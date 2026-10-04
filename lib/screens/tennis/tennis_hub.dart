@@ -97,7 +97,7 @@ class _TennisRallyHubState extends State<TennisRallyHub> {
     final frame = avatarFrameOptionById(game.equippedAvatarFrameId);
 
     navigator.push(
-      MaterialPageRoute<void>(
+      gamePageRoute<void>(
         builder: (_) => GameMatchGate(
           goLabel: 'PLAY!',
           config: GameMatchmakingConfig(
@@ -118,7 +118,7 @@ class _TennisRallyHubState extends State<TennisRallyHub> {
           onCancel: () => navigator.pop(),
           onReady: () {
             navigator.pushReplacement(
-              MaterialPageRoute<void>(
+              gamePageRoute<void>(
                 builder: (_) => BlocProvider.value(
                   value: _cubit,
                   child: TennisMatchScreen(
@@ -149,7 +149,7 @@ class _TennisRallyHubState extends State<TennisRallyHub> {
     playSound(SoundEffect.playMatch);
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      gamePageRoute<void>(
         builder: (_) => BlocProvider.value(
           value: _cubit,
           child: TennisMatchScreen(
@@ -275,7 +275,7 @@ class _TennisRallyV2HubState extends State<TennisRallyV2Hub> {
     final frame = avatarFrameOptionById(game.equippedAvatarFrameId);
 
     navigator.push(
-      MaterialPageRoute<void>(
+      gamePageRoute<void>(
         builder: (_) => GameMatchGate(
           goLabel: 'PLAY!',
           config: GameMatchmakingConfig(
@@ -296,7 +296,7 @@ class _TennisRallyV2HubState extends State<TennisRallyV2Hub> {
           onCancel: () => navigator.pop(),
           onReady: () {
             navigator.pushReplacement(
-              MaterialPageRoute<void>(
+              gamePageRoute<void>(
                 builder: (_) => BlocProvider.value(
                   value: _cubit,
                   child: TennisMatchScreen(
@@ -339,7 +339,7 @@ class _TennisRallyV2HubState extends State<TennisRallyV2Hub> {
     playSound(SoundEffect.playMatch);
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      gamePageRoute<void>(
         builder: (_) => BlocProvider.value(
           value: _cubit,
           child: TennisMatchScreen(
@@ -637,7 +637,8 @@ class _TennisHero extends StatelessWidget {
                   const SizedBox(height: 7),
                   Text(
                     'READ THE BOUNCE. OWN THE LINE.',
-                    style: Cyber.body(
+                    style: Cyber.bodyFor(
+                      context,
                       11,
                       color: Colors.white.withValues(alpha: 0.72),
                       letterSpacing: 0.8,
@@ -750,7 +751,7 @@ class _ResumeCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   '${snapshot.config.mode.label} // ${tennisPlayerById(snapshot.config.opponentId).name.toUpperCase()}',
-                  style: Cyber.body(10, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, 10, color: Cyber.muted),
                 ),
               ],
             ),
@@ -850,11 +851,7 @@ class _MatchHistoryStrip extends StatelessWidget {
         accent: Cyber.cyan,
         child: Row(
           children: [
-            const Icon(
-              Icons.history,
-              color: Cyber.cyan,
-              size: 30,
-            ),
+            const Icon(Icons.history, color: Cyber.cyan, size: 30),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -998,12 +995,8 @@ class _SelectionScreen extends StatelessWidget {
                     _DifficultyPicker(selected: profile.difficulty),
                     const SizedBox(height: 20),
                     HudCtaButton(
-                      label: competitive
-                          ? 'FIND RIVAL'
-                          : 'SESSION PREVIEW',
-                      icon: competitive
-                          ? Icons.radar
-                          : Icons.sports_tennis,
+                      label: competitive ? 'FIND RIVAL' : 'SESSION PREVIEW',
+                      icon: competitive ? Icons.radar : Icons.sports_tennis,
                       accent: Cyber.lime,
                       helper: competitive
                           ? 'RANDOM QUEUE // ${profile.difficulty.label}'
@@ -1161,7 +1154,7 @@ class _AthleteDetail extends StatelessWidget {
               Expanded(
                 child: Text(
                   player.signature,
-                  style: Cyber.body(12, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, 12, color: Cyber.muted),
                 ),
               ),
               Text(
@@ -1278,7 +1271,7 @@ class _PreviewScreen extends StatelessWidget {
   void _openDeckBuilder(BuildContext context) {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      gamePageRoute<void>(
         builder: (_) => TennisDeckBuilderScreen(
           onBack: navigator.pop,
           onSaved: navigator.pop,
@@ -1800,7 +1793,7 @@ class _LessonCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   lesson.objective,
-                  style: Cyber.body(10, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, 10, color: Cyber.muted),
                 ),
               ],
             ),
@@ -2280,7 +2273,7 @@ class _AchievementRow extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     spec.condition,
-                    style: Cyber.body(10, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, 10, color: Cyber.muted),
                   ),
                 ],
               ),

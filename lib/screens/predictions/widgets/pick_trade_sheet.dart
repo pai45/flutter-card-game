@@ -145,7 +145,8 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
                       const SizedBox(height: 10),
                       Text(
                         widget.market.question,
-                        style: Cyber.body(
+                        style: Cyber.bodyFor(
+                          context,
                           18,
                           weight: FontWeight.w700,
                           height: 1.2,
@@ -213,7 +214,8 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
                         const SizedBox(height: 8),
                         Text(
                           _disabledReason(balance),
-                          style: Cyber.body(
+                          style: Cyber.bodyFor(
+                            context,
                             11,
                             color: Cyber.amber,
                             weight: FontWeight.w700,
@@ -288,7 +290,7 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: const Color(0xff121b30),
-          content: Text(result.message, style: Cyber.body(12)),
+          content: Text(result.message, style: Cyber.bodyFor(context, 12)),
         ),
       );
       return;

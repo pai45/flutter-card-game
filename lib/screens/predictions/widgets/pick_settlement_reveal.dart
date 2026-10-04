@@ -231,7 +231,8 @@ class _PickSettlementOverlayState extends State<_PickSettlementOverlay>
                               textAlign: TextAlign.center,
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
-                              style: Cyber.body(
+                              style: Cyber.bodyFor(
+                                context,
                                 15,
                                 weight: FontWeight.w700,
                                 height: 1.25,

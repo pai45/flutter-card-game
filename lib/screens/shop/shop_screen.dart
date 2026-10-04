@@ -463,85 +463,88 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     return BlocBuilder<GameBloc, GameState>(
       builder: (BuildContext context, GameState state) {
-        return Scaffold(
-          backgroundColor: _bg,
-          body: Stack(
-            children: [
-              const Positioned.fill(child: _AnimatedShopBackground()),
-              const Positioned.fill(child: CyberTextureOverlay()),
-              SafeArea(
-                top: false,
-                child: Column(
-                  children: [
-                    StatOzTopBar(
-                      title: 'Shop',
-                      accent: _cyan,
-                      onAddCoins: () => _setTab(4),
-                      onStreakTap: widget.onOpenStreakHub,
-                    ),
-                    _ShopSportsTabs(
-                      activeIndex: _activeSportTab,
-                      selectedSport: _selectedSport,
-                      onTap: (index) => setState(() => _activeSportTab = index),
-                      onSearch: () {
-                        HapticFeedback.selectionClick();
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const ShopSearchScreen(),
+        return GameTypographyScope(
+          child: Scaffold(
+            backgroundColor: _bg,
+            body: Stack(
+              children: [
+                const Positioned.fill(child: _AnimatedShopBackground()),
+                const Positioned.fill(child: CyberTextureOverlay()),
+                SafeArea(
+                  top: false,
+                  child: Column(
+                    children: [
+                      StatOzTopBar(
+                        title: 'Shop',
+                        accent: _cyan,
+                        onAddCoins: () => _setTab(4),
+                        onStreakTap: widget.onOpenStreakHub,
+                      ),
+                      _ShopSportsTabs(
+                        activeIndex: _activeSportTab,
+                        selectedSport: _selectedSport,
+                        onTap: (index) =>
+                            setState(() => _activeSportTab = index),
+                        onSearch: () {
+                          HapticFeedback.selectionClick();
+                          Navigator.of(context).push(
+                            gamePageRoute<void>(
+                              builder: (_) => const ShopSearchScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      CyberUnderlineTabs(
+                        labels: const [
+                          'AVATAR',
+                          'FRAME',
+                          'BANNER',
+                          'KITS',
+                          'COINS',
+                          'PACKS',
+                          'CARDS',
+                        ],
+                        activeIndex: _activeTab,
+                        onTap: _setTab,
+                        minTabWidth: 80,
+                      ),
+                      Expanded(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          transitionBuilder:
+                              (Widget child, Animation<double> animation) {
+                                final Animation<Offset> slide = Tween<Offset>(
+                                  begin: const Offset(0, 0.03),
+                                  end: Offset.zero,
+                                ).animate(animation);
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: SlideTransition(
+                                    position: slide,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                          child: KeyedSubtree(
+                            key: ValueKey<int>(_activeTab),
+                            child: _buildTab(state),
                           ),
-                        );
-                      },
-                    ),
-                    CyberUnderlineTabs(
-                      labels: const [
-                        'AVATAR',
-                        'FRAME',
-                        'BANNER',
-                        'KITS',
-                        'COINS',
-                        'PACKS',
-                        'CARDS',
-                      ],
-                      activeIndex: _activeTab,
-                      onTap: _setTab,
-                      minTabWidth: 80,
-                    ),
-                    Expanded(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 250),
-                        transitionBuilder:
-                            (Widget child, Animation<double> animation) {
-                              final Animation<Offset> slide = Tween<Offset>(
-                                begin: const Offset(0, 0.03),
-                                end: Offset.zero,
-                              ).animate(animation);
-                              return FadeTransition(
-                                opacity: animation,
-                                child: SlideTransition(
-                                  position: slide,
-                                  child: child,
-                                ),
-                              );
-                            },
-                        child: KeyedSubtree(
-                          key: ValueKey<int>(_activeTab),
-                          child: _buildTab(state),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              if (_celebrationCoins != null)
-                _CelebrationOverlay(amount: _celebrationCoins!),
-              if (_acquireOverlay != null)
-                Positioned.fill(child: _acquireOverlay!),
-            ],
-          ),
-          bottomNavigationBar: LandingBottomNavigation(
-            selectedIndex: 1,
-            onNavigate: widget.onNavigate,
-            includeShop: false,
+                if (_celebrationCoins != null)
+                  _CelebrationOverlay(amount: _celebrationCoins!),
+                if (_acquireOverlay != null)
+                  Positioned.fill(child: _acquireOverlay!),
+              ],
+            ),
+            bottomNavigationBar: LandingBottomNavigation(
+              selectedIndex: 1,
+              onNavigate: widget.onNavigate,
+              includeShop: false,
+            ),
           ),
         );
       },

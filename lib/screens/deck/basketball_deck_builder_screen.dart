@@ -130,9 +130,8 @@ class _BasketballDeckBuilderScreenState
                     BasketballJerseySelector(
                       selectedId: bbState.teamId,
                       ownedTeamIds: state.ownedBasketballTeamIds,
-                      onSelected: (teamId) => context
-                          .read<BasketballCubit>()
-                          .setTeamId(
+                      onSelected: (teamId) =>
+                          context.read<BasketballCubit>().setTeamId(
                             teamId,
                             ownedTeamIds: state.ownedBasketballTeamIds,
                           ),
@@ -142,10 +141,9 @@ class _BasketballDeckBuilderScreenState
                 ),
               ),
               BottomActionBar(
-                primaryLabel: widget.onSaved != null
-                    ? 'SAVE LOADOUT'
-                    : 'PLAY',
-                primaryEnabled: valid &&
+                primaryLabel: widget.onSaved != null ? 'SAVE LOADOUT' : 'PLAY',
+                primaryEnabled:
+                    valid &&
                     (widget.onSaved != null || widget.onPlayHoopDuel != null),
                 primaryOnTap: () async {
                   await _save(active);
@@ -161,8 +159,9 @@ class _BasketballDeckBuilderScreenState
                     ? () => _attemptBack(active)
                     : () async => _save(active),
                 tertiaryLabel: widget.onSaved == null ? 'BACK' : null,
-                tertiaryOnTap:
-                    widget.onSaved == null ? () => _attemptBack(active) : null,
+                tertiaryOnTap: widget.onSaved == null
+                    ? () => _attemptBack(active)
+                    : null,
               ),
             ],
           ),
@@ -615,7 +614,7 @@ class _BasketballPickerPanel extends StatelessWidget {
                 ? Center(
                     child: Text(
                       'No owned cards for this slot yet.',
-                      style: Cyber.body(12, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, 12, color: Cyber.muted),
                     ),
                   )
                 : SingleChildScrollView(
@@ -650,23 +649,23 @@ class _BasketballTelemetry extends StatelessWidget {
   Widget build(BuildContext context) {
     final stats = switch (athlete.cardRole) {
       BasketballCardRole.guard => [
-          ('SPD', athlete.speed),
-          ('HANDLE', athlete.handling),
-          ('3PT', athlete.three),
-          ('STEAL', athlete.steal),
-        ],
+        ('SPD', athlete.speed),
+        ('HANDLE', athlete.handling),
+        ('3PT', athlete.three),
+        ('STEAL', athlete.steal),
+      ],
       BasketballCardRole.wing => [
-          ('SPD', athlete.speed),
-          ('3PT', athlete.three),
-          ('DUNK', athlete.dunk),
-          ('DEF', athlete.defense),
-        ],
+        ('SPD', athlete.speed),
+        ('3PT', athlete.three),
+        ('DUNK', athlete.dunk),
+        ('DEF', athlete.defense),
+      ],
       BasketballCardRole.big => [
-          ('INSIDE', athlete.inside),
-          ('DUNK', athlete.dunk),
-          ('BLOCK', athlete.block),
-          ('REB', athlete.rebound),
-        ],
+        ('INSIDE', athlete.inside),
+        ('DUNK', athlete.dunk),
+        ('BLOCK', athlete.block),
+        ('REB', athlete.rebound),
+      ],
     };
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 7, 8, 8),
@@ -694,10 +693,7 @@ class _BasketballTelemetry extends StatelessWidget {
                         '${stat.$2}',
                         style: Cyber.display(13, color: Cyber.gold),
                       ),
-                      Text(
-                        stat.$1,
-                        style: Cyber.label(6, color: Cyber.muted),
-                      ),
+                      Text(stat.$1, style: Cyber.label(6, color: Cyber.muted)),
                     ],
                   ),
                 ),

@@ -142,6 +142,8 @@ class HudCtaButton extends StatefulWidget {
   /// Calm secondary action with a flat panel fill and accent-colored content.
   final bool outlined;
   final TextStyle? labelStyle;
+  /// Readable mission names may wrap instead of shrinking to fit.
+  final bool wrapLabel;
 
   const HudCtaButton({
     super.key,
@@ -157,6 +159,7 @@ class HudCtaButton extends StatefulWidget {
     this.glow = true,
     this.outlined = false,
     this.labelStyle,
+    this.wrapLabel = false,
     this.enabled = true,
     this.onPressStart,
     this.onPressEnd,
@@ -266,7 +269,9 @@ class _HudCtaButtonState extends State<HudCtaButton>
             return Opacity(
               opacity: widget.enabled ? 1 : 0.58,
               child: Container(
-                height: widget.height,
+                height: widget.wrapLabel
+                    ? math.max(widget.height, 36 + MediaQuery.textScalerOf(context).scale(14) * 3.6)
+                    : widget.height,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   // Glow rule: halo only when [glow] is on. Flat otherwise —
@@ -345,7 +350,10 @@ class _HudCtaButtonState extends State<HudCtaButton>
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      FittedBox(
+                                      if (widget.wrapLabel)
+                                        Text(displayLabel, textAlign: TextAlign.center,
+                                          style: Cyber.display(14, color: contentColor, letterSpacing: 1))
+                                      else FittedBox(
                                         fit: BoxFit.scaleDown,
                                         child: Text(
                                           displayLabel,

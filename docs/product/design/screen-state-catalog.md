@@ -1,7 +1,7 @@
 # StatOz Screen and State Catalog
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-12
+> **Last verified:** 2026-09-19
 > **Scope:** Reproducible product and QA evidence for StatOz screens, game entries, and representative visible states.
 
 ## Product Purpose
@@ -67,6 +67,11 @@ for the new ESPN team hub: EPL MATCHES and PLAYERS, LaLiga PREDICTIONS, IPL
 MATCHES and PLAYERS, plus the live-refresh-failure state where bundled data
 remains visible. Each capture must enter from a real TABLE or STATS team row and
 retain the 393x852 / DPR 1 catalog contract.
+
+The next regeneration must also capture the quest hub's three derived states:
+tabless ROOKIE PATH, graduated one-sport TODAY, and graduated multi-sport
+QUESTS. The rookie top-bar flag and DAILY QUESTS UNLOCKED reveal are separate
+required keyframes.
 
 ## Persistence
 

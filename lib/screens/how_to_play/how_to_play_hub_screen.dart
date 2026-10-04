@@ -24,7 +24,7 @@ enum HowToPlayMode {
 /// context help affordances inside the Predict and Pick surfaces.
 Future<void> showHowToPlayGuide(BuildContext context, HowToPlayMode mode) {
   return Navigator.of(context).push(
-    MaterialPageRoute<void>(
+    gamePageRoute<void>(
       builder: (_) => _HowToPlayGuideScreen(guide: _guides[mode.index]),
     ),
   );
@@ -92,7 +92,12 @@ class HowToPlayHubScreen extends StatelessWidget {
           Text(
             'Predict fixtures, take market picks, duel with cards, or trade spot '
             'kicks. Tap a mode for its quick guide.',
-            style: Cyber.body(12.5, color: AppTheme.text2, height: 1.4),
+            style: Cyber.bodyFor(
+              context,
+              12.5,
+              color: AppTheme.text2,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 18),
           for (var i = 0; i < _guides.length; i++) ...[
@@ -117,7 +122,7 @@ class _ModeCard extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
+        gamePageRoute<void>(
           builder: (_) => _HowToPlayGuideScreen(guide: guide),
         ),
       ),
@@ -139,7 +144,12 @@ class _ModeCard extends StatelessWidget {
                   const SizedBox(height: 5),
                   Text(
                     guide.tagline,
-                    style: Cyber.body(12, color: AppTheme.text2, height: 1.3),
+                    style: Cyber.bodyFor(
+                      context,
+                      12,
+                      color: AppTheme.text2,
+                      height: 1.3,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   _MetaTag(
@@ -235,14 +245,16 @@ class _GuideHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  guide.title,
-                  style: Cyber.display(16, letterSpacing: 0.6),
-                ),
+                Text(guide.title, style: Cyber.display(16, letterSpacing: 0.6)),
                 const SizedBox(height: 7),
                 Text(
                   guide.purpose,
-                  style: Cyber.body(12.5, color: AppTheme.text2, height: 1.45),
+                  style: Cyber.bodyFor(
+                    context,
+                    12.5,
+                    color: AppTheme.text2,
+                    height: 1.45,
+                  ),
                 ),
               ],
             ),
@@ -302,7 +314,7 @@ class _GuideStatCell extends StatelessWidget {
           Text(
             stat.sub,
             textAlign: TextAlign.center,
-            style: Cyber.body(9, color: Cyber.muted, height: 1.2),
+            style: Cyber.bodyFor(context, 9, color: Cyber.muted, height: 1.2),
           ),
         ],
       ),
@@ -386,7 +398,12 @@ class _StepTile extends StatelessWidget {
               const SizedBox(height: 5),
               Text(
                 step.body,
-                style: Cyber.body(12, color: AppTheme.text2, height: 1.45),
+                style: Cyber.bodyFor(
+                  context,
+                  12,
+                  color: AppTheme.text2,
+                  height: 1.45,
+                ),
               ),
             ],
           ),
@@ -448,7 +465,12 @@ class _FactTile extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 fact.body,
-                style: Cyber.body(11.5, color: Cyber.muted, height: 1.4),
+                style: Cyber.bodyFor(
+                  context,
+                  11.5,
+                  color: Cyber.muted,
+                  height: 1.4,
+                ),
               ),
             ],
           ),
@@ -616,12 +638,14 @@ const _guides = <_ModeGuide>[
       _GuideFact(
         icon: Icons.edit,
         label: 'Edit until kickoff',
-        body: 'Re-open a prediction any time before the match starts to change answers.',
+        body:
+            'Re-open a prediction any time before the match starts to change answers.',
       ),
       _GuideFact(
         icon: Icons.history,
         label: 'Review, not replay',
-        body: 'A match you already predicted opens as a review list, not a fresh quiz.',
+        body:
+            'A match you already predicted opens as a review list, not a fresh quiz.',
       ),
     ],
   ),
@@ -862,7 +886,8 @@ const _guides = <_ModeGuide>[
       _GuideFact(
         icon: Icons.sports_soccer,
         label: 'Standalone mode',
-        body: 'Played on its own from the Games tab — not tied to a card match.',
+        body:
+            'Played on its own from the Games tab — not tied to a card match.',
       ),
     ],
   ),

@@ -1,7 +1,7 @@
 # Leaderboards, Rivals, History, and Statistics
 
 > **Status:** PROTOTYPE
-> **Last verified:** 2026-09-15
+> **Last verified:** 2026-10-01
 > **Scope:** Ranking boards, rival dossiers, game/prediction/pick histories, ledgers, and profile statistics
 
 ## Product Purpose
@@ -90,9 +90,9 @@ doubles) produces the same board as native.
 Every game lobby's top bar carries a leaderboard action on the right: Pitch Duel,
 Penalty Shootout, Football Chess, Football Bingo, the Knowledge Arena quiz lobby,
 Grand Prix Dash, Hoop Duel, Final Over, Tennis Rally, and the three daily mystery
-landings (Guess the Player / Driver / Winner). It is a compact chamfered plate
-carrying the leaderboard glyph in the lobby's own accent — persistent chrome, so
-per the glow rule it never glows.
+landings (Guess the Player / Driver / Winner). The leaderboard glyph uses the
+lobby's own accent with a transparent hit area: no plate fill, border, or glow.
+Its long-press tooltip, sound/haptic response, and destination stay the same.
 
 Tapping it pushes the leaderboard **over** the lobby, opened on GAMES with that
 lobby's sport and game preselected, so the player lands on their own board rather

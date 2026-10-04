@@ -91,7 +91,7 @@ void main() {
   test('cricket deck save keeps the football deck intact', () async {
     final base = _playableState();
     final footballSlot = defaultDeckSlots.first;
-    final cricketIds = batsmen.take(3).map((card) => card.id).toList();
+    final cricketIds = batsmen.take(5).map((card) => card.id).toList();
     final bloc = GameBloc(SecureGameStorage());
     addTearDown(bloc.close);
     bloc.emit(
@@ -154,7 +154,9 @@ void main() {
     expect(bloc.state.starterPackClaimed, isFalse);
     expect(bloc.state.deckFinalOverBatsmen, hasLength(cricketStarterCardCount));
     expect(
-      bloc.state.deckFinalOverBatsmen.every((card) => card.role == PlayerRole.batsman),
+      bloc.state.deckFinalOverBatsmen.every(
+        (card) => card.role == PlayerRole.batsman,
+      ),
       isTrue,
     );
     expect(bloc.state.finalOverDeckReady, isTrue);

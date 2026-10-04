@@ -1,3 +1,4 @@
+import '../../../config/game_ladder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,6 +9,7 @@ import '../../../blocs/game/game_state.dart';
 import '../../../config/enums.dart';
 import '../../../config/theme.dart';
 import '../../../models/match.dart';
+import '../../../models/pitch_duel_mastery.dart';
 import '../../../models/progression.dart';
 import '../../../utils/label_helpers.dart';
 import '../../../utils/sound_effects.dart';
@@ -70,6 +72,7 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
   late final int _oldXpIntoLevel;
   late final int _oldXpToNextLevel;
   bool _showLevelUp = false;
+  bool _motionChecked = false;
   final _bannerKey = GlobalKey();
   final _actionsKey = GlobalKey();
 
@@ -124,6 +127,15 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_motionChecked && MediaQuery.disableAnimationsOf(context)) {
+      _seq.value = 1;
+    }
+    _motionChecked = true;
+  }
+
+  @override
   void dispose() {
     _seq.dispose();
     super.dispose();
@@ -134,6 +146,33 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
     final state = widget.state;
     final won = state.playerScore > state.opponentScore;
     final drawn = state.playerScore == state.opponentScore;
+    final comboRounds =
+        state.roundResults
+            .where(
+              (r) =>
+                  (r.playerAttacking
+                      ? r.attackBreakdown
+                      : r.defenseBreakdown) !=
+                  null,
+            )
+            .toList()
+          ..sort(
+            (a, b) =>
+                (b.playerAttacking ? b.attackBreakdown! : b.defenseBreakdown!)
+                    .combo
+                    .compareTo(
+                      (a.playerAttacking
+                              ? a.attackBreakdown!
+                              : a.defenseBreakdown!)
+                          .combo,
+                    ),
+          );
+    final bestRound = comboRounds.firstOrNull;
+    final bestPower = bestRound == null
+        ? null
+        : (bestRound.playerAttacking
+              ? bestRound.attackBreakdown
+              : bestRound.defenseBreakdown);
     final mvp = state.roundResults
         .where(
           (round) =>
@@ -235,6 +274,19 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
                         ),
                       ),
                     ],
+                    if (_seq.value >= 0.62)
+                      QuestResultReceipt(
+                        game: ArcadeGame.pitchDuel,
+                        sourceId: state.pitchSessionId,
+                      ),
+                    const SizedBox(height: 12),
+                    PitchMasteryPanel(
+                      goal: pitchCompletedMasteryGoal(state.matchHistory),
+                      progress: pitchCompletedMasteryGoal(
+                        state.matchHistory,
+                      ).progress(pitchPlayerPlays(state.roundResults)),
+                      nextGoal: pitchMasteryGoal(state.matchHistory),
+                    ),
                     if (mvp != null) ...[
                       const SizedBox(height: 14),
                       Column(
@@ -254,6 +306,54 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
                       ),
                     ],
                     const SizedBox(height: 14),
+                    if (bestRound != null && bestPower != null) ...[
+                      CyberPanel(
+                        cornerCuts: true,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              bestPower.combo > 0
+                                  ? 'BEST COMBINATION +${bestPower.combo}'
+                                  : 'BUILD YOUR NEXT COMBINATION',
+                              style: Cyber.label(12, color: Cyber.cyan),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${(bestRound.playerAttacking ? bestRound.attackerCard : bestRound.defenderCard).name} + ${(bestRound.playerAttacking ? bestRound.attackAction : bestRound.defenseAction).title}',
+                              style: Cyber.bodyFor(
+                                context,
+                                14,
+                                color: AppTheme.whiteColor,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Affinity +${bestPower.affinity} • Scenario match +${bestPower.scenarioCombo}',
+                              style: Cyber.bodyFor(
+                                context,
+                                12,
+                                color: Cyber.cyan,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            PitchContributionStrip(power: bestPower),
+                            if (bestPower.combo == 0) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                'Match a player affinity for +4 and the scenario for +6.',
+                                style: Cyber.bodyFor(
+                                  context,
+                                  12,
+                                  color: Cyber.muted,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                    ],
                     _RoundLogHeader(count: state.roundResults.length),
                     if (state.roundResults.isNotEmpty) ...[
                       const SizedBox(height: 8),
@@ -465,7 +565,8 @@ class _ResultDockButton extends StatelessWidget {
               ],
               Text(
                 label,
-                style: Cyber.body(
+                style: Cyber.bodyFor(
+                  context,
                   15,
                   color: content,
                   weight: FontWeight.w800,

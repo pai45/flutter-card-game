@@ -22,6 +22,8 @@ enum OzCoinTransactionSource {
   guessDriverHint,
   tennisReward,
   manual,
+  sportUnlock,
+  beginnerQuestReward,
 }
 
 class OzCoinLedgerEntry {

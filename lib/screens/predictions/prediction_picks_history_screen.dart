@@ -92,8 +92,9 @@ class _PredictionPicksHistoryScreenState
                     : net < 0
                     ? Cyber.red
                     : Colors.white;
-                final sportLabel =
-                    sportModuleFor(_selectedSport).label.toUpperCase();
+                final sportLabel = sportModuleFor(
+                  _selectedSport,
+                ).label.toUpperCase();
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -243,7 +244,7 @@ class _PredictionPicksHistoryScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: const Color(0xff121b30),
-          content: Text(result.message, style: Cyber.body(12)),
+          content: Text(result.message, style: Cyber.bodyFor(context, 12)),
         ),
       );
       return;
@@ -412,7 +413,12 @@ class _PickCardBody extends StatelessWidget {
           position.marketQuestion,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.body(15, weight: FontWeight.w700, height: 1.15),
+          style: Cyber.bodyFor(
+            context,
+            15,
+            weight: FontWeight.w700,
+            height: 1.15,
+          ),
         ),
         if (context0 != null) ...[
           const SizedBox(height: 4),
@@ -420,7 +426,8 @@ class _PickCardBody extends StatelessWidget {
             context0,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.body(
+            style: Cyber.bodyFor(
+              context,
               11,
               color: const Color(0xff9fb0c2),
               weight: FontWeight.w600,
@@ -452,7 +459,7 @@ class _PickCardBody extends StatelessWidget {
                     position.outcomeLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.body(13, weight: FontWeight.w800),
+                    style: Cyber.bodyFor(context, 13, weight: FontWeight.w800),
                   ),
                 ],
               ),
@@ -474,7 +481,8 @@ class _PickCardBody extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       '${position.stakeOz} → ${position.maxPayoutOz}',
-                      style: Cyber.body(
+                      style: Cyber.bodyFor(
+                        context,
                         12.5,
                         weight: FontWeight.w700,
                         fontFeatures: const [FontFeature.tabularFigures()],
@@ -602,7 +610,8 @@ class _PickHistoryStrip extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 '+${position.realizedProfit} OZ PROFIT',
-                style: Cyber.body(
+                style: Cyber.bodyFor(
+                  context,
                   12,
                   color: Cyber.success,
                   weight: FontWeight.w800,
@@ -617,7 +626,8 @@ class _PickHistoryStrip extends StatelessWidget {
           topBorder: Cyber.red.withValues(alpha: 0.18),
           child: Text(
             '−${position.stakeOz} OZ',
-            style: Cyber.body(
+            style: Cyber.bodyFor(
+              context,
               12,
               color: Cyber.red.withValues(alpha: 0.9),
               weight: FontWeight.w800,

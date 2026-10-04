@@ -369,7 +369,7 @@ class StandingsTable extends StatelessWidget {
     if (rows.isEmpty) {
       return Text(
         'Standings unavailable.',
-        style: Cyber.body(13, color: Cyber.muted),
+        style: Cyber.bodyFor(context, 13, color: Cyber.muted),
       );
     }
     // Basketball is tested first: it has no draws either, so a null `drawn`
@@ -606,7 +606,8 @@ class _DataRow extends StatelessWidget {
                   row.tableName ?? row.team.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.body(
+                  style: Cyber.bodyFor(
+                    context,
                     13,
                     color: AppTheme.whiteColor,
                     weight: FontWeight.w700,

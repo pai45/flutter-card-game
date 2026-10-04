@@ -128,6 +128,8 @@ bool _matchStateChanged(GameState prev, GameState curr) =>
     prev.opponentSelectedActionCard != curr.opponentSelectedActionCard ||
     !identical(prev.usedPlayerCards, curr.usedPlayerCards) ||
     !identical(prev.usedActionCards, curr.usedActionCards) ||
+    !identical(prev.opponentUsedPlayerCards, curr.opponentUsedPlayerCards) ||
+    !identical(prev.opponentUsedActionCards, curr.opponentUsedActionCards) ||
     !identical(prev.redCardedCards, curr.redCardedCards) ||
     !identical(prev.roundResults, curr.roundResults) ||
     !identical(prev.opponentAttackers, curr.opponentAttackers) ||
@@ -212,7 +214,7 @@ class _MatchScreenState extends State<MatchScreen> {
                   title: 'PITCH DUEL',
                   queueLabel: 'SCANNING GLOBAL PITCH QUEUE',
                   player: MatchmakingFighter(
-                    name: 'PLAYER ONE',
+                    name: state.displayName,
                     avatarAsset: playerAvatar.assetPath,
                     frame: equippedFrame,
                     badge: 'LV $level',

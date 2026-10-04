@@ -247,7 +247,8 @@ class _StreakReminderSheetState extends State<StreakReminderSheet> {
                                         atRisk
                                             ? '$clock left to save your $current-day run.'
                                             : 'Play anything today to make it ${current + 1}.',
-                                        style: Cyber.body(
+                                        style: Cyber.bodyFor(
+                                          context,
                                           14,
                                           color: Colors.white.withValues(
                                             alpha: 0.85,
@@ -591,7 +592,7 @@ class _ShieldLine extends StatelessWidget {
                 ? 'Covers ${shields == 1 ? 'a missed day' : '$shields missed days'}.'
                 : 'Clear the Daily Sweep to forge one.',
             maxLines: 2,
-            style: Cyber.body(12, color: Cyber.muted, height: 1.3),
+            style: Cyber.bodyFor(context, 12, color: Cyber.muted, height: 1.3),
           ),
         ),
       ],

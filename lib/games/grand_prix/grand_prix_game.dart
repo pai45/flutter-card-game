@@ -3,7 +3,6 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
-import 'package:flame/particles.dart';
 import 'package:flutter/foundation.dart' show ValueNotifier;
 
 import '../../config/theme.dart';
@@ -12,6 +11,43 @@ import '../../data/grand_prix_liveries.dart';
 import '../../models/grand_prix.dart';
 import 'grand_prix_car_painter.dart';
 import 'grand_prix_engine.dart';
+import 'grand_prix_simulation_clock.dart';
+import 'grand_prix_scenery.dart';
+
+class GrandPrixTelemetry {
+  const GrandPrixTelemetry({
+    this.energy = 1,
+    this.tow = 0,
+    this.grip = 1,
+    this.deploying = false,
+    this.gear = 1,
+    this.rpm = 0.3,
+    this.throttle = 0,
+    this.brake = 0,
+    this.cleanPasses = 0,
+    this.elapsedMs = 0,
+    this.bestLapMs,
+    this.lastLapMs,
+    this.corner,
+    this.braking = false,
+    this.rivalName,
+    this.rivalGapSeconds = 0,
+    this.recoverySeconds = 0,
+  });
+  final double energy,
+      tow,
+      grip,
+      rpm,
+      throttle,
+      brake,
+      rivalGapSeconds,
+      recoverySeconds;
+  final bool deploying, braking;
+  final int gear, cleanPasses, elapsedMs;
+  final int? bestLapMs, lastLapMs;
+  final GrandPrixCornerPreview? corner;
+  final String? rivalName;
+}
 
 enum GrandPrixAudioEvent { tireScrub, wallContact, carContact }
 
@@ -32,6 +68,7 @@ class GrandPrixGame extends FlameGame {
     required this.onPlayerFinished,
     required this.onAudioEvent,
     this.reducedMotion = false,
+    this.onMoment,
   });
 
   final RaceSetup setup;
@@ -39,12 +76,16 @@ class GrandPrixGame extends FlameGame {
   final void Function(OvertakeEvent event) onOvertake;
   final void Function(PlayerRaceOutcome outcome) onPlayerFinished;
   final void Function(GrandPrixAudioEvent event) onAudioEvent;
-  final bool reducedMotion;
+  bool reducedMotion;
+  final void Function(GrandPrixMoment moment)? onMoment;
 
   // HUD bindings — cheap 60fps reads, never bloc emissions.
   final ValueNotifier<double> speedKph = ValueNotifier(0);
   final ValueNotifier<double> lapProgress = ValueNotifier(0);
   final ValueNotifier<bool> slipstreamActive = ValueNotifier(false);
+  final ValueNotifier<GrandPrixTelemetry> telemetry = ValueNotifier(
+    const GrandPrixTelemetry(),
+  );
 
   /// 1-based lap the player is on (clamped to [laps]); the HUD shows LAP n/N
   /// and the race screen flashes a beat when it climbs.
@@ -59,16 +100,27 @@ class GrandPrixGame extends FlameGame {
   late final RaceField field;
   late final GrandPrixEngine _engine;
   final List<_CarComponent> _carSprites = [];
-  final Random _fxRng = Random();
+  final GrandPrixSimulationClock _clock = GrandPrixSimulationClock();
+  late final GrandPrixScenery _scenery = GrandPrixScenery(setup.circuit.id);
+  late final _TrackEffectsComponent _effects = _TrackEffectsComponent();
 
   bool _running = false;
+  bool _started = false;
   bool _finishedReported = false;
-  bool _left = false, _right = false, _throttle = false, _brake = false;
-  double _accumulator = 0;
+  bool _left = false,
+      _right = false,
+      _throttle = false,
+      _brake = false,
+      _deploy = false;
+  double _steer = 0;
+  double _telemetryTimer = 0;
+  double _cameraScale = 1;
+  double _impact = 0;
+  double _sparkCooldown = 0;
+  double _finishCoast = 0;
   double _cameraRefX = 0;
+  double _cameraDistance = 0;
   OvertakeEvent? _bestOvertake;
-
-  static const double _subDt = 1 / 120;
 
   /// Player car's fixed screen row (fraction of height from the top).
   static const double _anchorFrac = 0.68;
@@ -76,11 +128,11 @@ class GrandPrixGame extends FlameGame {
   // -- camera / world→screen mapping ----------------------------------------
 
   /// Vertical px per metre — sized so the player can see ~95m up the road.
-  double get pxPerMeterY => max(3.0, size.y * _anchorFrac / 95);
+  double get pxPerMeterY => max(2.8, size.y * _anchorFrac / 110) * _cameraScale;
 
   /// Lateral px per metre for lane offsets — the asphalt band spans ~42% of
   /// the screen width.
-  double get pxPerMeterX => size.x * 0.42 / (kTrackHalfWidth * 2);
+  double get pxPerMeterX => min(size.x * 0.56, 360.0) / (kTrackHalfWidth * 2);
 
   /// Curvature is compressed relative to lane widths so a 30m corner bend
   /// sweeps across the screen instead of off it (pseudo-scroller trick). The
@@ -91,12 +143,13 @@ class GrandPrixGame extends FlameGame {
   double get anchorY => size.y * _anchorFrac;
 
   Offset worldToScreen(double distance, double lateral) {
-    final bend =
-        raceCenterlineX(field.circuit, field.sectionStarts, distance) *
-        bendPxPerMeter;
+    final bend = field.geometry.sample(distance).centerX * bendPxPerMeter;
     return Offset(
-      size.x / 2 + (bend - _cameraRefX) + lateral * pxPerMeterX,
-      anchorY - (distance - field.player.distance) * pxPerMeterY,
+      size.x / 2 +
+          (bend - _cameraRefX) +
+          lateral * pxPerMeterX +
+          (reducedMotion ? 0 : sin(_impact * 70) * _impact * 12),
+      anchorY - (distance - _cameraDistance) * pxPerMeterY,
     );
   }
 
@@ -111,15 +164,12 @@ class GrandPrixGame extends FlameGame {
     final rng = Random(setup.seed);
     field = buildField(setup, generateDriverNames(kFieldSize - 1, rng), rng);
     _engine = GrandPrixEngine(random: Random(setup.seed ^ 0x51f15eed));
+    _cameraDistance = field.player.distance;
     _cameraRefX =
-        raceCenterlineX(
-          field.circuit,
-          field.sectionStarts,
-          field.player.distance,
-        ) *
-        bendPxPerMeter;
+        field.geometry.sample(_cameraDistance).centerX * bendPxPerMeter;
 
     add(_TrackComponent()..priority = -10);
+    add(_effects..priority = 5);
     for (final car in field.cars) {
       final sprite = _CarComponent(
         car: car,
@@ -133,17 +183,35 @@ class GrandPrixGame extends FlameGame {
 
   // -- inputs from the HUD control pad ---------------------------------------
 
-  void setInputs({bool? left, bool? right, bool? throttle, bool? brake}) {
+  void setInputs({
+    bool? left,
+    bool? right,
+    bool? throttle,
+    bool? brake,
+    double? steer,
+    bool? deploy,
+  }) {
     _left = left ?? _left;
     _right = right ?? _right;
     _throttle = throttle ?? _throttle;
     _brake = brake ?? _brake;
+    _steer = steer?.clamp(-1.0, 1.0) ?? _steer;
+    _deploy = deploy ?? _deploy;
+  }
+
+  void clearInputs() {
+    _left = _right = _throttle = _brake = _deploy = false;
+    _steer = 0;
   }
 
   RaceInputs get _playerInputs => RaceInputs(
-    steer: (_right ? 1.0 : 0.0) - (_left ? 1.0 : 0.0),
+    steer: (_steer + (_right ? 1.0 : 0.0) - (_left ? 1.0 : 0.0)).clamp(
+      -1.0,
+      1.0,
+    ),
     throttle: _throttle,
     brake: _brake,
+    deploy: _deploy,
   );
 
   // -- race lifecycle ---------------------------------------------------------
@@ -151,24 +219,59 @@ class GrandPrixGame extends FlameGame {
   /// Lights out: applies the graded launches and arms the simulation.
   void startRace(LaunchGrade playerGrade) {
     if (_running || _finishedReported) return;
-    applyLaunch(field, playerGrade, Random(setup.seed ^ 0x1a));
+    if (!_started) {
+      applyLaunch(field, playerGrade, Random(setup.seed ^ 0x1a));
+      _started = true;
+    }
+    _clock.reset();
     _running = true;
   }
 
-  void stopRace() => _running = false;
+  void stopRace() {
+    _running = false;
+    _clock.reset();
+    clearInputs();
+    if (isLoaded) {
+      for (final car in field.cars) {
+        car.previousDistance = car.distance;
+        car.previousLateral = car.lateral;
+        car.previousHeading = car.heading;
+      }
+    }
+  }
+
+  bool recoverPlayer() {
+    if (!_running || !_engine.recoverPlayer(field)) return false;
+    clearInputs();
+    onMoment?.call(
+      const GrandPrixMoment(
+        GrandPrixMomentKind.recovery,
+        'RECOVERING',
+        'THREE SECONDS · RIVALS KEEP RACING',
+      ),
+    );
+    return true;
+  }
 
   @override
   void update(double dt) {
     super.update(dt);
+    _sparkCooldown = max(0, _sparkCooldown - dt);
+    _impact = max(0, _impact - dt);
     if (_running) {
-      // Clamp + fixed substeps so a dropped frame can't tunnel a braking zone.
-      _accumulator += min(dt, 1 / 30);
-      while (_accumulator >= _subDt && _running) {
-        _accumulator -= _subDt;
-        final events = _engine.tick(field, _playerInputs, _subDt);
+      _clock.advance(dt, (step) {
+        final events = _engine.tick(field, _playerInputs, step);
         _handleEvents(events);
-      }
+        return _running;
+      });
+    } else if (_finishedReported && !reducedMotion && field.player.finished) {
+      _finishCoast = min(16, _finishCoast + field.player.speed * dt * 0.35);
     }
+    final scaleTarget = reducedMotion
+        ? 1.0
+        : 1 - field.player.speed / kTopSpeed * 0.12;
+    _cameraScale += (scaleTarget - _cameraScale) * (1 - exp(-dt * 3));
+    _telemetryTimer += dt;
     _syncCamera();
     _syncSprites();
     _syncNotifiers();
@@ -185,6 +288,7 @@ class GrandPrixGame extends FlameGame {
       }
       onOvertake(overtake);
     }
+    if (events.moment case final moment?) onMoment?.call(moment);
     if (events.playerTireScrub) {
       onAudioEvent(GrandPrixAudioEvent.tireScrub);
     }
@@ -193,7 +297,11 @@ class GrandPrixGame extends FlameGame {
     } else if (events.playerContact) {
       onAudioEvent(GrandPrixAudioEvent.carContact);
     }
-    if ((events.playerWallContact || events.playerContact) && !reducedMotion) {
+    if ((events.playerWallContact || events.playerContact) &&
+        !reducedMotion &&
+        _sparkCooldown == 0) {
+      _sparkCooldown = 0.16;
+      _impact = events.playerWallContact ? 0.16 : 0.09;
       _spawnSparks(
         events.playerWallContact ? Cyber.danger : Cyber.amber,
         events.playerWallContact ? 18 : 8,
@@ -208,6 +316,10 @@ class GrandPrixGame extends FlameGame {
           position: positionOf(field, player),
           lapTimeMs: player.finishTimeMs.round(),
           bestOvertakeName: _bestOvertake?.overtakenName,
+          lapTimesMs: List.unmodifiable(field.playerLapTimesMs),
+          cleanOvertakes: field.cleanPassedCars.length,
+          cleanRace: field.playerCleanRace,
+          recoveries: field.playerRecoveries,
         ),
       );
     }
@@ -216,7 +328,14 @@ class GrandPrixGame extends FlameGame {
       _finishedReported = true;
       _running = false;
       onPlayerFinished(
-        const PlayerRaceOutcome(position: kFieldSize, lapTimeMs: 0, dnf: true),
+        PlayerRaceOutcome(
+          position: kFieldSize,
+          lapTimeMs: 0,
+          dnf: true,
+          lapTimesMs: List.unmodifiable(field.playerLapTimesMs),
+          cleanOvertakes: field.cleanPassedCars.length,
+          recoveries: field.playerRecoveries,
+        ),
       );
     }
   }
@@ -226,37 +345,56 @@ class GrandPrixGame extends FlameGame {
     // player car keeps a fixed horizontal screen position — offset only by its
     // own lateral, i.e. only when the player steers. Any lag/smoothing here
     // reads as the car sliding sideways on its own through a bend.
+    final player = field.player;
+    _cameraDistance = _interpolate(
+      player.previousDistance,
+      player.distance,
+      player,
+    );
     _cameraRefX =
-        raceCenterlineX(
-          field.circuit,
-          field.sectionStarts,
-          field.player.distance,
-        ) *
-        bendPxPerMeter;
+        field.geometry.sample(_cameraDistance).centerX * bendPxPerMeter;
   }
+
+  double _interpolate(double previous, double current, CarState car) =>
+      !_running || !car.hasPreviousPose
+      ? current
+      : previous + (current - previous) * _clock.interpolation;
 
   void _syncSprites() {
     if (!isLoaded) return;
-    final playerDistance = field.player.distance;
+    final playerDistance = _cameraDistance;
     final window = viewAheadMeters;
     for (final sprite in _carSprites) {
       final delta = sprite.car.distance - playerDistance;
       sprite.visibleOnTrack = delta > -60 && delta < window;
       if (!sprite.visibleOnTrack) continue;
-      final at = worldToScreen(sprite.car.distance, sprite.car.lateral);
+      final car = sprite.car;
+      final sample = field.geometry.sample(
+        _interpolate(car.previousDistance, car.distance, car),
+      );
+      final distance =
+          _interpolate(car.previousDistance, car.distance, car) +
+          (car.isPlayer ? _finishCoast : 0);
+      final lateral = _interpolate(car.previousLateral, car.lateral, car);
+      final at = worldToScreen(distance, lateral);
       sprite.position = Vector2(at.dx, at.dy);
-      // Slimmer + longer than the old 1.75 block — real F1 proportions.
+      // Shared dimensions shrink both axes while retaining F1 proportions.
       final carW = kCarWidth * pxPerMeterX * 0.68;
       sprite.size = Vector2(carW, carW * 2.05);
       sprite.angle = sprite.car.spinning
           ? sin(sprite.car.spinTimer * 24) * 0.7
-          : (_steerLean(sprite.car));
+          : projectedGrandPrixCarHeading(
+              roadSlope: sample.slope,
+              relativeHeading: _interpolate(
+                car.previousHeading,
+                car.heading,
+                car,
+              ),
+              lateralScale: pxPerMeterX,
+              forwardScale: pxPerMeterY,
+              straight: field.circuit.sections[sample.sectionIndex].isStraight,
+            );
     }
-  }
-
-  double _steerLean(CarState car) {
-    if (!car.isPlayer) return 0;
-    return ((_right ? 1 : 0) - (_left ? 1 : 0)) * 0.12;
   }
 
   void _syncNotifiers() {
@@ -276,34 +414,59 @@ class GrandPrixGame extends FlameGame {
     }
     slipstreamActive.value = player.slipstreaming;
     stuckSeconds.value = _running ? field.playerStuckSeconds : 0;
+    if (_telemetryTimer >= 1 / 20) {
+      _telemetryTimer = 0;
+      final corner = field.geometry.cornerAhead(
+        player.distance,
+        field.raceLength,
+      );
+      CarState? rival;
+      for (final car in field.cars) {
+        if (car.isPlayer || car.distance <= player.distance) continue;
+        if (rival == null || car.distance < rival.distance) rival = car;
+      }
+      final stoppingDistance = corner == null
+          ? 0.0
+          : max(
+                  0.0,
+                  (player.speed * player.speed -
+                          corner.safeSpeed * corner.safeSpeed) /
+                      (2 * kBrake),
+                ) +
+                player.speed * 0.18;
+      telemetry.value = GrandPrixTelemetry(
+        energy: player.energy,
+        tow: player.towStrength,
+        grip: player.grip,
+        deploying: player.deploying,
+        gear: player.gear,
+        rpm: player.rpm,
+        throttle: player.throttleLoad,
+        brake: player.brakeLoad,
+        cleanPasses: field.cleanPassedCars.length,
+        elapsedMs: field.raceClockMs.round(),
+        bestLapMs: field.playerLapTimesMs.isEmpty
+            ? null
+            : field.playerLapTimesMs.reduce(min),
+        lastLapMs: field.playerLapTimesMs.isEmpty
+            ? null
+            : field.playerLapTimesMs.last,
+        corner: corner,
+        braking:
+            corner != null &&
+            corner.distance <= stoppingDistance &&
+            player.speed > corner.safeSpeed,
+        rivalName: rival?.name,
+        rivalGapSeconds: rival == null
+            ? 0
+            : (rival.distance - player.distance) / max(1, player.speed),
+        recoverySeconds: player.recoveryTimer,
+      );
+    }
   }
 
   void _spawnSparks(Color color, int count) {
-    if (!isLoaded) return;
-    final player = field.player;
-    final at = worldToScreen(player.distance, player.lateral);
-    add(
-      ParticleSystemComponent(
-        position: Vector2(at.dx, at.dy),
-        priority: 30,
-        particle: Particle.generate(
-          count: count,
-          lifespan: 0.45,
-          generator: (_) {
-            final angle = _fxRng.nextDouble() * pi * 2;
-            final speed = 60 + _fxRng.nextDouble() * 160;
-            return AcceleratedParticle(
-              speed: Vector2(cos(angle), sin(angle)) * speed,
-              acceleration: Vector2(0, 260),
-              child: CircleParticle(
-                radius: 1.4 + _fxRng.nextDouble() * 1.8,
-                paint: Paint()..color = color,
-              ),
-            );
-          },
-        ),
-      ),
-    );
+    if (isLoaded) _effects.sparks(field.player, color, count);
   }
 
   @override
@@ -313,6 +476,8 @@ class GrandPrixGame extends FlameGame {
     slipstreamActive.dispose();
     stuckSeconds.dispose();
     currentLap.dispose();
+    telemetry.dispose();
+    _scenery.dispose();
     super.onRemove();
   }
 }
@@ -334,6 +499,14 @@ class _TrackComponent extends PositionComponent
     final player = field.player;
     final from = player.distance - 60;
     final to = player.distance + gameRef.viewAheadMeters;
+    gameRef._scenery.paint(
+      canvas,
+      Size(gameRef.size.x, gameRef.size.y),
+      gameRef.worldToScreen,
+      from,
+      to,
+      gameRef.pxPerMeterX,
+    );
 
     final leftWall = <Offset>[];
     final rightWall = <Offset>[];
@@ -350,12 +523,40 @@ class _TrackComponent extends PositionComponent
     // Grass: the full corridor between the walls.
     canvas.drawPath(
       _band(leftWall, rightWall),
-      Paint()..color = const Color(0xff07230f),
+      Paint()..color = gameRef._scenery.runoff,
     );
     // Asphalt.
     canvas.drawPath(
       _band(leftEdge, rightEdge),
-      Paint()..color = const Color(0xff11161f),
+      Paint()..color = AppTheme.backgroundSecondary,
+    );
+    gameRef._scenery.paintAsphalt(
+      canvas,
+      _band(leftEdge, rightEdge),
+      gameRef.worldToScreen,
+      from,
+      to,
+    );
+    final rubber = Path();
+    var firstRubber = true;
+    for (var s = from; s <= to; s += _sampleStep) {
+      final at = gameRef.worldToScreen(
+        s,
+        field.geometry.racingLine(s, kTrackHalfWidth),
+      );
+      if (firstRubber) {
+        rubber.moveTo(at.dx, at.dy);
+        firstRubber = false;
+      } else {
+        rubber.lineTo(at.dx, at.dy);
+      }
+    }
+    canvas.drawPath(
+      rubber,
+      Paint()
+        ..color = Cyber.arenaFloor.withValues(alpha: 0.26)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = gameRef.pxPerMeterX * 1.7,
     );
 
     // Track edge lines.
@@ -449,7 +650,7 @@ class _TrackComponent extends PositionComponent
           final paint = Paint()
             ..style = PaintingStyle.stroke
             ..strokeWidth = 4
-            ..color = (red ? Cyber.danger : const Color(0xffe8ecf2)).withValues(
+            ..color = (red ? Cyber.danger : AppTheme.whiteColor).withValues(
               alpha: 0.55,
             );
           for (final side in const [-1.0, 1.0]) {
@@ -514,8 +715,7 @@ class _TrackComponent extends PositionComponent
         );
         canvas.drawRect(
           Rect.fromPoints(a, b),
-          Paint()
-            ..color = even ? const Color(0xffe8ecf2) : const Color(0xff0a0e14),
+          Paint()..color = even ? AppTheme.whiteColor : Cyber.arenaFloor,
         );
       }
     }
@@ -549,11 +749,29 @@ class _CarComponent extends PositionComponent {
         Rect.fromLTWH(-w * 0.25, -h * 0.15, w * 1.5, h * 1.3),
         Paint()
           ..color = _glowColor.withValues(alpha: 0.35)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+          ..maskFilter = const MaskFilter.blur(
+            BlurStyle.normal,
+            8 * kGrandPrixCarScale,
+          ),
       );
     }
 
-    paintGrandPrixCar(canvas, w, h, _style);
+    if (car.recovering || car.ghostTimer > 0) {
+      canvas.saveLayer(
+        Rect.fromLTWH(-w, -h, w * 3, h * 3),
+        Paint()..color = AppTheme.whiteColor.withValues(alpha: 0.45),
+      );
+    }
+    paintGrandPrixCar(
+      canvas,
+      w,
+      h,
+      _style,
+      steering: car.steeringAngle,
+      brake: car.brakeLoad,
+      deploying: car.deploying,
+    );
+    if (car.recovering || car.ghostTimer > 0) canvas.restore();
 
     if (car.spinning) {
       canvas.drawCircle(
@@ -561,9 +779,172 @@ class _CarComponent extends PositionComponent {
         w * 0.75,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2
+          ..strokeWidth = 2 * kGrandPrixCarScale
           ..color = Cyber.danger.withValues(alpha: 0.6),
       );
+    }
+  }
+}
+
+class _RoadEffect {
+  _RoadEffect(
+    this.distance,
+    this.lateral,
+    this.color, {
+    this.life = 0.5,
+    this.sideVelocity = 0,
+    this.forwardVelocity = 0,
+    this.smoke = false,
+    this.mark = false,
+  });
+  double distance, lateral, age = 0;
+  final double life, sideVelocity, forwardVelocity;
+  final Color color;
+  final bool smoke, mark;
+}
+
+/// Bounded world-space effects: marks stay attached to asphalt, and smoke and
+/// sparks scroll past with the road. The presentation RNG never enters physics.
+class _TrackEffectsComponent extends PositionComponent
+    with HasGameReference<GrandPrixGame> {
+  final List<_RoadEffect> _effects = [];
+  final Random _random = Random(31);
+  double _emission = 0;
+  static const _capacity = 160;
+
+  void _add(_RoadEffect effect) {
+    if (_effects.length >= _capacity) _effects.removeAt(0);
+    _effects.add(effect);
+  }
+
+  void sparks(CarState car, Color color, int count) {
+    for (var i = 0; i < count; i++) {
+      _add(
+        _RoadEffect(
+          car.distance,
+          car.lateral,
+          color,
+          sideVelocity: (_random.nextDouble() - 0.5) * 12,
+          forwardVelocity: -5 - _random.nextDouble() * 15,
+          life: 0.25 + _random.nextDouble() * 0.25,
+        ),
+      );
+    }
+  }
+
+  @override
+  void update(double dt) {
+    if (!game.isLoaded) return;
+    if (game.reducedMotion) {
+      _effects.clear();
+      return;
+    }
+    if (!game._running && !game._finishedReported) return;
+    for (final effect in _effects) {
+      effect.age += dt;
+      effect.distance += effect.forwardVelocity * dt;
+      effect.lateral += effect.sideVelocity * dt;
+    }
+    _effects.removeWhere((effect) => effect.age >= effect.life);
+    _emission += dt;
+    if (_emission < 0.075 || !game._running) return;
+    _emission = 0;
+    for (final car in game.field.cars) {
+      if ((car.distance - game.field.player.distance).abs() > 100 ||
+          car.speed < 12) {
+        continue;
+      }
+      if (car.brakeLoad > 0.1 || car.grip < 0.82 || car.spinning) {
+        for (final side in const [-0.65, 0.65]) {
+          _add(
+            _RoadEffect(
+              car.distance - 2 * kGrandPrixCarScale,
+              car.lateral + side * kGrandPrixCarScale,
+              Cyber.arenaFloor,
+              life: 8,
+              mark: true,
+            ),
+          );
+        }
+      }
+      if (car.spinning || car.grip < 0.78) {
+        _add(
+          _RoadEffect(
+            car.distance - 3 * kGrandPrixCarScale,
+            car.lateral,
+            Cyber.muted,
+            smoke: true,
+            life: 0.65,
+            sideVelocity: car.lateralVelocity * 0.2,
+            forwardVelocity: -3,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  void render(Canvas canvas) {
+    if (!game.isLoaded || game.reducedMotion) return;
+    for (final effect in _effects) {
+      final at = game.worldToScreen(effect.distance, effect.lateral);
+      if (at.dy < -20 || at.dy > game.size.y + 20) continue;
+      final fade = (1 - effect.age / effect.life).clamp(0.0, 1.0);
+      final paint = Paint()
+        ..color = effect.color.withValues(
+          alpha:
+              fade *
+              (effect.smoke
+                  ? 0.16
+                  : effect.mark
+                  ? 0.42
+                  : 0.8),
+        );
+      if (effect.mark) {
+        paint
+          ..strokeWidth = max(1, game.pxPerMeterX * 0.08 * kGrandPrixCarScale)
+          ..strokeCap = StrokeCap.round;
+        canvas.drawLine(
+          at,
+          game.worldToScreen(
+            effect.distance - 1.6 * kGrandPrixCarScale,
+            effect.lateral,
+          ),
+          paint,
+        );
+      } else if (effect.smoke) {
+        canvas.drawCircle(
+          at,
+          (4 + effect.age * 12) * kGrandPrixCarScale,
+          paint,
+        );
+      } else {
+        canvas.drawCircle(at, 1.8 * kGrandPrixCarScale, paint);
+      }
+    }
+    final player = game.field.player;
+    if (player.deploying || player.towStrength > 0.3) {
+      final at = game.worldToScreen(
+        player.distance - 4 * kGrandPrixCarScale,
+        player.lateral,
+      );
+      final paint = Paint()
+        ..color = Cyber.cyan.withValues(alpha: player.deploying ? 0.55 : 0.22)
+        ..strokeWidth = 1.5 * kGrandPrixCarScale
+        ..strokeCap = StrokeCap.round;
+      for (final side in const [-0.6, 0.6]) {
+        canvas.drawLine(
+          at + Offset(side * kGrandPrixCarScale * game.pxPerMeterX, 0),
+          at +
+              Offset(
+                side * kGrandPrixCarScale * game.pxPerMeterX,
+                game.pxPerMeterY *
+                    (player.deploying ? 11 : 5) *
+                    kGrandPrixCarScale,
+              ),
+          paint,
+        );
+      }
     }
   }
 }

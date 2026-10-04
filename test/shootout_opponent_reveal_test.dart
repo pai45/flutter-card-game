@@ -68,7 +68,9 @@ void main() {
 
     final gameBloc = GameBloc(SecureGameStorage());
     addTearDown(gameBloc.close);
-    gameBloc.emit(GameState.initial().copyWith(loading: false));
+    gameBloc.emit(
+      GameState.initial().copyWith(loading: false, displayName: 'chiefpai45'),
+    );
 
     final shootoutBloc = ShootoutBloc(
       playerShooters: player,
@@ -112,7 +114,7 @@ void main() {
       disableAnimations: false,
     );
 
-    expect(find.text('PLAYER ONE'), findsOneWidget);
+    expect(find.text('CHIEFPAI45'), findsOneWidget);
     expect(find.text('SEARCHING FOR\nOPPONENT...'), findsOneWidget);
     expect(find.text('CANCEL'), findsOneWidget);
     expect(find.text('MAYA SANTOS'), findsNothing);

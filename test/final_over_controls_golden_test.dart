@@ -21,6 +21,9 @@ void main() {
           'Onest',
         )..addFont(rootBundle.load('assets/fonts/Onest-VariableFont_wght.ttf')))
         .load();
+    await (FontLoader('Exo 2')
+          ..addFont(rootBundle.load('assets/fonts/Exo2-VariableFont_wght.ttf')))
+        .load();
     await (FontLoader(
       'MaterialIcons',
     )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();

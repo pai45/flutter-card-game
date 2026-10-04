@@ -108,7 +108,7 @@ class _FootballChessTossResult extends StatelessWidget {
               ? 'YOU KICK OFF'
               : '${match.opponentName.toUpperCase()} KICKS OFF',
           textAlign: TextAlign.center,
-          style: Cyber.body(12, color: Cyber.muted),
+          style: Cyber.bodyFor(context, 12, color: Cyber.muted),
         ),
         const SizedBox(height: 16),
         Padding(

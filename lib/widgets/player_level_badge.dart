@@ -14,6 +14,7 @@ class PlayerLevelBadge extends StatefulWidget {
   });
 
   final PlayerProgression progression;
+
   /// When set, shows that track's level/XP instead of the profile total.
   final ProgressTrack? track;
   final VoidCallback? onTap;
@@ -70,22 +71,26 @@ class _PlayerLevelBadgeState extends State<PlayerLevelBadge> {
             children: [
               SizedBox(
                 width: 34,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'LVL',
-                      style: Cyber.label(
-                        8,
-                        color: Cyber.cyan,
-                        letterSpacing: 1.5,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'LVL',
+                        style: Cyber.label(
+                          8,
+                          color: Cyber.cyan,
+                          letterSpacing: 1.5,
+                        ),
                       ),
-                    ),
-                    Text(
-                      '$level',
-                      style: Cyber.display(24, color: Cyber.gold),
-                    ),
-                  ],
+                      Text(
+                        '$level',
+                        style: Cyber.display(24, color: Cyber.gold),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Container(
@@ -111,42 +116,51 @@ class _PlayerLevelBadgeState extends State<PlayerLevelBadge> {
                         padding: const EdgeInsets.only(left: 10),
                         child: SizedBox(
                           width: 76,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'NEXT',
-                                style: Cyber.label(
-                                  8,
-                                  color: Cyber.cyan,
-                                  letterSpacing: 1.2,
-                                ),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: SizedBox(
+                              width: 76,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'NEXT',
+                                    style: Cyber.label(
+                                      8,
+                                      color: Cyber.cyan,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    '${band.toNextLevel} XP',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Cyber.label(
+                                      13,
+                                      color: Cyber.gold,
+                                      letterSpacing: 0.8,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    track == null
+                                        ? 'TOTAL $xp'
+                                        : '${track.shortLabel} $xp',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Cyber.bodyFor(
+                                      context,
+                                      8,
+                                      color: Cyber.muted,
+                                      weight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 3),
-                              Text(
-                                '${band.toNextLevel} XP',
-                                overflow: TextOverflow.ellipsis,
-                                style: Cyber.label(
-                                  13,
-                                  color: Cyber.gold,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                track == null
-                                    ? 'TOTAL $xp'
-                                    : '${track.shortLabel} $xp',
-                                overflow: TextOverflow.ellipsis,
-                                style: Cyber.body(
-                                  8,
-                                  color: Cyber.muted,
-                                  weight: FontWeight.w800,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ],
+                            ),
                           ),
                         ),
                       )
@@ -198,11 +212,7 @@ class _XpMeter extends StatelessWidget {
         Text(
           label,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.label(
-            8,
-            color: Cyber.muted,
-            letterSpacing: 0.5,
-          ),
+          style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.5),
         ),
       ],
     );

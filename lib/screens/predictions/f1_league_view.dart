@@ -238,7 +238,7 @@ class _F1LeagueViewState extends State<F1LeagueView> {
               const SizedBox(height: 12),
               Text(
                 '${f1Number(gap)} PTS ahead of ${next!.name}',
-                style: Cyber.body(12, color: Cyber.muted),
+                style: Cyber.bodyFor(context, 12, color: Cyber.muted),
               ),
             ],
           ],
@@ -334,7 +334,7 @@ class _F1LeagueViewState extends State<F1LeagueView> {
                       Expanded(
                         child: Text(
                           row.name,
-                          style: Cyber.body(13),
+                          style: Cyber.bodyFor(context, 13),
                           maxLines: 2,
                         ),
                       ),
@@ -388,7 +388,11 @@ class _F1LeagueViewState extends State<F1LeagueView> {
                           const SizedBox(height: 8),
                           Text(
                             '${row.scoringRounds} scoring rounds · best ${f1Number(row.bestWeekend)} PTS',
-                            style: Cyber.body(12, color: Cyber.muted),
+                            style: Cyber.bodyFor(
+                              context,
+                              12,
+                              color: Cyber.muted,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           Wrap(
@@ -410,7 +414,7 @@ class _F1LeagueViewState extends State<F1LeagueView> {
                           if (row.byRace.isEmpty)
                             Text(
                               'No recorded weekend points.',
-                              style: Cyber.body(12),
+                              style: Cyber.bodyFor(context, 12),
                             ),
                         ],
                       ),
@@ -480,19 +484,19 @@ class _F1LeagueViewState extends State<F1LeagueView> {
       else
         Text(
           'Complete points histories are not available for the leading entries.',
-          style: Cyber.body(12, color: Cyber.muted),
+          style: Cyber.bodyFor(context, 12, color: Cyber.muted),
         ),
       const SizedBox(height: 8),
       Text(
         'Cumulative weekend points from ESPN. Drag the chart to inspect each round.',
-        style: Cyber.body(11, color: Cyber.muted),
+        style: Cyber.bodyFor(context, 11, color: Cyber.muted),
       ),
       const SizedBox(height: 24),
       const SectionLabel(label: 'Best weekend hauls'),
       const SizedBox(height: 8),
       Text(
         'Highest points in one weekend, including sprint points when supplied. Ties share the same total.',
-        style: Cyber.body(11, color: Cyber.muted),
+        style: Cyber.bodyFor(context, 11, color: Cyber.muted),
       ),
       const SizedBox(height: 12),
       for (final row in best.take(5))
@@ -507,7 +511,7 @@ class _F1LeagueViewState extends State<F1LeagueView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(row.name, style: Cyber.body(13)),
+                      Text(row.name, style: Cyber.bodyFor(context, 13)),
                       Text(
                         row.byRace.entries
                             .where((e) => e.value == row.bestWeekend)
@@ -531,7 +535,9 @@ class _F1LeagueViewState extends State<F1LeagueView> {
 
   List<Widget> _rounds(F1LeagueData data) {
     if (data.rounds.isEmpty) {
-      return [Text('No rounds supplied by ESPN.', style: Cyber.body(13))];
+      return [
+        Text('No rounds supplied by ESPN.', style: Cyber.bodyFor(context, 13)),
+      ];
     }
     final selected =
         data.rounds.where((r) => r.code == _round).firstOrNull ??

@@ -1572,7 +1572,7 @@ class ScoreboardPanel extends StatelessWidget {
                 style: const TextStyle(
                   color: Cyber.cyan,
                   fontSize: 10,
-                  fontFamily: 'Onest',
+                  fontFamily: Cyber.gameBodyFont,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.5,
                   fontFeatures: [FontFeature.tabularFigures()],
@@ -1616,7 +1616,7 @@ class _RoleBadge extends StatelessWidget {
         attacking ? ' ATTACKING' : ' DEFENDING',
         style: TextStyle(
           color: color,
-          fontFamily: Cyber.bodyFont,
+          fontFamily: Cyber.gameBodyFont,
           fontSize: 9,
           fontWeight: FontWeight.w700,
           letterSpacing: 1,
@@ -1678,7 +1678,7 @@ class _HudIdentityState extends State<_HudIdentity>
             widget.label,
             style: TextStyle(
               color: widget.color,
-              fontFamily: 'Onest',
+              fontFamily: Cyber.gameBodyFont,
               fontWeight: FontWeight.w700,
               fontSize: 11,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -1809,9 +1809,7 @@ class ActionCardTile extends StatelessWidget {
           card.title,
           style: const TextStyle(fontWeight: FontWeight.w800),
         ),
-        subtitle: Text(
-          '${card.category.name.toUpperCase()} - ${card.effect}${card.risky ? ' - Risky' : ''}',
-        ),
+        subtitle: Text('${card.category.name.toUpperCase()} - ${card.effect}'),
         trailing: Text(
           '+${card.power}',
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),

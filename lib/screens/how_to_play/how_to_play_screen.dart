@@ -90,7 +90,8 @@ const _steps = [
     icon: Icons.style,
     color: Cyber.violet,
     title: 'Build Your Deck',
-    body: 'Choose 2 attackers, 2 defenders, and 6 action cards to form your squad.',
+    body:
+        'Equip 2 attackers, 2 defenders, 1 keeper and 6 actions. Cover two attacks and two defenses.',
     hint: '2 ATK   ·   2 DEF   ·   6 ACT',
   ),
   _Step(
@@ -98,15 +99,17 @@ const _steps = [
     icon: Icons.toll,
     color: Cyber.amber,
     title: 'Toss for Role',
-    body: 'Coin flip decides who attacks first. Roles alternate every round after.',
-    hint: 'HEADS = ATTACK   ·   TAILS = DEFEND',
+    body:
+        'Coin flip decides who attacks first. Roles alternate every round after.',
+    hint: 'WIN TOSS → CHOOSE ROLE   ·   THEN ALTERNATE',
   ),
   _Step(
     index: 3,
     icon: Icons.flag,
     color: Cyber.lime,
     title: 'Reveal Scenario',
-    body: 'A bonus scenario drops each round. Read it — it changes everything.',
+    body:
+        'Read the ATK/DEF bonuses and matching actions. A matching action earns +6 power.',
     hint: 'QUICK COUNTER   ·   SET PIECE   ·   1V1 DUEL',
   ),
   _Step(
@@ -114,7 +117,8 @@ const _steps = [
     icon: Icons.bolt,
     color: Cyber.cyan,
     title: 'Lock Your Move',
-    body: 'Play 1 player card + 1 action card before the round resolves.',
+    body:
+        'Pick one player and one action. Match their affinity for +4. COMMIT opens timing: Perfect +8, Great +6, Good +4.',
     hint: 'PLAYER  +  ACTION  =  POWER',
   ),
   _Step(
@@ -122,8 +126,9 @@ const _steps = [
     icon: Icons.sports_soccer,
     color: Cyber.success,
     title: 'Resolve the Round',
-    body: 'Rating, action boost, scenario bonus, and a luck roll decide the outcome.',
-    hint: 'GOAL   ·   SAVED   ·   BLOCKED   ·   FOUL',
+    body:
+        'Player + action + scenario + combination + timing. Higher total wins; an exact tie flips a coin.',
+    hint: 'GOAL   ·   SAVED   ·   BLOCKED',
   ),
   _Step(
     index: 6,
@@ -152,12 +157,14 @@ const _faqs = [
   _Faq(
     icon: Icons.replay,
     question: 'Can I reuse cards?',
-    answer: 'Yes. Cards can be reused unless a player gets a red card.',
+    answer:
+        'Each player and action plays once per match, for both sides. Spent cards stay marked. Your collection is kept.',
   ),
   _Faq(
     icon: Icons.dangerous,
-    question: 'What does a red card do?',
-    answer: 'That player card is blocked for all remaining rounds.',
+    question: 'Why is an action RESERVED?',
+    answer:
+        'Playing it now would leave a later round without an action for its role. Pick a ready action instead.',
   ),
   _Faq(
     icon: Icons.swap_horiz,
@@ -166,8 +173,9 @@ const _faqs = [
   ),
   _Faq(
     icon: Icons.sports_soccer,
-    question: 'When do penalties happen?',
-    answer: 'Only when the match is tied after 4 rounds.',
+    question: 'What happens at full time?',
+    answer:
+        'Most goals after four rounds wins. A level score is a draw. Penalty Shootout is a separate game.',
   ),
 ];
 
@@ -462,14 +470,10 @@ class _PowerFormula extends StatelessWidget {
                 icon: Icons.bolt,
               ),
               const _Op('+'),
-              _FormulaChip(
-                label: 'BONUS',
-                color: Cyber.lime,
-                icon: Icons.star,
-              ),
+              _FormulaChip(label: 'BONUS', color: Cyber.lime, icon: Icons.star),
               const _Op('+'),
               _FormulaChip(
-                label: 'LUCK',
+                label: 'TIMING',
                 color: Cyber.magenta,
                 icon: Icons.casino,
               ),
@@ -479,7 +483,7 @@ class _PowerFormula extends StatelessWidget {
           const HudLine(),
           const SizedBox(height: 10),
           const Text(
-            'Smart picks improve your odds. Risky cards can win big — or punish you.',
+            'Match affinity +4 and scenario +6. Timing adds 0–8; higher total wins.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Cyber.muted,
@@ -570,10 +574,7 @@ class _QuickRules extends StatelessWidget {
           for (var i = 0; i < _faqs.length; i++) ...[
             _FaqTile(faq: _faqs[i]),
             if (i < _faqs.length - 1)
-              Divider(
-                color: Cyber.violet.withValues(alpha: 0.2),
-                height: 16,
-              ),
+              Divider(color: Cyber.violet.withValues(alpha: 0.2), height: 16),
           ],
         ],
       ),
@@ -610,16 +611,14 @@ class _FaqTileState extends State<_FaqTile> {
                   widget.faq.question,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontFamily: 'Onest',
+                    fontFamily: Cyber.gameBodyFont,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               Icon(
-                _expanded
-                    ? Icons.keyboard_arrow_up
-                    : Icons.keyboard_arrow_down,
+                _expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                 color: Cyber.muted,
                 size: 18,
               ),

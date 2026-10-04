@@ -1,3 +1,4 @@
+import 'package:card_game/config/game_ladder.dart';
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/game/game_event.dart';
 import 'package:card_game/blocs/quiz/quiz_cubit.dart';
@@ -204,6 +205,53 @@ void main() {
 
     expect(gameBloc.state.coins, 25);
     expect(find.byType(QuizPlayScreen), findsOneWidget);
+  });
+
+  testWidgets('beginner quiz can exit and enter again without spending coins', (
+    tester,
+  ) async {
+    final gameBloc = await _loadedGameBloc();
+    final quizCubit = await _loadedQuizCubit();
+    addTearDown(gameBloc.close);
+    addTearDown(quizCubit.close);
+    gameBloc.add(HomeSportChosen(Sport.cricket));
+    gameBloc.add(
+      ArcadeGamePlayed(ArcadeGame.finalOver, sourceId: 'rookie-first'),
+    );
+    await gameBloc.stream.firstWhere(
+      (s) => s.unlocks.hasRookieTicket(Sport.cricket),
+    );
+    await tester.pumpWidget(
+      _wrap(
+        gameBloc: gameBloc,
+        quizCubit: quizCubit,
+        child: const QuizSetScreen(sport: Sport.cricket, mode: QuizMode.easy),
+      ),
+    );
+    await tester.pump();
+    for (var attempt = 0; attempt < 2; attempt++) {
+      await tester.tap(find.byKey(const ValueKey('quiz-set-1')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 450));
+      expect(find.text('FREE BEGINNER ATTEMPT'), findsOneWidget);
+      await tester.drag(find.text('ENTRY BRIEFING'), const Offset(0, -500));
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.tap(find.byKey(const ValueKey('quiz-confirm-entry')));
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(QuizPlayScreen), findsOneWidget);
+      expect(gameBloc.state.coins, 0);
+      expect(
+        tester.widget<QuizPlayScreen>(find.byType(QuizPlayScreen)).freeEntry,
+        isTrue,
+      );
+      await tester.tap(find.byIcon(Icons.arrow_back).first);
+      await tester.pumpAndSettle();
+      expect(find.byType(QuizSetScreen), findsOneWidget);
+      expect(gameBloc.state.unlocks.hasRookieTicket(Sport.cricket), isTrue);
+    }
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('set ladder uses chapters and explicit progress states', (

@@ -125,7 +125,7 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: const Color(0xff121b30),
-          content: Text(result.message, style: Cyber.body(12)),
+          content: Text(result.message, style: Cyber.bodyFor(context, 12)),
         ),
       );
       return;
@@ -201,7 +201,8 @@ class _MarketHeader extends StatelessWidget {
                       market.contextTitle,
                       market.contextSubtitle,
                     ].whereType<String>().join(' · '),
-                    style: Cyber.body(
+                    style: Cyber.bodyFor(
+                      context,
                       12,
                       color: Cyber.muted,
                       weight: FontWeight.w700,
@@ -411,7 +412,8 @@ class _ScoreContext extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 market.contextSubtitle!,
-                style: Cyber.body(
+                style: Cyber.bodyFor(
+                  context,
                   11,
                   color: Cyber.muted,
                   weight: FontWeight.w700,
@@ -436,7 +438,10 @@ class _ScoreRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(label, style: Cyber.body(13, weight: FontWeight.w700)),
+          child: Text(
+            label,
+            style: Cyber.bodyFor(context, 13, weight: FontWeight.w700),
+          ),
         ),
         Text(
           score ?? '-',
@@ -565,7 +570,11 @@ class _OutcomeRow extends StatelessWidget {
                           outcome.label,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.body(13, weight: FontWeight.w700),
+                          style: Cyber.bodyFor(
+                            context,
+                            13,
+                            weight: FontWeight.w700,
+                          ),
                         ),
                       ),
                       if (held) ...[
@@ -665,7 +674,7 @@ class _NoPositionPanel extends StatelessWidget {
               market.canBuy
                   ? 'Pick an outcome to create your ticket.'
                   : 'Market is closed with no ticket held.',
-              style: Cyber.body(12, color: Cyber.muted),
+              style: Cyber.bodyFor(context, 12, color: Cyber.muted),
             ),
           ),
         ],
@@ -744,7 +753,8 @@ class _PositionPanel extends StatelessWidget {
                   : position.status == PickPositionStatus.voided
                   ? 'Stake refunded'
                   : '${position.stakeOz} Oz spent',
-              style: Cyber.body(
+              style: Cyber.bodyFor(
+                context,
                 12,
                 color: statusColor,
                 weight: FontWeight.w700,
@@ -775,7 +785,12 @@ class _RulesPanel extends StatelessWidget {
         '${outcome.probabilityPercent} Oz and pays 100 Oz '
         '(${(100 / outcome.probabilityPercent).toStringAsFixed(1)}×) '
         'if correct.',
-        style: Cyber.body(12, color: Cyber.muted, weight: FontWeight.w700),
+        style: Cyber.bodyFor(
+          context,
+          12,
+          color: Cyber.muted,
+          weight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -799,7 +814,8 @@ class _TicketMetric extends StatelessWidget {
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.body(
+            style: Cyber.bodyFor(
+              context,
               12,
               weight: FontWeight.w700,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -823,7 +839,7 @@ class _MissingMarket extends StatelessWidget {
           child: Center(
             child: Text(
               'Market unavailable.',
-              style: Cyber.body(13, color: Cyber.muted),
+              style: Cyber.bodyFor(context, 13, color: Cyber.muted),
             ),
           ),
         ),

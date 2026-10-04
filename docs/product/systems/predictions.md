@@ -1,7 +1,7 @@
 # Predictions
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-15
+> **Last verified:** 2026-10-02
 > **Scope:** Fixture quiz discovery, submission/editing, boosters, lock lifecycle, XP settlement, and paid Scoreline contest
 
 ## Product Purpose
@@ -224,20 +224,31 @@ hard-elevation edge. LIVE, FUTURE, PREDICT, PICK, and sport identity colors stay
 inside the card as semantic labels and markers rather than changing its shell.
 
 The MATCH Trending feed opens with a PICKS / FUTURES / EVENTS category strip:
-three equal squares on the same cyan Trending card shell, directly above the
-bento grid. Each shows its live open-market count and a type-coloured glyph;
-tapping one opens ALL PICKS with the browse filters reset (all leagues, open
-status) and the matching MATCHES / FUTURES / EVENT chip active. A square pulses
-a small dot only while one of its open markets is genuinely hot (the same
-5-point rule as the market delta chip).
+three compact cards in one row on the same cyan Trending card shell, directly
+above the bento grid. Each card shows a chamfered type-coloured glyph, category
+name, live open-market count, `OPEN`, and a cyan chevron (replaced by `HOT`
+when a market is moving). The former headline market teaser and its leading
+outcome percentage are omitted. Tapping one opens ALL PICKS with the browse
+filters reset (all leagues, open status) and the matching MATCHES / FUTURES /
+EVENT chip active. A shortcut pulses a small **HOT** flag beside its glyph only
+while one of its open markets is genuinely hot (the same 5-point rule as the
+market delta chip);
+otherwise the tabs are calm chrome with no glow.
 
 Below it, the Trending layout uses a dense two-column broadcast grid.
 Full-width fixtures are scoreboard cards on a shorter strip row: the live minute
 (beside a blinking green dot) or lifecycle sits in a centered top notch, the
 white score or kickoff is the dominant figure between full team names and
 crests, and the bottom telemetry rail carries live/full-time/XP state plus Oz
-volume. FUTURE,
-PICK, and PREDICT cards use taller portrait proportions with the same separated
+volume.
+Cricket MATCH fixtures use a taller version of the same scoreboard shell. Each
+team has its own crest, full name, innings score, and available overs/target
+context on a separate row, so neither innings is mistaken for a shared score.
+The league sits above the innings; a distinct result strip shows the provider's
+win margin from the completed cricket competition status when available, or the current/final state. The existing telemetry
+rail still carries live/full-time/XP state and Oz volume. Missing innings remain
+visibly unscored rather than borrowing the other team's runs.
+FUTURE, PICK, and PREDICT cards use taller portrait proportions with the same separated
 telemetry rail, keeping the question or matchup readable above market status,
 XP, and volume. The rail changes to the darker footer surface without a divider
 line, so each tile reads as one uninterrupted card. Only LIVE badges and dots,
@@ -636,6 +647,10 @@ two surfaces share one goal instead of each re-deriving it.
 Tapping a league's standing strip opens the per-league hub, which carries five
 tabs: **TABLE**, **LEADERS**, **STATS**, **GAMES**, and **PICKS**.
 
+On the MATCHES feed, each sport's league standing strip uses compact Onest type
+for the league name, preserving room for the standing action and long
+competition names without competing with the fixture cards below.
+
 The persistent league lockup keeps its subtitle to the compact season token
 only (for example, `2026-27`). The league name already owns the primary line,
 so duplicated competition text and team count do not compete for header space.
@@ -925,6 +940,14 @@ Predictions, answers, multipliers, contest entry/rank/prize, status, and
 settlement result persist through the prediction repository/storage path.
 Progression, wallet, ledgers, streaks, and achievements persist in their shared systems.
 
+The versioned RETURNING PLAYER preset contains three fixture-bound match-quiz
+submissions per sport (15 total): a strong settled result, a weaker settled
+result, and an open entry. It also contains three catalog-backed pick positions
+per sport (15 total): won, lost, and pending. Fixture, quiz, question, market,
+outcome, and sport relationships are validated while the typed preset is built;
+the basketball repository supplies the same canonical three-question match
+basics quiz used by these seeded fixtures.
+
 ## Planned Scope and Current Limitations
 
 - **BUILT:** Multi-sport fixture board, all-sports team/league fixture search,
@@ -967,6 +990,7 @@ Progression, wallet, ledgers, streaks, and achievements persist in their shared 
 - [`lib/screens/predictions/widgets/team_stat_board.dart`](../../../lib/screens/predictions/widgets/team_stat_board.dart)
 - [`lib/services/league_stats_package_service.dart`](../../../lib/services/league_stats_package_service.dart)
 - [`lib/services/espn_football_player_profile_service.dart`](../../../lib/services/espn_football_player_profile_service.dart)
+- [`lib/services/returning_profile_preset.dart`](../../../lib/services/returning_profile_preset.dart)
 - [`lib/blocs/league_stats/league_stats_cubit.dart`](../../../lib/blocs/league_stats/league_stats_cubit.dart)
 
 ## Tests
@@ -979,5 +1003,6 @@ Progression, wallet, ledgers, streaks, and achievements persist in their shared 
 - [`test/league_stats_package_service_test.dart`](../../../test/league_stats_package_service_test.dart)
 - [`test/espn_league_team_stats_live_test.dart`](../../../test/espn_league_team_stats_live_test.dart) (skipped by default; hits the live ESPN API)
 - [`test/football_match_stats_view_test.dart`](../../../test/football_match_stats_view_test.dart)
+- [`test/returning_profile_preset_test.dart`](../../../test/returning_profile_preset_test.dart)
 - [`test/basketball_cricket_match_package_service_test.dart`](../../../test/basketball_cricket_match_package_service_test.dart)
 - [`test/basketball_cricket_match_stats_view_test.dart`](../../../test/basketball_cricket_match_stats_view_test.dart)

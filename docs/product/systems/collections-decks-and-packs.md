@@ -1,7 +1,7 @@
 # Collections, Decks, Cards, Packs, Starter Packs, and Daily Drops
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-05
+> **Last verified:** 2026-10-04
 > **Scope:** Card ownership, sport decks, pack opening, starter entitlement, duplicate handling, and daily drops
 
 ## Product Purpose
@@ -96,6 +96,28 @@ portraits for Ederson Moraes, Aurélien Tchouaméni, Bart Verbruggen, and Viníc
 Júnior are mapped to their exact current card IDs. Their archive labels are
 unique; the first-occurrence policy therefore required no conflict resolution.
 
+### Pitch Duel cards and legal decks [BUILT]
+
+Football player/action tiles use the football presentation variant of the shared
+Cyber tiles; other sports retain their current cards. Existing football portraits,
+rarity, ratings, powers and IDs are retained. Six scoped affinity glyphs and sixteen
+action illustrations make matching pairs readable. Football fronts use portrait
+windows, corner indices and static etched rails; action cards use tactical
+blueprint art, and backs share a mirrored circuit print. Muted USED/RESERVED
+labels distinguish exhaustion without a red suspension banner. Long-press and All Cards
+explain actual +4 affinity / +6 scenario bonuses. Disrupt Play retains the old
+Tactical Foul ID and power.
+Card-share text uses the same actual abilities; action posters show one use per
+match instead of advertising inactive risk.
+
+Pitch Duel decks require distinct owned 2 attackers, 2 defenders, 1 keeper and
+6 actions with coverage for two attacking and two defensive plays. Flexible
+actions can cover either role once. The deck builder displays abilities/matching
+actions and blocks incomplete/unsupported play. Existing saved one-sided decks
+remain available for repair. Pack summary suggests a matching +4 pair when one
+is present; this does not add a reward or alter pack rolls. Reduced-motion pack
+opening uses the settled summary. See [Pitch Duel](../games/pitch-duel.md).
+
 ## Rewards and Progression
 
 Revealed cards grant Cards/Meta XP based on card type and rating/power. Packs
@@ -123,6 +145,15 @@ confirmation seal).
 Owned cards, saved decks, pack/daily-drop claims, starter entitlements, XP, and
 ledger records persist through `SecureGameStorage` and shared game state.
 
+The `chiefpai45` returning preset claims every sport starter pack and equips the
+legal cross-sport **CHIEF XI** loadout. It owns each sport's six strongest
+catalog cards (plus any role cards required by the legal Pitch Duel lineup),
+the twelve strongest action cards, four card backs, four avatars, three
+banners, three frames, and four choices in each mode-specific kit/livery/jersey
+catalog. Equipped choices are Cyan Circuit, Liverpool frame, Bellingham avatar,
+South Africa banner, Meridian kit, Papaya livery, and Warriors jersey. All IDs
+are checked against the live catalogs during preset construction.
+
 ## Planned Scope and Current Limitations
 
 - **BUILT:** Shared football collections plus mode-specific deck/roster and
@@ -138,6 +169,7 @@ ledger records persist through `SecureGameStorage` and shared game state.
 - [`lib/screens/deck/all_cards_screen.dart`](../../../lib/screens/deck/all_cards_screen.dart)
 - [`lib/screens/deck/all_decks_screen.dart`](../../../lib/screens/deck/all_decks_screen.dart)
 - [`lib/widgets/card_unpack_animation.dart`](../../../lib/widgets/card_unpack_animation.dart)
+- [`lib/services/returning_profile_preset.dart`](../../../lib/services/returning_profile_preset.dart)
 - [`lib/screens/home/widgets/daily_drop.dart`](../../../lib/screens/home/widgets/daily_drop.dart)
 
 ## Tests
@@ -150,3 +182,4 @@ ledger records persist through `SecureGameStorage` and shared game state.
 - [`test/football_portraits_test.dart`](../../../test/football_portraits_test.dart)
 - [`test/cricket_portraits_test.dart`](../../../test/cricket_portraits_test.dart)
 - [`test/racing_portraits_test.dart`](../../../test/racing_portraits_test.dart)
+- [`test/returning_profile_preset_test.dart`](../../../test/returning_profile_preset_test.dart)

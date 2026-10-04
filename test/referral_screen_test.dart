@@ -93,6 +93,9 @@ void main() {
   testWidgets('Friends Arena shows invite card and opens referral screen', (
     tester,
   ) async {
+    FlutterSecureStorage.setMockInitialValues({
+      'pd_display_name_v1': 'chiefpai45',
+    });
     final gameBloc = await _loadedGameBloc();
     final friendsCubit = FriendsCubit(SecureGameStorage());
     await friendsCubit.load();
@@ -112,6 +115,7 @@ void main() {
 
     expect(find.text('INVITE FRIENDS'), findsOneWidget);
     expect(find.text('EARN 500 OZ COINS'), findsOneWidget);
+    expect(find.text('chiefpai45'), findsOneWidget);
 
     await tester.tap(find.text('INVITE FRIENDS'));
     await tester.pump();

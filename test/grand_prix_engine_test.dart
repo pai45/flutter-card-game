@@ -41,11 +41,7 @@ RaceField _soloField(List<TrackSection> sections, {int laps = 1}) {
     distance: 0,
     lateral: 0,
   );
-  return RaceField(
-    circuit: circuit,
-    cars: [car],
-    laps: laps,
-  );
+  return RaceField(circuit: circuit, cars: [car], laps: laps);
 }
 
 void _run(
@@ -78,7 +74,9 @@ RaceInputs _manualInputs(RaceField field) {
   }
 
   final delta = target - car.lateral;
-  final steer = delta.abs() < 0.25 ? 0.0 : delta.sign * min(1.0, delta.abs() / 2);
+  final steer = delta.abs() < 0.25
+      ? 0.0
+      : delta.sign * min(1.0, delta.abs() / 2);
   final safe = section.safeSpeed;
   final brake = safe != null && car.speed > safe;
   return RaceInputs(steer: steer, throttle: !brake, brake: brake);
@@ -215,7 +213,9 @@ void main() {
     test('scraping the wall down a straight scrubs speed but never spins', () {
       final engine = GrandPrixEngine(random: Random(1));
       final field = _soloField(const [TrackSection.straight(3000)]);
-      final car = field.player..speed = 70;
+      final car = field.player
+        ..speed = 70
+        ..lateral = kWallLateral - .3;
       const drivingIntoWall = RaceInputs(throttle: true, steer: 1);
 
       var sawWall = false;
@@ -237,7 +237,9 @@ void main() {
 
       var stuckOut = false;
       for (var t = 0.0; t < kStuckTimeout + 1 && !stuckOut; t += _dt) {
-        stuckOut = stuckOut || engine.tick(field, const RaceInputs(), _dt).playerStuckOut;
+        stuckOut =
+            stuckOut ||
+            engine.tick(field, const RaceInputs(), _dt).playerStuckOut;
       }
       expect(stuckOut, isTrue);
       expect(field.playerStuckSeconds, greaterThanOrEqualTo(kStuckTimeout));
@@ -265,7 +267,11 @@ void main() {
 
       var stuckOut = false;
       for (var t = 0.0; t < kStuckTimeout + 2; t += _dt) {
-        stuckOut = stuckOut || engine.tick(field, const RaceInputs(throttle: true), _dt).playerStuckOut;
+        stuckOut =
+            stuckOut ||
+            engine
+                .tick(field, const RaceInputs(throttle: true), _dt)
+                .playerStuckOut;
       }
       expect(stuckOut, isFalse);
       expect(field.playerStuckSeconds, 0);
@@ -393,13 +399,13 @@ void main() {
           lateral: 0,
         ),
         CarState(
-          index: 3,
-          isPlayer: false,
-          name: 'DONE',
-          livery: GrandPrixLivery.skyBlue,
-          distance: 1001,
-          lateral: 0,
-        )
+            index: 3,
+            isPlayer: false,
+            name: 'DONE',
+            livery: GrandPrixLivery.skyBlue,
+            distance: 1001,
+            lateral: 0,
+          )
           ..mode = CarMode.finished
           ..finishTimeMs = 60000,
       ]);
@@ -424,7 +430,11 @@ void main() {
       field.player.speed = 60;
       final seen = <String>[];
       for (var t = 0.0; t < 1; t += _dt) {
-        final events = engine.tick(field, const RaceInputs(throttle: true), _dt);
+        final events = engine.tick(
+          field,
+          const RaceInputs(throttle: true),
+          _dt,
+        );
         seen.addAll(events.overtakes.map((o) => o.overtakenName));
       }
       expect(seen, contains('TARGET'));
@@ -433,7 +443,10 @@ void main() {
 
   group('launch grading', () {
     test('grades map to the spec reaction bands', () {
-      expect(gradeLaunch(const Duration(milliseconds: 149)), LaunchGrade.perfect);
+      expect(
+        gradeLaunch(const Duration(milliseconds: 149)),
+        LaunchGrade.perfect,
+      );
       expect(gradeLaunch(const Duration(milliseconds: 150)), LaunchGrade.great);
       expect(gradeLaunch(const Duration(milliseconds: 299)), LaunchGrade.great);
       expect(gradeLaunch(const Duration(milliseconds: 300)), LaunchGrade.good);
@@ -441,27 +454,30 @@ void main() {
       expect(gradeLaunch(const Duration(milliseconds: 500)), LaunchGrade.slow);
     });
 
-    test('better launches give strictly better boosts; jump start cuts throttle', () {
-      final perfect = launchBoost(LaunchGrade.perfect);
-      final great = launchBoost(LaunchGrade.great);
-      final good = launchBoost(LaunchGrade.good);
-      final slow = launchBoost(LaunchGrade.slow);
-      expect(perfect.initialSpeed, greaterThan(great.initialSpeed));
-      expect(great.initialSpeed, greaterThan(good.initialSpeed));
-      expect(good.initialSpeed, greaterThan(slow.initialSpeed));
-      expect(launchBoost(LaunchGrade.jump).initialSpeed, 0);
+    test(
+      'better launches give strictly better boosts; jump start cuts throttle',
+      () {
+        final perfect = launchBoost(LaunchGrade.perfect);
+        final great = launchBoost(LaunchGrade.great);
+        final good = launchBoost(LaunchGrade.good);
+        final slow = launchBoost(LaunchGrade.slow);
+        expect(perfect.initialSpeed, greaterThan(great.initialSpeed));
+        expect(great.initialSpeed, greaterThan(good.initialSpeed));
+        expect(good.initialSpeed, greaterThan(slow.initialSpeed));
+        expect(launchBoost(LaunchGrade.jump).initialSpeed, 0);
 
-      final setup = _setup();
-      final rng = Random(setup.seed);
-      final field = buildField(setup, generateDriverNames(19, rng), rng);
-      applyLaunch(field, LaunchGrade.jump, rng);
-      expect(field.player.throttleCutTimer, kJumpStartCutSeconds);
+        final setup = _setup();
+        final rng = Random(setup.seed);
+        final field = buildField(setup, generateDriverNames(19, rng), rng);
+        applyLaunch(field, LaunchGrade.jump, rng);
+        expect(field.player.throttleCutTimer, kJumpStartCutSeconds);
 
-      // Throttle does nothing while the jump-start cut is active.
-      final engine = GrandPrixEngine(random: rng);
-      engine.tick(field, const RaceInputs(throttle: true), _dt);
-      expect(field.player.speed, 0);
-    });
+        // Throttle does nothing while the jump-start cut is active.
+        final engine = GrandPrixEngine(random: rng);
+        engine.tick(field, const RaceInputs(throttle: true), _dt);
+        expect(field.player.speed, 0);
+      },
+    );
 
     test('cpu reactions improve with strength and never jump', () {
       final rng = Random(3);
@@ -470,13 +486,17 @@ void main() {
         expect(weak.inMilliseconds, greaterThan(0));
       }
       final strongAvg =
-          List.generate(300, (_) => sampleCpuReaction(1.0, rng).inMilliseconds)
-                  .reduce((a, b) => a + b) /
-              300;
+          List.generate(
+            300,
+            (_) => sampleCpuReaction(1.0, rng).inMilliseconds,
+          ).reduce((a, b) => a + b) /
+          300;
       final weakAvg =
-          List.generate(300, (_) => sampleCpuReaction(0.0, rng).inMilliseconds)
-                  .reduce((a, b) => a + b) /
-              300;
+          List.generate(
+            300,
+            (_) => sampleCpuReaction(0.0, rng).inMilliseconds,
+          ).reduce((a, b) => a + b) /
+          300;
       expect(strongAvg, lessThan(weakAvg));
     });
   });
@@ -493,8 +513,9 @@ void main() {
       expect(names.length, kFieldSize);
       // No CPU wears the player's livery.
       expect(
-        field.cars
-            .where((c) => !c.isPlayer && c.livery == GrandPrixLivery.scarlet),
+        field.cars.where(
+          (c) => !c.isPlayer && c.livery == GrandPrixLivery.scarlet,
+        ),
         isEmpty,
       );
     });
@@ -555,8 +576,11 @@ void main() {
             .tick(field, const RaceInputs(throttle: true), _dt)
             .playerCrossedLine;
         if (car.distance > 1000 && car.distance < 2900) {
-          expect(car.finished, isFalse,
-              reason: 'crossing an intermediate lap line must not finish');
+          expect(
+            car.finished,
+            isFalse,
+            reason: 'crossing an intermediate lap line must not finish',
+          );
         }
       }
       expect(crossed, isTrue);
@@ -594,7 +618,10 @@ void main() {
   group('full-race soak', () {
     test('a seeded 20-car race completes deterministically with no NaNs', () {
       List<String> classification(int seed) {
-        final setup = _setup(seed: seed, circuit: GrandPrixCircuitId.emeraldPark);
+        final setup = _setup(
+          seed: seed,
+          circuit: GrandPrixCircuitId.emeraldPark,
+        );
         final rng = Random(setup.seed);
         final field = buildField(setup, generateDriverNames(19, rng), rng);
         applyLaunch(field, LaunchGrade.good, rng);

@@ -12,7 +12,9 @@ import '../blocs/game/game_bloc.dart';
 import '../blocs/game/game_event.dart';
 import '../blocs/game/game_state.dart';
 import '../config/theme.dart';
+import '../config/game_ladder.dart';
 import '../models/streak.dart';
+import '../models/unlock_progress.dart';
 import '../utils/sound_effects.dart';
 import 'cyber/cyber_cta_button.dart';
 import 'cyber/cyber_widgets.dart';
@@ -31,8 +33,18 @@ class StreakCelebrationHost extends StatelessWidget {
     return BlocBuilder<GameBloc, GameState>(
       buildWhen: (previous, current) =>
           previous.streak.celebrationQueue != current.streak.celebrationQueue ||
+          previous.unlocks != current.unlocks ||
           previous.questRewardCoins != current.questRewardCoins,
       builder: (context, state) {
+        final reveals = state.unlocks.pendingReveals;
+        final rookieGraduationPending =
+            reveals.isNotEmpty &&
+            (reveals.first.kind == UnlockRevealKind.graduation ||
+                (reveals.first.kind == UnlockRevealKind.questComplete &&
+                    reveals.first.sport == state.unlocks.homeSport &&
+                    sportGameLadder[reveals.first.targetSport]!.length ==
+                        beginnerChapterLength));
+        if (rookieGraduationPending) return const SizedBox.shrink();
         if (state.streak.celebrationQueue.isEmpty) {
           if (state.questRewardCoins > 0 &&
               !(achievements?.holding ?? false) &&
@@ -42,10 +54,20 @@ class StreakCelebrationHost extends StatelessWidget {
           return const SizedBox.shrink();
         }
         final celebration = state.streak.celebrationQueue.first;
-        return _StreakCelebrationOverlay(
-          key: ValueKey(celebration.id),
-          celebration: celebration,
-          streak: state.streak,
+        if (state.unlocks.initialQuestActive &&
+            (celebration.type == StreakCelebrationType.shieldEarned ||
+                celebration.type == StreakCelebrationType.shieldSaved)) {
+          return const SizedBox.shrink();
+        }
+        return GameTypographyScope(
+          enabled:
+              celebration.activity != StreakActivity.predict &&
+              celebration.activity != StreakActivity.pick,
+          child: _StreakCelebrationOverlay(
+            key: ValueKey(celebration.id),
+            celebration: celebration,
+            streak: state.streak,
+          ),
         );
       },
     );
@@ -131,7 +153,11 @@ class _RevealBurstPainter extends CustomPainter {
       final direction = Offset(math.cos(angle), math.sin(angle));
       final inner = maxRadius * (0.3 + 0.4 * t);
       final outer = inner + maxRadius * 0.28 * (1 - t) + 3;
-      canvas.drawLine(center + direction * inner, center + direction * outer, rays);
+      canvas.drawLine(
+        center + direction * inner,
+        center + direction * outer,
+        rays,
+      );
     }
   }
 
@@ -247,15 +273,16 @@ class _QuestRewardRevealState extends State<_QuestRewardReveal>
                               curve: Curves.easeOutCubic,
                               builder: (context, value, child) => Text(
                                 '+${value.round()}',
-                                style: Cyber.display(
-                                  46,
-                                  color: Cyber.gold,
-                                  letterSpacing: 0,
-                                ).copyWith(
-                                  fontFeatures: const [
-                                    FontFeature.tabularFigures(),
-                                  ],
-                                ),
+                                style:
+                                    Cyber.display(
+                                      46,
+                                      color: Cyber.gold,
+                                      letterSpacing: 0,
+                                    ).copyWith(
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures(),
+                                      ],
+                                    ),
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -481,7 +508,8 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
     };
     final subline = switch (_type) {
       StreakCelebrationType.daily => streakActivityLabel(celebration.activity),
-      StreakCelebrationType.milestone => milestone?.rewardLabel ?? 'REWARD READY',
+      StreakCelebrationType.milestone =>
+        milestone?.rewardLabel ?? 'REWARD READY',
       StreakCelebrationType.shieldSaved =>
         used == 1 ? '1 missed day covered' : '$used missed days covered',
       StreakCelebrationType.shieldEarned => 'Daily Sweep complete',
@@ -530,7 +558,9 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
                                         color: accent,
                                         shadows: [
                                           Shadow(
-                                            color: accent.withValues(alpha: 0.6),
+                                            color: accent.withValues(
+                                              alpha: 0.6,
+                                            ),
                                             blurRadius: 18,
                                           ),
                                         ],
@@ -609,9 +639,10 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
             scale: numberScale,
             child: Text(
               '${_visibleStreakValue(celebration.streak, reducedMotion)}',
-              style: Cyber.display(58, letterSpacing: 0).copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+              style: Cyber.display(
+                58,
+                letterSpacing: 0,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ),
           const SizedBox(height: 4),
@@ -625,14 +656,23 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
           mainAxisSize: MainAxisSize.min,
           children: [
             if (milestone != null) ...[
-              Icon(streakRewardIcon(milestone.rewardType), size: 18, color: accent),
+              Icon(
+                streakRewardIcon(milestone.rewardType),
+                size: 18,
+                color: accent,
+              ),
               const SizedBox(width: 8),
             ],
             Flexible(
               child: Text(
                 subline,
                 textAlign: TextAlign.center,
-                style: Cyber.body(14, weight: FontWeight.w800, height: 1.3),
+                style: Cyber.bodyFor(
+                  context,
+                  14,
+                  weight: FontWeight.w800,
+                  height: 1.3,
+                ),
               ),
             ),
           ],
@@ -657,7 +697,7 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
           Text(
             '${next.days - celebration.streak} days to ${next.rewardLabel}',
             textAlign: TextAlign.center,
-            style: Cyber.body(12.5, color: Cyber.muted),
+            style: Cyber.bodyFor(context, 12.5, color: Cyber.muted),
           ),
         ],
         if (_type == StreakCelebrationType.shieldSaved) ...[
@@ -684,7 +724,7 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
           Text(
             'Miss a day and this shield keeps your run alive.',
             textAlign: TextAlign.center,
-            style: Cyber.body(12.5, color: Cyber.muted),
+            style: Cyber.bodyFor(context, 12.5, color: Cyber.muted),
           ),
         ],
         if (_type == StreakCelebrationType.milestone) ...[

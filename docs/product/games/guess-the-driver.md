@@ -1,7 +1,7 @@
 # Guess the Driver
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
+> **Last verified:** 2026-10-03
 > **Scope:** Daily F1 mystery, guesses, paid team hint, archive, and local records
 
 ## Product Purpose
@@ -12,8 +12,10 @@ run out.
 
 ## Where It Lives
 
-Open **Sports -> Games -> F1 -> Guess the Driver**. The home surface shows the
-daily CTA, win streak, win rate, best hearts, wins, and 30-day logs.
+Open **Sports -> Games -> F1 -> Guess the Driver**. The home surface uses the
+shared daily case dossier: race identity, current status, hearts available or
+remaining, reset countdown, primary Play/Resume/Review action, win streak,
+win rate, best hearts, and 30-day archive.
 
 ## Player Flow
 
@@ -33,6 +35,8 @@ shows today plus the previous 29 days. The paid team hint can be unlocked once
 per day and is persisted before the wallet transaction is applied. Reopening an
 unfinished current-day run resumes its in-memory guesses during the session;
 completed days open as review.
+The dossier's heart badge reflects the current run or completed result. It does
+not advertise XP because this game has no XP payout.
 
 ## Rewards and Progression
 The game records local mystery wins, hearts, streak, and hint spending. The
@@ -46,6 +50,8 @@ Wrong guesses spend a visible heart and advance the scan; the team hint plays a
 decrypt confirmation without taking a life. Correct/lost results reveal the
 driver with mystery-specific audio and a result overlay, then return to the
 daily archive loop.
+The lobby's primary action uses the shared Cyberpunk UI kit press, sound and
+haptic response. Its archive action stays visually quiet.
 
 ## Visible States
 
@@ -73,6 +79,8 @@ coin ledger are shared systems.
 - [`lib/models/guess_driver.dart`](../../../lib/models/guess_driver.dart)
 - [`lib/data/f1_guess_data.dart`](../../../lib/data/f1_guess_data.dart)
 - [`lib/blocs/guess_driver/guess_driver_cubit.dart`](../../../lib/blocs/guess_driver/guess_driver_cubit.dart)
+- [`lib/screens/guess_driver/guess_driver_home_screen.dart`](../../../lib/screens/guess_driver/guess_driver_home_screen.dart)
+- [`lib/widgets/cyber/daily_case_lobby.dart`](../../../lib/widgets/cyber/daily_case_lobby.dart)
 - [`lib/screens/guess_driver/guess_driver_screen.dart`](../../../lib/screens/guess_driver/guess_driver_screen.dart)
 
 ## Tests

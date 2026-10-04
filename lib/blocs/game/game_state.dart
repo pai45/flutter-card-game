@@ -7,9 +7,11 @@ import '../../models/grand_prix.dart';
 import '../../models/match.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/packs.dart';
+import '../../models/pitch_duel_rules.dart';
 import '../../models/progression.dart';
 import '../../models/streak.dart';
 import '../../models/daily_quest.dart';
+import '../../models/unlock_progress.dart';
 import '../../models/xp_ledger.dart';
 import '../../utils/card_helpers.dart';
 
@@ -223,6 +225,7 @@ class PackRevealData {
 class GameState {
   const GameState({
     required this.loading,
+    required this.displayName,
     required this.deckSlots,
     required this.activeDeckId,
     required this.deckAttackers,
@@ -275,6 +278,8 @@ class GameState {
     required this.opponentSelectedActionCard,
     required this.usedPlayerCards,
     required this.usedActionCards,
+    this.opponentUsedPlayerCards = const [],
+    this.opponentUsedActionCards = const [],
     required this.redCardedCards,
     required this.roundResults,
     required this.opponentAttackers,
@@ -292,10 +297,14 @@ class GameState {
     this.questClaiming = false,
     this.questError,
     this.questRewardCoins = 0,
+    this.unlocks = const UnlockProgress(),
+    this.questReceipts = const {},
+    this.pitchSessionId,
   });
 
   factory GameState.initial() => GameState(
     loading: true,
+    displayName: 'PLAYER ONE',
     deckSlots: defaultDeckSlots,
     activeDeckId: defaultDeckSlots.first.id,
     deckAttackers: cardsByIds(attackers, defaultDeckSlots.first.attackers),
@@ -395,6 +404,7 @@ class GameState {
   final PlayerCard? deckKeeper;
   final List<PlayerCard> deckFinalOverBatsmen;
   final List<PlayerCard> deckBasketballPlayers;
+  final String displayName;
   final PlayerCard? deckBasketballStarter;
   final List<PlayerCard> deckTennisPlayers;
   final PlayerCard? deckTennisStarter;
@@ -445,6 +455,8 @@ class GameState {
   final ActionCard? opponentSelectedActionCard;
   final List<String> usedPlayerCards;
   final List<String> usedActionCards;
+  final List<String> opponentUsedPlayerCards;
+  final List<String> opponentUsedActionCards;
   final List<String> redCardedCards;
   final List<RoundResult> roundResults;
   final List<PlayerCard> opponentAttackers;
@@ -468,6 +480,11 @@ class GameState {
   final String? questError;
   final int questRewardCoins;
 
+  /// Sport + game unlocks and the per-sport Beginner's Quest position.
+  final UnlockProgress unlocks;
+  final Map<String, QuestCompletionReceipt> questReceipts;
+  final String? pitchSessionId;
+
   bool get hasLevelUp => pendingLevelUps.isNotEmpty;
 
   bool get deckReady => pitchDuelDeckReady;
@@ -476,6 +493,10 @@ class GameState {
       deckAttackers.length == 2 &&
       deckDefenders.length == 2 &&
       deckActions.length == 6 &&
+      deckAttackers.map((c) => c.id).toSet().length == 2 &&
+      deckDefenders.map((c) => c.id).toSet().length == 2 &&
+      deckActions.map((c) => c.id).toSet().length == 6 &&
+      pitchCanComplete(deckActions, const [true, false, true, false]) &&
       deckKeeper != null &&
       deckAttackers.every((card) => ownedCardIds.contains(card.id)) &&
       deckDefenders.every((card) => ownedCardIds.contains(card.id)) &&
@@ -529,6 +550,7 @@ class GameState {
 
   GameState copyWith({
     bool? loading,
+    String? displayName,
     List<StoredDeckSlot>? deckSlots,
     String? activeDeckId,
     List<PlayerCard>? deckAttackers,
@@ -581,6 +603,8 @@ class GameState {
     Object? opponentSelectedActionCard = _sentinel,
     List<String>? usedPlayerCards,
     List<String>? usedActionCards,
+    List<String>? opponentUsedPlayerCards,
+    List<String>? opponentUsedActionCards,
     List<String>? redCardedCards,
     List<RoundResult>? roundResults,
     List<PlayerCard>? opponentAttackers,
@@ -599,8 +623,12 @@ class GameState {
     String? questError,
     bool clearQuestError = false,
     int? questRewardCoins,
+    UnlockProgress? unlocks,
+    Map<String, QuestCompletionReceipt>? questReceipts,
+    String? pitchSessionId,
   }) => GameState(
     loading: loading ?? this.loading,
+    displayName: displayName ?? this.displayName,
     deckSlots: deckSlots ?? this.deckSlots,
     activeDeckId: activeDeckId ?? this.activeDeckId,
     deckAttackers: deckAttackers ?? this.deckAttackers,
@@ -689,6 +717,10 @@ class GameState {
         : opponentSelectedActionCard as ActionCard?,
     usedPlayerCards: usedPlayerCards ?? this.usedPlayerCards,
     usedActionCards: usedActionCards ?? this.usedActionCards,
+    opponentUsedPlayerCards:
+        opponentUsedPlayerCards ?? this.opponentUsedPlayerCards,
+    opponentUsedActionCards:
+        opponentUsedActionCards ?? this.opponentUsedActionCards,
     redCardedCards: redCardedCards ?? this.redCardedCards,
     roundResults: roundResults ?? this.roundResults,
     opponentAttackers: opponentAttackers ?? this.opponentAttackers,
@@ -714,6 +746,9 @@ class GameState {
     questClaiming: questClaiming ?? this.questClaiming,
     questError: clearQuestError ? null : questError ?? this.questError,
     questRewardCoins: questRewardCoins ?? this.questRewardCoins,
+    unlocks: unlocks ?? this.unlocks,
+    questReceipts: questReceipts ?? this.questReceipts,
+    pitchSessionId: pitchSessionId ?? this.pitchSessionId,
   );
 }
 

@@ -32,7 +32,12 @@ class TalkToStatozScreen extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             'Pick a channel. We read every transmission.',
-            style: Cyber.body(12.5, color: AppTheme.text2, height: 1.4),
+            style: Cyber.bodyFor(
+              context,
+              12.5,
+              color: AppTheme.text2,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 18),
           for (var i = 0; i < _channels.length; i++) ...[
@@ -85,13 +90,15 @@ class _ChannelCard extends StatelessWidget {
                   const SizedBox(height: 5),
                   Text(
                     channel.tagline,
-                    style: Cyber.body(12, color: AppTheme.text2, height: 1.3),
+                    style: Cyber.bodyFor(
+                      context,
+                      12,
+                      color: AppTheme.text2,
+                      height: 1.3,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  _MetaTag(
-                    label: 'CHANNEL $channelNo',
-                    accent: channel.accent,
-                  ),
+                  _MetaTag(label: 'CHANNEL $channelNo', accent: channel.accent),
                 ],
               ),
             ),
@@ -172,7 +179,12 @@ class _FollowUsPanel extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           'Highlights, hot takes, and the next drop.',
-          style: Cyber.body(12.5, color: AppTheme.text2, height: 1.4),
+          style: Cyber.bodyFor(
+            context,
+            12.5,
+            color: AppTheme.text2,
+            height: 1.4,
+          ),
         ),
         const SizedBox(height: 12),
         const Row(
@@ -239,7 +251,8 @@ class _ComposeTransmissionScreen extends StatefulWidget {
       _ComposeTransmissionScreenState();
 }
 
-class _ComposeTransmissionScreenState extends State<_ComposeTransmissionScreen> {
+class _ComposeTransmissionScreenState
+    extends State<_ComposeTransmissionScreen> {
   final _summary = TextEditingController();
   final _details = TextEditingController();
 
@@ -308,7 +321,8 @@ class _ComposeTransmissionScreenState extends State<_ComposeTransmissionScreen> 
                                 const SizedBox(height: 7),
                                 Text(
                                   channel.composeHint,
-                                  style: Cyber.body(
+                                  style: Cyber.bodyFor(
+                                    context,
                                     12.5,
                                     color: AppTheme.text2,
                                     height: 1.45,
@@ -325,8 +339,7 @@ class _ComposeTransmissionScreenState extends State<_ComposeTransmissionScreen> 
                       controller: _summary,
                       label: 'Summary',
                       hint: channel.summaryHint,
-                      error:
-                          _submittedEmpty && _summary.text.trim().isEmpty,
+                      error: _submittedEmpty && _summary.text.trim().isEmpty,
                     ),
                     const SizedBox(height: 14),
                     _TransmissionField(
@@ -334,8 +347,7 @@ class _ComposeTransmissionScreenState extends State<_ComposeTransmissionScreen> 
                       label: 'Details',
                       hint: channel.detailsHint,
                       maxLines: 6,
-                      error:
-                          _submittedEmpty && _details.text.trim().isEmpty,
+                      error: _submittedEmpty && _details.text.trim().isEmpty,
                     ),
                   ],
                 ),
@@ -398,11 +410,11 @@ class _TransmissionField extends StatelessWidget {
         TextField(
           controller: controller,
           maxLines: maxLines,
-          style: Cyber.body(13),
+          style: Cyber.bodyFor(context, 13),
           cursorColor: Cyber.cyan,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: Cyber.body(13, color: Cyber.muted),
+            hintStyle: Cyber.bodyFor(context, 13, color: Cyber.muted),
             filled: true,
             fillColor: Cyber.bg.withValues(alpha: 0.45),
             isDense: true,
@@ -578,7 +590,8 @@ class _TransmissionSentOverlayState extends State<_TransmissionSentOverlay>
                               Text(
                                 'Signal locked. We\'ll take it from here.',
                                 textAlign: TextAlign.center,
-                                style: Cyber.body(
+                                style: Cyber.bodyFor(
+                                  context,
                                   13,
                                   color: AppTheme.text2,
                                   height: 1.35,

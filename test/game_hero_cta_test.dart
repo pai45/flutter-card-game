@@ -1,12 +1,14 @@
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/prediction/prediction_cubit.dart';
 import 'package:card_game/config/theme.dart';
+import 'package:card_game/config/sport_modules.dart';
 import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/screens/predictions/prediction_home_screen.dart';
 import 'package:card_game/services/prediction_repository.dart';
 import 'package:card_game/services/secure_storage_service.dart';
 import 'package:card_game/utils/sound_effects.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,6 +18,13 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
+    for (final channel in [
+      'xyz.luan/audioplayers.global',
+      'xyz.luan/audioplayers',
+    ]) {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(MethodChannel(channel), (_) async => null);
+    }
     AudioController.instance.muted.value = true;
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
@@ -55,7 +64,7 @@ void main() {
     var f1QuizOpens = 0;
     var tennisQuizOpens = 0;
 
-    Future<void> pumpGamesTab(int sportTab) async {
+    Future<void> pumpGamesTab(int sportTab, {double textScale = 1}) async {
       await tester.pumpWidget(
         MultiBlocProvider(
           providers: [
@@ -63,6 +72,15 @@ void main() {
             BlocProvider<PredictionCubit>.value(value: predictionCubit),
           ],
           child: MaterialApp(
+            key: ValueKey((sportTab, textScale)),
+            theme: AppTheme.darkTheme,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(
+                disableAnimations: true,
+                textScaler: TextScaler.linear(textScale),
+              ),
+              child: child!,
+            ),
             home: PredictionHomeScreen(
               activeTab: 1,
               onTabChanged: (_) {},
@@ -106,7 +124,7 @@ void main() {
     await pumpGamesTab(1);
     expect(find.text('PITCH DUEL'), findsOneWidget);
     expect(find.text('TACTICAL CARD GAME'), findsOneWidget);
-    expect(find.text('ENTER THE DUEL'), findsNothing);
+    expect(find.text('ENTER THE DUEL'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('pitch-duel-hero-card')));
     expect(pitchDuelOpens, 1);
 
@@ -120,13 +138,13 @@ void main() {
     expect(find.text('SUDDEN-DEATH SPOT KICKS'), findsOneWidget);
     expect(
       tester.widget<Text>(find.text('SUDDEN-DEATH SPOT KICKS')).style?.color,
-      Cyber.cyan,
+      AppTheme.gamePenalty,
     );
     expect(
       tester.widget<Text>(find.text('FEATURED // SUDDEN DEATH')).style?.color,
-      Cyber.cyan,
+      AppTheme.gamePenalty,
     );
-    expect(find.text('TAKE THE SHOT'), findsNothing);
+    expect(find.text('TAKE THE SHOT'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('penalty-shootout-hero-card')));
     expect(penaltyShootoutOpens, 1);
 
@@ -140,13 +158,13 @@ void main() {
     expect(find.text('TACTICAL SQUAD DUEL'), findsOneWidget);
     expect(
       tester.widget<Text>(find.text('TACTICAL SQUAD DUEL')).style?.color,
-      Cyber.cyan,
+      AppTheme.gameFootballChess,
     );
     expect(
       tester.widget<Text>(find.text('FEATURED // 5V5')).style?.color,
-      Cyber.cyan,
+      AppTheme.gameFootballChess,
     );
-    expect(find.text('MAKE YOUR MOVE'), findsNothing);
+    expect(find.text('MAKE YOUR MOVE'), findsOneWidget);
     await tester.drag(find.byType(Scrollable).last, const Offset(0, -140));
     await tester.pumpAndSettle();
     final footballChessCard = tester.getRect(
@@ -192,7 +210,7 @@ void main() {
     await pumpGamesTab(3);
     expect(find.text('HOOP DUEL'), findsOneWidget);
     expect(find.text('STREET 1-ON-1 ARCADE HOOPS'), findsOneWidget);
-    expect(find.text('HIT THE COURT'), findsNothing);
+    expect(find.text('HIT THE COURT'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('hoop-duel-hero-card')));
     expect(hoopDuelOpens, 1);
     final basketballQuizCard = find.byKey(
@@ -223,7 +241,7 @@ void main() {
     await pumpGamesTab(2);
     expect(find.text('FINAL OVER'), findsOneWidget);
     expect(find.text('SIX-BALL CRICKET CHASE'), findsOneWidget);
-    expect(find.text('START THE CHASE'), findsNothing);
+    expect(find.text('START THE CHASE'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('final-over-hero-card')));
     expect(finalOverOpens, 1);
     final cricketQuizCard = find.byKey(
@@ -251,10 +269,10 @@ void main() {
     expect(cricketQuizOpens, 1);
     expect(cricketGuessPlayerOpens, 1);
 
-    await pumpGamesTab(5);
+    await pumpGamesTab(hubIndexForSport(Sport.motorsport));
     expect(find.text('GRAND PRIX DASH'), findsOneWidget);
     expect(find.text('ONE-LAP ARCADE RACER'), findsOneWidget);
-    expect(find.text('RACE NOW'), findsNothing);
+    expect(find.text('RACE NOW'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('grand-prix-dash-hero-card')));
     expect(grandPrixOpens, 1);
     final f1QuizCard = find.byKey(const ValueKey('motorsport-quiz-grid-card'));
@@ -271,10 +289,10 @@ void main() {
     await tester.tap(f1QuizCard);
     expect(f1QuizOpens, 1);
 
-    await pumpGamesTab(4);
+    await pumpGamesTab(hubIndexForSport(Sport.tennis));
     expect(find.text('TENNIS RALLY'), findsOneWidget);
     expect(find.text('2D ARCADE SETS // 5 MODES'), findsOneWidget);
-    expect(find.text('STEP ON COURT'), findsNothing);
+    expect(find.text('STEP ON COURT'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('tennis-rally-hero-card')));
     expect(tennisRallyOpens, 1);
     final tennisQuizCard = find.byKey(const ValueKey('tennis-quiz-grid-card'));
@@ -290,5 +308,25 @@ void main() {
     );
     await tester.tap(tennisQuizCard);
     expect(tennisQuizOpens, 1);
+
+    await pumpGamesTab(hubIndexForSport(Sport.tennis), textScale: 1.4);
+    final winner = find.byKey(const ValueKey('tennis-guess-winner-grid-card'));
+    await tester.scrollUntilVisible(
+      winner,
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    expect(tester.getRect(tennisQuizCard).width, moreOrLessEquals(288));
+    expect(
+      tester.getRect(winner).left,
+      moreOrLessEquals(tester.getRect(tennisQuizCard).left),
+    );
+    expect(
+      tester.getRect(winner).top,
+      greaterThan(tester.getRect(tennisQuizCard).bottom),
+    );
+    expect(find.text('CALL WINNER'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

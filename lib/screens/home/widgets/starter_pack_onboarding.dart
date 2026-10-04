@@ -5,6 +5,7 @@ import '../../../blocs/game/game_bloc.dart';
 import '../../../blocs/game/game_event.dart';
 import '../../../blocs/game/game_state.dart';
 import '../../../config/theme.dart';
+import '../../../models/pitch_duel_rules.dart';
 import '../../../utils/label_helpers.dart';
 import '../../../widgets/card_unpack_animation.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
@@ -26,6 +27,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
     with TickerProviderStateMixin {
   _Phase _phase = _Phase.intro;
   int _cardIndex = 0;
+  bool _motionChecked = false;
 
   // Intro
   late final AnimationController _bgPulse;
@@ -141,6 +143,23 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_motionChecked && MediaQuery.disableAnimationsOf(context)) {
+      _bgPulse.stop();
+      _titleDrop.value = 1;
+      for (final c in _slotCtrl) {
+        c.value = 1;
+      }
+      for (final c in _summaryCtrl) {
+        c.value = 1;
+      }
+      _phase = _Phase.summary;
+    }
+    _motionChecked = true;
+  }
+
+  @override
   void dispose() {
     _bgPulse.dispose();
     _titleDrop.dispose();
@@ -195,10 +214,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                           Opacity(
                             opacity: _iv(td, 0.0, 0.28),
                             child: Transform.translate(
-                              offset: Offset(
-                                0,
-                                24 * (1 - _iv(td, 0.0, 0.28)),
-                              ),
+                              offset: Offset(0, 24 * (1 - _iv(td, 0.0, 0.28))),
                               child: Text(
                                 'PITCH DUEL',
                                 style: Cyber.label(
@@ -213,10 +229,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                           Opacity(
                             opacity: _iv(td, 0.12, 0.65),
                             child: Transform.translate(
-                              offset: Offset(
-                                0,
-                                80 * (1 - _iv(td, 0.12, 0.65)),
-                              ),
+                              offset: Offset(0, 80 * (1 - _iv(td, 0.12, 0.65))),
                               child: _PackGradientHeadline(
                                 text: widget.reveal.headline,
                               ),
@@ -226,10 +239,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                           Opacity(
                             opacity: _iv(td, 0.32, 0.72),
                             child: Transform.translate(
-                              offset: Offset(
-                                0,
-                                20 * (1 - _iv(td, 0.32, 0.72)),
-                              ),
+                              offset: Offset(0, 20 * (1 - _iv(td, 0.32, 0.72))),
                               child: Text(
                                 widget.reveal.statusLabel,
                                 style: Cyber.label(
@@ -278,7 +288,8 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                                 opacity: 0.35 + 0.65 * _bgPulse.value,
                                 child: Text(
                                   'PREPARING YOUR SQUAD...',
-                                  style: Cyber.body(
+                                  style: Cyber.bodyFor(
+                                    context,
                                     10,
                                     color: Cyber.muted,
                                     weight: FontWeight.w700,
@@ -405,7 +416,8 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                         Text(
                           '${actions.length} ACTIONS UNLOCKED TOGETHER',
                           textAlign: TextAlign.center,
-                          style: Cyber.body(
+                          style: Cyber.bodyFor(
+                            context,
                             10,
                             color: Cyber.muted,
                             weight: FontWeight.w800,
@@ -450,6 +462,13 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
 
   Widget _buildSummary(BuildContext context) {
     final items = widget.reveal.items;
+    final matchingPairs = [
+      for (final p in items.where((i) => i.isPlayer))
+        for (final a in items.where((i) => !i.isPlayer))
+          if ((pitchAffinityActions[pitchAffinityFor(p.playerCard!)] ?? {})
+              .contains(pitchActionBaseId(a.actionCard!)))
+            '${p.playerCard!.name} + ${a.actionCard!.title}',
+    ];
     final playerIndices = [
       for (int i = 0; i < items.length; i++)
         if (items[i].isPlayer) i,
@@ -498,7 +517,8 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                           Text(
                             widget.reveal.summaryLabel,
                             textAlign: TextAlign.center,
-                            style: Cyber.body(
+                            style: Cyber.bodyFor(
+                              context,
                               10,
                               color: Cyber.muted,
                               weight: FontWeight.w700,
@@ -510,7 +530,8 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                             Text(
                               widget.reveal.detailLabel!,
                               textAlign: TextAlign.center,
-                              style: Cyber.body(
+                              style: Cyber.bodyFor(
+                                context,
                                 10,
                                 color: Cyber.cyan.withValues(alpha: 0.85),
                                 weight: FontWeight.w800,
@@ -544,6 +565,41 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                           ],
                           const SizedBox(height: 30),
 
+                          if (matchingPairs.isNotEmpty) ...[
+                            CyberPanel(
+                              cornerCuts: true,
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'TRY THIS PAIR +4',
+                                    style: Cyber.label(12, color: Cyber.cyan),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    matchingPairs.first,
+                                    textAlign: TextAlign.center,
+                                    style: Cyber.bodyFor(
+                                      context,
+                                      14,
+                                      color: AppTheme.whiteColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Match the scenario for another +6. Long-press a card to see its ability.',
+                                    textAlign: TextAlign.center,
+                                    style: Cyber.bodyFor(
+                                      context,
+                                      12,
+                                      color: Cyber.muted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+
                           // Cards grouped under left-aligned section headers.
                           if (playerIndices.isNotEmpty)
                             _cardGroup('PLAYER CARDS', playerIndices),
@@ -553,28 +609,32 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                           if (actionIndices.isNotEmpty)
                             _cardGroup('ACTION CARDS', actionIndices),
                         ],
+                      ),
                     ),
                   ),
-                ),
-                _BottomCtaBar(
-                  child: FilledButton(
-                    onPressed: _enterGame,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Cyber.lime,
-                      foregroundColor: Cyber.bg,
-                      minimumSize: const Size.fromHeight(52),
-                    ),
-                    child: Text(
-                      widget.reveal.ctaLabel,
-                      style: Cyber.label(14, color: Cyber.bg, letterSpacing: 2),
+                  _BottomCtaBar(
+                    child: FilledButton(
+                      onPressed: _enterGame,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Cyber.lime,
+                        foregroundColor: Cyber.bg,
+                        minimumSize: const Size.fromHeight(52),
+                      ),
+                      child: Text(
+                        widget.reveal.ctaLabel,
+                        style: Cyber.label(
+                          14,
+                          color: Cyber.bg,
+                          letterSpacing: 2,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+        ],
       ),
     );
   }
@@ -628,7 +688,10 @@ double _iv(double t, double a, double b) => ((t - a) / (b - a)).clamp(0.0, 1.0);
 /// Solid backdrop for pack-reveal screens. Background painters sit in
 /// [Positioned.fill] behind content so grid/glow never bleed through text.
 class _PackRevealBackdrop extends StatelessWidget {
-  const _PackRevealBackdrop({required this.glowColor, this.glowOpacity = 0.055});
+  const _PackRevealBackdrop({
+    required this.glowColor,
+    this.glowOpacity = 0.055,
+  });
 
   final Color glowColor;
   final double glowOpacity;
@@ -729,10 +792,7 @@ class _MysterySlot extends StatelessWidget {
         border: Border.all(color: Cyber.cyan.withValues(alpha: 0.45), width: 1),
       ),
       child: Center(
-        child: Text(
-          '?',
-          style: Cyber.display(24, color: Cyber.cyan),
-        ),
+        child: Text('?', style: Cyber.display(24, color: Cyber.cyan)),
       ),
     );
   }
@@ -765,7 +825,8 @@ class _SummaryGroupHeader extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           '$count',
-          style: Cyber.body(
+          style: Cyber.bodyFor(
+            context,
             11,
             color: Cyber.muted,
             weight: FontWeight.w800,
@@ -816,7 +877,8 @@ class _ProgressDots extends StatelessWidget {
         children: [
           Text(
             'CARD $current OF $total',
-            style: Cyber.body(
+            style: Cyber.bodyFor(
+              context,
               10,
               color: const Color(0xFF94A3B8),
               weight: FontWeight.w700,

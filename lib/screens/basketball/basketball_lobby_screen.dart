@@ -50,7 +50,7 @@ class BasketballLobbyScreen extends StatelessWidget {
     playSound(SoundEffect.playMatch);
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      gamePageRoute<void>(
         builder: (_) => BlocProvider.value(
           value: cubit,
           child: BasketballMatchScreen(
@@ -227,9 +227,7 @@ class BasketballLobbyScreen extends StatelessWidget {
                                                         (entry) =>
                                                             entry.isBasketball,
                                                       )
-                                                      .toList(
-                                                        growable: false,
-                                                      ),
+                                                      .toList(growable: false),
                                                   career: _RecordPanel(
                                                     stats: state.stats,
                                                   ),
@@ -620,10 +618,7 @@ class _DifficultyPicker extends StatelessWidget {
 }
 
 class _HudLink extends StatelessWidget {
-  const _HudLink({
-    required this.label,
-    required this.onTap,
-  });
+  const _HudLink({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;

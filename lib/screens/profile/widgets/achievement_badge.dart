@@ -152,52 +152,62 @@ Future<void> showAchievementDetail(
   return showDialog<void>(
     context: context,
     barrierColor: Colors.black.withValues(alpha: 0.8),
-    builder: (context) => Dialog(
-      elevation: 0,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 32),
-      backgroundColor: Colors.transparent,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 340),
-        child: CyberPanel(
-          accent: tier,
-          padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AchievementBadgePlate(
-                icon: achievement.icon,
-                tier: tier,
-                unlocked: unlocked,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                achievement.title.toUpperCase(),
-                textAlign: TextAlign.center,
-                style: Cyber.display(20, color: Colors.white, letterSpacing: 1),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                achievement.description,
-                textAlign: TextAlign.center,
-                style: Cyber.body(13, color: Cyber.muted),
-              ),
-              const SizedBox(height: 18),
-              if (unlocked)
-                CyberChip(label: 'UNLOCKED', color: tier)
-              else ...[
-                CyberProgressBar(value: achievement.progress(stats), accent: tier),
-                const SizedBox(height: 8),
+    builder: (context) => GameTypographyScope(
+      enabled: achievement.tab == AchievementTab.games,
+      child: Dialog(
+        elevation: 0,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 32),
+        backgroundColor: Colors.transparent,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 340),
+          child: CyberPanel(
+            accent: tier,
+            padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AchievementBadgePlate(
+                  icon: achievement.icon,
+                  tier: tier,
+                  unlocked: unlocked,
+                ),
+                const SizedBox(height: 16),
                 Text(
-                  '$current / ${achievement.target}',
-                  style: Cyber.label(
-                    11,
-                    color: Cyber.muted,
+                  achievement.title.toUpperCase(),
+                  textAlign: TextAlign.center,
+                  style: Cyber.display(
+                    20,
+                    color: Colors.white,
                     letterSpacing: 1,
-                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  achievement.description,
+                  textAlign: TextAlign.center,
+                  style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+                ),
+                const SizedBox(height: 18),
+                if (unlocked)
+                  CyberChip(label: 'UNLOCKED', color: tier)
+                else ...[
+                  CyberProgressBar(
+                    value: achievement.progress(stats),
+                    accent: tier,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '$current / ${achievement.target}',
+                    style: Cyber.label(
+                      11,
+                      color: Cyber.muted,
+                      letterSpacing: 1,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

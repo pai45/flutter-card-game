@@ -188,6 +188,12 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.byType(CoinsTab), findsOneWidget);
+    expect(
+      Theme.of(
+        tester.element(find.byType(CoinsTab)),
+      ).textTheme.bodyMedium?.fontFamily,
+      Cyber.gameBodyFont,
+    );
     expect(find.byKey(const ValueKey('shop-search-button')), findsOneWidget);
     await tester.tap(find.byTooltip('Search Shop'));
     await tester.pump();

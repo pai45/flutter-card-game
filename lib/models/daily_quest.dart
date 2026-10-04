@@ -6,6 +6,12 @@ enum DailyQuestActivity {
   guessPlayer,
   prediction,
   pick,
+
+  /// Any other finished GAMES-tab mode (Final Over, Hoop Duel, quizzes…), so
+  /// a non-football home sport can still clear its daily game quests.
+  arcadeGame;
+
+  bool get isGame => this != prediction && this != pick;
 }
 
 enum DailyQuestId { kickOff, makeYourCall, backYourPlay, dailySweep }
@@ -48,7 +54,7 @@ class DailyQuestDay {
           DailyQuestId.dailySweep => completedCount / 3,
         };
   DailyQuestDay record(DailyQuestActivity activity) => DailyQuestDay(
-    games: (games + (activity.index < 3 ? 1 : 0)).clamp(0, 3),
+    games: (games + (activity.isGame ? 1 : 0)).clamp(0, 3),
     predicted: predicted || activity == DailyQuestActivity.prediction,
     picked: picked || activity == DailyQuestActivity.pick,
   );

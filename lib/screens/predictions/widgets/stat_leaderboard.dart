@@ -234,7 +234,12 @@ class _ChaserRow extends StatelessWidget {
                 _nameOf(leader, resolving),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.body(13, weight: FontWeight.w700, height: 1),
+                style: Cyber.bodyFor(
+                  context,
+                  13,
+                  weight: FontWeight.w700,
+                  height: 1,
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -299,7 +304,7 @@ class _LeaderboardNote extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 18),
-      child: Text(text, style: Cyber.body(13, color: Cyber.muted)),
+      child: Text(text, style: Cyber.bodyFor(context, 13, color: Cyber.muted)),
     );
   }
 }

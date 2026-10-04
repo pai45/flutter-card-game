@@ -1,3 +1,4 @@
+import '../../../config/game_ladder.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
@@ -170,7 +171,11 @@ class _GuessPlayerResultViewState extends State<GuessPlayerResultView> {
                                   ? 'The remaining intel has been unlocked.'
                                   : 'No attempts remain. Study the debrief and return tomorrow.',
                               textAlign: TextAlign.center,
-                              style: Cyber.body(12.5, color: Cyber.muted),
+                              style: Cyber.bodyFor(
+                                context,
+                                12.5,
+                                color: Cyber.muted,
+                              ),
                             ),
                           ],
                         ),
@@ -242,6 +247,13 @@ class _GuessPlayerResultViewState extends State<GuessPlayerResultView> {
                         ),
                       ),
                     ],
+                    if (widget.xpBefore != null && widget.state.puzzle != null)
+                      QuestResultReceipt(
+                        game: sportGameLadder[widget.state.puzzle!.sport]!
+                            .firstWhere((g) => g.title == 'GUESS THE PLAYER'),
+                        sourceId:
+                            'guess-player:${widget.state.puzzle!.sport.name}:${record.dayKey}',
+                      ),
                     const SizedBox(height: 22),
                     HudCtaButton(
                       label: 'RETURN TO INTEL HUB',
@@ -602,7 +614,8 @@ class _GuessDebrief extends StatelessWidget {
                   Expanded(
                     child: Text(
                       state.guesses[index].name.toUpperCase(),
-                      style: Cyber.body(
+                      style: Cyber.bodyFor(
+                        context,
                         11.5,
                         color: AppTheme.textPrimary,
                         weight: FontWeight.w700,

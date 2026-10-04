@@ -1,7 +1,7 @@
 # Cyber UI Design System
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-07
+> **Last verified:** 2026-10-04
 > **Scope:** Theme tokens, typography, shape language, glow hierarchy, layout, and shared cyber components
 
 ## Product Purpose
@@ -25,8 +25,11 @@ clear state/result feedback, and a reward/next-action handoff.
 ## Mechanics and Rules
 
 - Dark theme only; use `AppTheme`/`Cyber` tokens rather than raw screen-local colors.
-- Orbitron is the display/HUD face; Onest is the body and utility face. Numeric
-  HUD values use tabular figures where comparison matters.
+- **BUILT:** Orbitron is the display/HUD face. Exo 2 is the body and utility
+  face throughout Games, arcade play, rewards, and game-related sections of
+  shared pages; Onest remains the body face for real sports Matches, Pick,
+  predictions, fixtures, and their details. Numeric HUD values use tabular
+  figures where comparison matters.
 - **PLANNED:** Standard boxes, panels, and cards use opposing diagonal cuts at the
   top-left and bottom-right; the top-right and bottom-left remain square. Two clipped
   bottom corners are not the reference silhouette. Specialized buttons, badges, tabs,
@@ -61,6 +64,55 @@ clear state/result feedback, and a reward/next-action handoff.
 - Reuse `GameScaffold`, `CyberPanel`, `CyberProgressBar`, `HudCtaButton`,
   `CyberCtaButton`, and `CyberSegmentedTabs`. If a visual pattern repeats, extend
   the shared cyber catalog rather than duplicate it.
+
+### Game discovery launch cards [BUILT]
+
+All 18 sport-specific Games entries and the curated Trending game tiles compose
+`CyberGameLaunchCard`, exported through the shared cyber catalog. It extends
+`ChamferedActionSurface` and `HudChamferClipper` with top-left and bottom-right
+cuts (`smallCut: 0`), a flat panel, a quiet accent border, a white Orbitron title,
+and a full-width action rail. Landscape hero cards keep the simulation on the
+right; narrow Quick Play and tall Trending cards stack the illustration above
+the title. Supporting labels are at least 10 px and compact titles at least 15 px.
+With text scaled above 1.2x, phone Quick Play grids use one wider column and
+Trending uses full-width tiles, retaining full game names and short action labels.
+
+The illustrations are original Flutter vector schematics: tactical card/passing
+chains, a perspective goal/aim reticle, a 5v5 board, a cricket chase, a hoop/shot
+arc, an F1 chassis/circuit, a tennis court/racket, a quiz core, a bingo grid,
+player/driver dossiers, and a winner trophy. Each game has a dedicated discovery
+accent from `AppTheme.game*`, shared between its sport page and Trending entry.
+The accent colours its wireframe, badge, quiet border and launch label; a 6%
+flat tint in the CTA rail adds a little identity without tinting the full panel.
+Pitch Duel stays cyan, Penalty is coral, Football Chess ice blue, Football Quiz
+violet, Bingo amber, and the football mystery rose. Cricket uses silver,
+seafoam and jade; Basketball uses gold, apricot and orchid; Motorsport uses
+coral-red, hot pink and periwinkle; Tennis uses green, citron and aqua.
+Quiz and mystery variants keep their own discovery shades where they share
+an illustration. Sport navigation colours, reward and state
+signals retain their existing tokens. The release feature cards reuse Pitch
+Duel and Penalty's discovery accents too.
+Ambient motion belongs to the schematic; borders do not
+pulse or glow. Hover/keyboard focus brightens the outline and launch rail;
+pressing gives a short scale response and selection haptic.
+
+The entire card, action rail, keyboard Enter/Space and accessibility activation
+invoke the existing game callback. Existing streak badges and quest lock/choice
+veils still carry real progression state. Locked illustrations stay static and
+the lock action continues through the existing mission-selection guard. Quick
+Play uses challenge/clue/grid labels instead of implying every mode is free.
+See [Motion, Audio, Haptics, and Celebration](motion-audio-haptics.md) for the
+loop and reduced-motion contract.
+
+### Cyberpunk UI kit — sport access
+
+**BUILT:** Sport unlock sheets use the opt-in [Cyberpunk UI kit](cyberpunk-ui-kit.md).
+It combines opposing chamfers, segmented section rules, numbered progression
+entries, sport emblems and flat primary/secondary/icon actions. Its shared
+`CyberKit` dimensions and motion values accompany the existing theme tokens.
+Only an enabled primary action glows; unaffordable unlocks give that emphasis
+to VIEW QUESTS. Existing components retain their defaults. The kit implements
+the standard opposing cuts without migrating legacy `CyberPanel` callers.
 
 ### Charts — one system
 
@@ -101,6 +153,31 @@ panel with one cyan outline, no glow, and no nested filled input or clipped
 corners. Chamfers remain reserved for cards, panels, and action controls; the
 plain search silhouette prioritizes a clean typing target.
 
+### Football card presentation [BUILT]
+
+`CyberPlayerCardTile` selects a football-specific presentation for attacker,
+defender and keeper roles (`pitchDuelStyle` can opt out). `CyberActionCardTile`
+shares the sci-fi playing-card frame: large corner OVR/power, angular etched
+rails, quiet one-to-four rarity inlays, a separate nameplate and affinity glyph.
+Players use portrait windows and mirrored lower indices; actions use tactical
+blueprint art. Backs use a symmetric circuit print. The frame brightens on
+selection, without a check square covering the card's index. Static print has no
+continuous foil animation. Numeric indices fit their reserved corner width at
+enlarged text; names/ability details retain scoped body typography.
+
+Current-role players are full-size on the board; other-role cards are omitted
+from that round's choices. Used/reserved football cards use muted labels through
+`PremiumCardShell(calmDisabled: true, showSelectionMarker: false)`, preserving
+other sports' existing shell behavior. Fronts/backs use opposing top-left and
+bottom-right cuts. `CyberPanel(cornerCuts: true)` applies the same path to clipping
+and border painting without migrating unrelated legacy panels.
+`PitchContributionStrip` is shared by details and recap; `PitchMasteryPanel` is
+shared by the lobby and full time. `PitchVectorArt` provides token tinting and
+missing-art fallbacks. Backgrounds/artwork live in `assets/pitch_duel/`; text and
+frames remain Flutter-rendered. Game text uses Orbitron display / Exo 2 body.
+The fixed-height `PlayerLevelBadge` fits its numeric stack within the header at
+enlarged text, including expanded XP detail, avoiding clipped lobby chrome.
+
 ## Rewards and Progression
 
 Progression uses explicit meters, level/rank chips, and before/after movement.
@@ -132,7 +209,7 @@ widget must not become the authoritative store for durable state.
 
 ## Planned Scope and Current Limitations
 
-- **BUILT:** Tokenized dark palette, Orbitron/Onest typography, chamfer language,
+- **BUILT:** Tokenized dark palette, scoped Orbitron/Exo 2/Onest typography, chamfer language,
   cyber scaffolds/panels/progress/CTA/tab components, and established HUD patterns.
 - **PLANNED:** Migrate the shared standard panel/card primitive from two bottom cuts to
   the top-left + bottom-right silhouette, including every painter that traces its border.
@@ -144,6 +221,9 @@ widget must not become the authoritative store for durable state.
 - [`lib/config/theme.dart`](../../../lib/config/theme.dart)
 - [`lib/widgets/game_scaffold.dart`](../../../lib/widgets/game_scaffold.dart)
 - [`lib/widgets/cyber/cyber_widgets.dart`](../../../lib/widgets/cyber/cyber_widgets.dart)
+- [`lib/widgets/cyber/cyber_game_launch_card.dart`](../../../lib/widgets/cyber/cyber_game_launch_card.dart)
+- [`lib/widgets/cyber/game_launch_art.dart`](../../../lib/widgets/cyber/game_launch_art.dart)
+- [`lib/screens/predictions/prediction_home_screen.dart`](../../../lib/screens/predictions/prediction_home_screen.dart)
 - [`lib/widgets/cyber/cyber_cta_button.dart`](../../../lib/widgets/cyber/cyber_cta_button.dart)
 - [`lib/widgets/cyber/cyber_segmented_tabs.dart`](../../../lib/widgets/cyber/cyber_segmented_tabs.dart)
 - [`lib/widgets/cyber/cyber_chart.dart`](../../../lib/widgets/cyber/cyber_chart.dart)
@@ -157,3 +237,8 @@ Component behavior is exercised by screen/widget tests linked from the owning
 feature pages; the shared chart system has its own
 [`test/cyber_chart_test.dart`](../../../test/cyber_chart_test.dart). Visual changes also require running-app review under the project
 instructions; documentation-only edits do not.
+Game-card routing/layout is covered by `game_hero_cta_test.dart`,
+`final_over_games_tab_test.dart`, and `trending_hub_test.dart`. The shared
+`cyber_game_launch_card_test.dart` covers motion shutdown/resume, input routes,
+and all schematic variants with enlarged text; `tool/game_cards_preview.dart`
+provides an isolated production-widget running-app preview.

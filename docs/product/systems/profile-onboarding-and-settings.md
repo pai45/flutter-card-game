@@ -1,7 +1,7 @@
 # Profile, Onboarding, Identity, and Settings
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-09
+> **Last verified:** 2026-10-04
 > **Scope:** First-run identity, welcome reward, Profile hub, followed competitions/teams, cosmetics, and settings
 
 ## Product Purpose
@@ -38,12 +38,17 @@ and never saved or transmitted. Legal links show themed unavailability dialogs;
 they do not represent published policies or record acceptance.
 
 1. Choose avatar and profile banner.
-2. Select a primary sport/module.
+2. Pick one **home sport** (single-select board, `PICK YOUR HOME SPORT`),
+   then that sport's clubs page. The home sport is the only sport open in the
+   app until more are unlocked for 50 Oz each; see
+   [Sport and Game Unlocks](sport-and-game-unlocks.md).
 3. Optionally follow leagues/competitions and favorite teams.
 4. Confirm identity in the profile-locked reveal.
 5. Receive the one-time **1,000 Oz Coin** welcome bonus and animation.
 6. Use Profile to inspect/edit identity and open progression/social/history/help.
-7. Use Settings to log out/reset the onboarding entry state when intended.
+7. Use Settings to open **PROFILE SELECT**. Choose **FIRST-TIME PLAYER** for
+   its isolated, blank career and onboarding flow, or **RETURNING PLAYER** to
+   resume the separately saved career.
 
 ## Mechanics and Rules
 
@@ -56,6 +61,11 @@ persists the canonical competition identity immediately and deliberately leaves
 the favourite club unset. Profile's existing Following band represents that
 state with a league-only **NO CLUB** chip. Unfollowing from the hub removes an
 existing favourite only after the shared confirmation dialog.
+
+The compact Following band gives the selected club the hierarchy: its badge
+keeps the club and league codes, while the home sport is an icon-only marker
+rather than repeating a sport/module label. The edit control stays on the same
+row for a quick club swap.
 
 The favorite is not decoration. It orders and marks the Predictions match feed:
 on any day a followed club plays, that fixture is pinned above the rest of the
@@ -71,9 +81,70 @@ yellow, Tennis green, and Motorsport red. Inactive icons remain recognizable at
 reduced intensity; the selected sport uses full color with the only selector
 glow. Changing this presentation does not alter the persisted primary sport.
 
-The current Profile settings sheet contains the logout action. Tennis owns a
-separate, mode-specific accessibility/control/audio settings surface documented
-on its game/design pages.
+All onboarding choice cards share one calm, angular selection surface with the
+standard top-left / bottom-right chamfer. Card content is centered, while only
+the current selection receives the accent border, slight lift, and restrained
+glow. On the clubs step, the title stands alone without a duplicate explanatory
+subheading; the dock keeps the neutral step instruction, and every club name is
+white so team identity stays in the crest rather than reducing label contrast.
+Existing dealt-card entrances are retained, and each identity or club choice now
+answers selection with haptic/audio feedback.
+
+The current Profile settings sheet contains the logout/profile-select action.
+After confirming **CONTINUE >**, the settings sheet closes and opens a two-route
+local switchboard:
+
+- **FIRST-TIME PLAYER** is a separate blank save slot on first use. It begins
+  at level 1, zero XP, no streak, no coins, no cards, no unlocks, and incomplete
+  onboarding; once played, its card becomes **CONTINUE ROOKIE PROFILE** and
+  restores that slot's saved career.
+- **RETURNING PLAYER** restores that slot's own level, streak, wallet, cards,
+  predictions, picks, game history, unlocks, and identity exactly as it was
+  when the player switched away.
+
+On the first launch containing returning-preset v1, **RETURNING PLAYER** is
+replaced once with the playable `chiefpai45` career: level 15, a live seven-day
+streak, all sports/games open, and populated progression, activity, decks, and
+collections. Its selector card reads `chiefpai45 // LV 15 // 7 DAY STREAK`.
+The first-time slot remains untouched. The preset is ready immediately without
+replaying onboarding, pack, achievement, reward, or unlock moments.
+Its Guess the Player history uses playable catalog puzzles for football,
+cricket, and basketball. Older preset archives with placeholder puzzle IDs are
+repaired on game load without resetting completed results or rewards. Their
+settlement IDs are seeded or recovered with the archive so review cannot award
+the preset XP again.
+
+The switchboard always marks the slot the player is currently in with an
+**ACTIVE** badge, and that card's CTA reads **STAY IN THIS PROFILE** — it simply
+backs out of the switchboard and returns to the app, so confirming logout is
+never a one-way door. The *other* card is always tappable and is the one that
+carries the screen's single glow: **CONTINUE CAREER** / **CONTINUE ROOKIE
+PROFILE** when that slot is already onboarded, or **START NEW CAREER** /
+**START FRESH** when it is blank, which is how a player logs out into a brand
+new career. A blank slot is therefore never presented as an unavailable dead
+end; a solo player whose only career lives in the first-time slot can still log
+out into a second one.
+
+Choosing a slot swaps the outgoing live career with the one inactive snapshot,
+then rebuilds the app state before gameplay resumes; no state leaks across the
+two careers. The active career is not duplicated inside the slot blob, avoiding
+the three-save quota spike that previously made **CONTINUE CAREER** fail on web.
+A switch is single-flight, and secure-store deletes/writes run serially so the
+web encryption backend never receives a racing mutation burst. If any clear,
+restore, slot, or activation-marker step fails, the outgoing live career and
+inactive snapshot are restored before the selector offers retry.
+The incoming session's shell owns the unlock-reveal routes (PLAY / open sport /
+quest hub) from its first frame; the outgoing shell releases them only if no
+successor has claimed them, so reveal CTAs keep working after a switch. Unlock
+reveals are also held while the switchboard is open, so a queued moment never
+plays over PROFILE SELECT.
+On web, the secure-storage encryption key is created once before the app
+starts, so first-boot saves can no longer be written under competing keys. A
+browser that already holds an unreadable save entry has it discarded when the
+switchboard reads storage (the profile slots are rebuilt from the live career),
+instead of the logout failing.
+Tennis owns a separate, mode-specific accessibility/control/audio settings
+surface documented on its game/design pages.
 
 ## Rewards and Progression
 
@@ -97,9 +168,27 @@ history/collection, and settings/logout states are represented.
 
 ## Persistence
 
-Avatar ID, banner ID, primary sport, followed league IDs, favorite team map,
-onboarding-complete flag, and onboarding-reward status persist through
-`SecureGameStorage`. Identity is local and is not a remote account profile.
+The active profile occupies the normal game-owned `SecureGameStorage` keys and
+SharedPreferences entries (including the wallet); the slot blob stores only the
+inactive profile. Switching exchanges those two representations. Avatar ID,
+banner ID, primary sport, followed league IDs, favorite team map, onboarding
+state, progression, streak, economy, game modes, and histories therefore
+persist per profile without keeping a redundant third full save. The selector
+is device-local, not authentication or cloud account switching.
+
+Returning-preset installation is an awaited startup bootstrap. A version marker
+outside the profile-managed key namespace is written only after the returning
+snapshot—and the live state when RETURNING is active—have both succeeded. The
+v1 install deliberately replaces an older returning career once; after that,
+switches and relaunches preserve player changes. Future schema migrations must
+use their own non-destructive migration path rather than replaying preset v1.
+If profile bootstrapping fails (for example because browser storage is full),
+startup reports the error and still mounts the app using the existing live
+career. A failed optional reward-status marker write also leaves the completed
+profile's onboarding gate open. The preset can retry on a later launch when
+storage becomes available; no automatic profile deletion is performed.
+The stored display name is exposed through `GameState` and the read-only local
+profile summary, with `PLAYER ONE` retained for legacy saves that have no name.
 
 ## Planned Scope and Current Limitations
 
@@ -120,6 +209,7 @@ onboarding-complete flag, and onboarding-reward status persist through
 - [`lib/models/avatar_option.dart`](../../../lib/models/avatar_option.dart)
 - [`lib/models/profile_banner_option.dart`](../../../lib/models/profile_banner_option.dart)
 - [`lib/services/secure_storage_service.dart`](../../../lib/services/secure_storage_service.dart)
+- [`lib/services/returning_profile_preset.dart`](../../../lib/services/returning_profile_preset.dart)
 - [`lib/blocs/game/game_bloc.dart`](../../../lib/blocs/game/game_bloc.dart)
 
 ## Tests
@@ -129,3 +219,6 @@ onboarding-complete flag, and onboarding-reward status persist through
 - [`test/league_follow_test.dart`](../../../test/league_follow_test.dart)
 - [`test/onboarding_reward_storage_test.dart`](../../../test/onboarding_reward_storage_test.dart)
 - [`test/onboarding_coin_reward_animation_test.dart`](../../../test/onboarding_coin_reward_animation_test.dart)
+- [`test/player_profile_selector_screen_test.dart`](../../../test/player_profile_selector_screen_test.dart)
+- [`test/local_profile_storage_test.dart`](../../../test/local_profile_storage_test.dart)
+- [`test/returning_profile_preset_test.dart`](../../../test/returning_profile_preset_test.dart)

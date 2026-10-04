@@ -30,6 +30,84 @@ void main() {
     await cubit.close();
   });
 
+  test(
+    'pause cancels lights; interrupted starts restart and racing retains its setup',
+    () {
+      fakeAsync((async) {
+        final cubit = makeCubit();
+        cubit.load();
+        async.flushMicrotasks();
+        cubit.acknowledgeCoach();
+        cubit.buildRace(6);
+        final setup = cubit.state.setup;
+        cubit.beginLights(reducedMotion: false);
+        async.elapse(const Duration(seconds: 2));
+        cubit.pauseRace();
+        async.elapse(const Duration(seconds: 20));
+        expect(cubit.state.phase, GrandPrixPhase.paused);
+        expect(cubit.state.lightsOut, isFalse);
+        cubit.resumeRace(reducedMotion: true);
+        expect(cubit.state.phase, GrandPrixPhase.racing);
+        expect(cubit.state.launchGrade, LaunchGrade.good);
+        cubit.pauseRace();
+        cubit.onRaceFinished(
+          const PlayerRaceOutcome(position: 1, lapTimeMs: 90000),
+        );
+        expect(cubit.state.stats.races, 0);
+        cubit.resumeRace(reducedMotion: false);
+        expect(identical(cubit.state.setup, setup), isTrue);
+        expect(cubit.state.phase, GrandPrixPhase.racing);
+        cubit.close();
+      });
+    },
+  );
+
+  test(
+    'mastery reveals once, does not add XP, and retirement earns no stamps',
+    () async {
+      final cubit = makeCubit();
+      await cubit.load();
+      for (var attempt = 0; attempt < 2; attempt++) {
+        cubit.buildRace(4);
+        cubit.beginLights(reducedMotion: true);
+        await cubit.onRaceFinished(
+          const PlayerRaceOutcome(
+            position: 3,
+            lapTimeMs: 90000,
+            lapTimesMs: [90000],
+            cleanOvertakes: 3,
+            cleanRace: true,
+          ),
+        );
+        expect(cubit.state.result!.newMastery.length, attempt == 0 ? 3 : 0);
+        expect(cubit.state.result!.xp, attempt == 0 ? 21 : 18);
+        // Duplicate finish callbacks cannot settle twice.
+        await cubit.onRaceFinished(
+          const PlayerRaceOutcome(position: 1, lapTimeMs: 80000),
+        );
+        expect(cubit.state.stats.races, attempt + 1);
+      }
+      cubit.selectCircuit(GrandPrixCircuitId.desertMile);
+      cubit.buildRace(4);
+      cubit.beginLights(reducedMotion: true);
+      await cubit.onRaceFinished(
+        const PlayerRaceOutcome(
+          position: 20,
+          lapTimeMs: 0,
+          dnf: true,
+          cleanOvertakes: 3,
+          cleanRace: true,
+        ),
+      );
+      expect(cubit.state.result!.newMastery, isEmpty);
+      expect(
+        cubit.state.stats.masteryFor(GrandPrixCircuitId.desertMile),
+        isEmpty,
+      );
+      await cubit.close();
+    },
+  );
+
   test('lobby selections persist onto stats', () async {
     final cubit = makeCubit();
     await cubit.load();
@@ -63,34 +141,36 @@ void main() {
     }
   });
 
-  test('lights sequence: five lamps, random hold, tap after out grades launch',
-      () {
-    fakeAsync((async) {
-      final cubit = makeCubit();
-      cubit.load();
-      async.flushMicrotasks();
-      cubit.buildRace(4);
-      cubit.beginLights(reducedMotion: false);
-      expect(cubit.state.phase, GrandPrixPhase.lights);
+  test(
+    'lights sequence: five lamps, random hold, tap after out grades launch',
+    () {
+      fakeAsync((async) {
+        final cubit = makeCubit();
+        cubit.load();
+        async.flushMicrotasks();
+        cubit.buildRace(4);
+        cubit.beginLights(reducedMotion: false);
+        expect(cubit.state.phase, GrandPrixPhase.lights);
 
-      for (var lamp = 1; lamp <= 5; lamp++) {
-        async.elapse(const Duration(milliseconds: 1000));
-        expect(cubit.state.lightsOn, lamp);
-        expect(cubit.state.lightsOut, isFalse);
-      }
-      // Hold is 200–1500ms; after 1500ms the lights must be out.
-      async.elapse(const Duration(milliseconds: 1500));
-      expect(cubit.state.lightsOut, isTrue);
-      expect(cubit.state.lightsOn, 0);
-      expect(cubit.state.phase, GrandPrixPhase.lights);
+        for (var lamp = 1; lamp <= 5; lamp++) {
+          async.elapse(const Duration(milliseconds: 1000));
+          expect(cubit.state.lightsOn, lamp);
+          expect(cubit.state.lightsOut, isFalse);
+        }
+        // Hold is 200–1500ms; after 1500ms the lights must be out.
+        async.elapse(const Duration(milliseconds: 1500));
+        expect(cubit.state.lightsOut, isTrue);
+        expect(cubit.state.lightsOn, 0);
+        expect(cubit.state.phase, GrandPrixPhase.lights);
 
-      // Tap: inside fakeAsync no wall-clock time passes → perfect reaction.
-      cubit.registerThrottleTap();
-      expect(cubit.state.phase, GrandPrixPhase.racing);
-      expect(cubit.state.launchGrade, LaunchGrade.perfect);
-      cubit.close();
-    });
-  });
+        // Tap: inside fakeAsync no wall-clock time passes → perfect reaction.
+        cubit.registerThrottleTap();
+        expect(cubit.state.phase, GrandPrixPhase.racing);
+        expect(cubit.state.launchGrade, LaunchGrade.perfect);
+        cubit.close();
+      });
+    },
+  );
 
   test('throttle before lights-out is a jump start', () {
     fakeAsync((async) {
@@ -127,16 +207,18 @@ void main() {
     });
   });
 
-  test('reduced motion skips the reaction test with a fixed average launch',
-      () async {
-    final cubit = makeCubit();
-    await cubit.load();
-    cubit.buildRace(4);
-    cubit.beginLights(reducedMotion: true);
-    expect(cubit.state.phase, GrandPrixPhase.racing);
-    expect(cubit.state.launchGrade, LaunchGrade.good);
-    await cubit.close();
-  });
+  test(
+    'reduced motion skips the reaction test with a fixed average launch',
+    () async {
+      final cubit = makeCubit();
+      await cubit.load();
+      cubit.buildRace(4);
+      cubit.beginLights(reducedMotion: true);
+      expect(cubit.state.phase, GrandPrixPhase.racing);
+      expect(cubit.state.launchGrade, LaunchGrade.good);
+      await cubit.close();
+    },
+  );
 
   test('finish settles result, XP, PB, and persists stats', () async {
     final cubit = makeCubit();
@@ -165,10 +247,7 @@ void main() {
     expect(cubit.state.stats.races, 1);
     expect(cubit.state.stats.podiums, 1);
     expect(cubit.state.stats.bestPosition, 3);
-    expect(
-      cubit.state.stats.bestLapMs(GrandPrixCircuitId.emeraldPark),
-      91500,
-    );
+    expect(cubit.state.stats.bestLapMs(GrandPrixCircuitId.emeraldPark), 91500);
 
     cubit.showResult();
     expect(cubit.state.phase, GrandPrixPhase.result);

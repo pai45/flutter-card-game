@@ -8,9 +8,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/game/game_bloc.dart';
 import '../../../blocs/game/game_event.dart';
 import '../../../blocs/game/game_state.dart';
-import '../../../config/enums.dart';
 import '../../../config/theme.dart';
 import '../../../models/cards.dart';
+import '../../../models/pitch_duel_rules.dart';
 import '../../../utils/label_helpers.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_cta_button.dart';
@@ -39,7 +39,7 @@ class CoinTossPhase extends StatefulWidget {
 
 class _CoinTossPhaseState extends State<CoinTossPhase>
     with TickerProviderStateMixin {
-  static const _cpuDecisionDuration = Duration(milliseconds: 3600);
+  static const _cpuDecisionDuration = Duration(milliseconds: 700);
 
   final _flipKey = GlobalKey();
   late final AnimationController _cpuDecision;
@@ -84,7 +84,7 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
       _cpuStarted = true;
       if (!reduce) playSound(SoundEffect.riser);
       _cpuDecision.duration = reduce
-          ? const Duration(milliseconds: 900)
+          ? const Duration(milliseconds: 180)
           : _cpuDecisionDuration;
       _cpuDecision.forward().then((_) => _completeCpuDecision());
     }
@@ -95,7 +95,7 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
     setState(() => _cpuFinalized = true);
     playSound(SoundEffect.commit);
     HapticFeedback.mediumImpact();
-    await Future<void>.delayed(const Duration(milliseconds: 650));
+    await Future<void>.delayed(const Duration(milliseconds: 200));
     if (!mounted || _advanced) return;
     _advanced = true;
     context.read<GameBloc>().add(TossContinued());
@@ -145,7 +145,7 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
         Text(
           'CHOOSE YOUR ROLE FOR ROUND $round',
           textAlign: TextAlign.center,
-          style: Cyber.body(12, color: Cyber.muted),
+          style: Cyber.bodyFor(context, 12, color: Cyber.muted),
         ),
         const SizedBox(height: 16),
         Row(
@@ -195,7 +195,7 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
                   : '$opponent IS DECIDING TO ATTACK OR DEFEND',
               key: ValueKey(_cpuFinalized),
               textAlign: TextAlign.center,
-              style: Cyber.body(12, color: Cyber.muted),
+              style: Cyber.bodyFor(context, 12, color: Cyber.muted),
             ),
           ),
           const SizedBox(height: 16),
@@ -461,26 +461,28 @@ class ScenarioBriefingSectionState extends State<ScenarioBriefingSection>
     return LayoutBuilder(
       builder: (context, constraints) {
         final maxWidth = min(constraints.maxWidth, 430.0);
-        return Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxWidth),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(12, 14, 12, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ScenarioBriefingCard(
-                    scenario: widget.scenario,
-                    attacking: widget.attacking,
-                    entrance: _entrance,
-                  ),
-                  const SizedBox(height: 24),
-                  CountdownBlock(
-                    seconds: _seconds,
-                    scanner: _scanner,
-                    accent: accent,
-                  ),
-                ],
+        return SingleChildScrollView(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(12, 14, 12, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ScenarioBriefingCard(
+                      scenario: widget.scenario,
+                      attacking: widget.attacking,
+                      entrance: _entrance,
+                    ),
+                    const SizedBox(height: 24),
+                    CountdownBlock(
+                      seconds: _seconds,
+                      scanner: _scanner,
+                      accent: accent,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -567,7 +569,12 @@ class ScenarioBriefingCard extends StatelessWidget {
               opacity: iconT,
               child: Transform.scale(
                 scale: 0.6 + 0.4 * iconT,
-                child: _RadarTargetIcon(accent: accent),
+                child: PitchVectorArt(
+                  asset: pitchScenarioAsset(scenario),
+                  color: accent,
+                  width: 56,
+                  height: 42,
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -594,7 +601,8 @@ class ScenarioBriefingCard extends StatelessWidget {
                 child: Text(
                   scenario.description,
                   textAlign: TextAlign.center,
-                  style: Cyber.body(
+                  style: Cyber.bodyFor(
+                    context,
                     13,
                     color: Colors.white.withValues(alpha: 0.82),
                     weight: FontWeight.w700,
@@ -637,7 +645,21 @@ class ScenarioBriefingCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
+            Text(
+              'SCENARIO MATCH +6',
+              style: Cyber.label(10, color: Cyber.cyan),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              pitchScenarioActionNames(
+                scenario,
+                attacking: attacking,
+              ).join(' • '),
+              textAlign: TextAlign.center,
+              style: Cyber.bodyFor(context, 12, color: AppTheme.whiteColor),
+            ),
+            const SizedBox(height: 16),
             Opacity(
               opacity: stampT,
               child: Transform.scale(
@@ -800,20 +822,6 @@ class BonusChip extends StatelessWidget {
   }
 }
 
-class _RadarTargetIcon extends StatelessWidget {
-  const _RadarTargetIcon({required this.accent});
-
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(46, 46),
-      painter: _RadarTargetPainter(accent),
-    );
-  }
-}
-
 class _ScenarioPanelPainter extends CustomPainter {
   const _ScenarioPanelPainter(this.accent);
 
@@ -886,46 +894,6 @@ class _ScenarioPanelPainter extends CustomPainter {
       oldDelegate.accent != accent;
 }
 
-class _RadarTargetPainter extends CustomPainter {
-  const _RadarTargetPainter(this.accent);
-
-  final Color accent;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = min(size.width, size.height) / 2;
-    final line = Paint()
-      ..color = accent
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    final faint = Paint()
-      ..color = accent.withValues(alpha: 0.24)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-
-    canvas.drawCircle(center, radius - 2, line);
-    canvas.drawCircle(center, radius * 0.42, line);
-    canvas.drawCircle(center, radius * 0.18, Paint()..color = accent);
-    canvas.drawLine(Offset(center.dx, 4), Offset(center.dx, 10), faint);
-    canvas.drawLine(
-      Offset(center.dx, size.height - 4),
-      Offset(center.dx, size.height - 10),
-      faint,
-    );
-    canvas.drawLine(Offset(4, center.dy), Offset(10, center.dy), faint);
-    canvas.drawLine(
-      Offset(size.width - 4, center.dy),
-      Offset(size.width - 10, center.dy),
-      faint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_RadarTargetPainter oldDelegate) =>
-      oldDelegate.accent != accent;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Match-phase entrance animators
 // ─────────────────────────────────────────────────────────────────────────────
@@ -958,422 +926,396 @@ class BottomLockButton extends StatelessWidget {
       accent: accent,
       // The round's decisive action — a meatier "commit" cue, not a plain tap.
       tapSound: SoundEffect.commit,
-      height: 70,
+      height:
+          70 +
+          (MediaQuery.textScalerOf(context).scale(14) - 14).clamp(0, 14) * 5,
       onTap: onPressed,
     );
   }
 }
 
-/// The player's honest success probability for the current selection: goal
-/// chance when attacking, save/stop chance when defending. Uses the same
-/// thresholds the engine resolves with ([goalChanceForDiff] /
-/// [resolveRoundDeterministic]).
-double playerSuccessChance(GameState state, double basePower) {
-  const meanSwing = 10.0; // expected value of the hidden 0..20 swing
-  final playerExpected = basePower + meanSwing;
-  final oppExpected = _opponentPowerEstimate(state) + meanSwing;
-  if (state.playerAttacking) {
-    return goalChanceForDiff(playerExpected - oppExpected);
-  }
-  return 1 - goalChanceForDiff(oppExpected - playerExpected);
-}
-
-/// A scouting estimate of the opponent's power this round — the averages of
-/// their relevant player and action pools plus the scenario bonus. No specific
-/// opponent card is revealed.
-double _opponentPowerEstimate(GameState state) {
+/// A scouting range over all remaining legal pairs, never the committed pick.
+PitchPowerRange? playerRivalRange(GameState state) {
   final scenario = state.currentScenario;
-  final players = state.playerAttacking
-      ? state.opponentDefenders
-      : state.opponentAttackers;
-  final live = players
-      .where((c) => !state.opponentRedCarded.contains(c.id))
-      .toList();
-  final ratingPool = live.isEmpty ? players : live;
-  final relevantCategory = state.playerAttacking
-      ? ActionCategory.defense
-      : ActionCategory.attack;
-  final relevant = state.opponentActions
-      .where(
-        (a) =>
-            a.category == relevantCategory ||
-            a.category == ActionCategory.special,
-      )
-      .toList();
-  final actionPool = relevant.isEmpty ? state.opponentActions : relevant;
-  final avgRating = ratingPool.isEmpty
-      ? 75.0
-      : ratingPool.map((c) => c.rating).reduce((a, b) => a + b) /
-            ratingPool.length;
-  final avgPower = actionPool.isEmpty
-      ? 10.0
-      : actionPool.map((a) => a.power).reduce((a, b) => a + b) /
-            actionPool.length;
-  final bonus = state.playerAttacking
-      ? scenario?.defenseBonus ?? 0
-      : scenario?.attackBonus ?? 0;
-  return avgRating + avgPower + bonus;
-}
-
-/// Opens the Shot Meter — a focused timing strike that sets the player's power
-/// swing (0..20). Returns the surge, or null if dismissed without striking.
-Future<double?> showShotMeter(
-  BuildContext context, {
-  required double base,
-  required Color accent,
-  required String chanceLabel,
-  required double successChance,
-  required bool isRisky,
-}) {
-  return showGeneralDialog<double>(
-    context: context,
-    barrierDismissible: false,
-    barrierLabel: 'Shot Meter',
-    barrierColor: Colors.black.withValues(alpha: 0.74),
-    transitionDuration: const Duration(milliseconds: 220),
-    pageBuilder: (_, _, _) => ShotMeterOverlay(
-      base: base,
-      accent: accent,
-      chanceLabel: chanceLabel,
-      successChance: successChance,
-      isRisky: isRisky,
-    ),
-    transitionBuilder: (context, anim, _, child) => FadeTransition(
-      opacity: CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
-      child: child,
-    ),
+  if (scenario == null) return null;
+  return pitchRivalRange(
+    players: state.playerAttacking
+        ? state.opponentDefenders
+        : state.opponentAttackers,
+    actions: state.opponentActions,
+    usedPlayers: [...state.opponentUsedPlayerCards, ...state.opponentRedCarded],
+    usedActions: state.opponentUsedActionCards,
+    scenario: scenario,
+    round: state.currentRound,
+    attacking: !state.playerAttacking,
   );
 }
 
-/// The transient strike overlay. All the new round-phase richness (odds, range,
-/// the timed strike and its feedback) lives here so the resting screen stays
-/// clean. Tapping anywhere strikes.
+Future<ShotTimingResult?> showShotMeter(
+  BuildContext context, {
+  required PowerBreakdown power,
+  required Color accent,
+  required PitchPowerRange? rivalRange,
+  required bool attacking,
+}) => showGeneralDialog<ShotTimingResult>(
+  context: context,
+  barrierDismissible: false,
+  barrierLabel: 'Shot Meter',
+  barrierColor: Cyber.bg.withValues(alpha: 0.82),
+  transitionDuration: const Duration(milliseconds: 180),
+  pageBuilder: (_, _, _) => ShotMeterOverlay(
+    power: power,
+    accent: accent,
+    rivalRange: rivalRange,
+    attacking: attacking,
+  ),
+  transitionBuilder: (_, animation, _, child) =>
+      FadeTransition(opacity: animation, child: child),
+);
+
 class ShotMeterOverlay extends StatefulWidget {
   const ShotMeterOverlay({
-    required this.base,
+    required this.power,
     required this.accent,
-    required this.chanceLabel,
-    required this.successChance,
-    required this.isRisky,
+    required this.rivalRange,
+    required this.attacking,
     super.key,
   });
-
-  final double base;
+  final PowerBreakdown power;
   final Color accent;
-  final String chanceLabel;
-  final double successChance; // 0..1
-  final bool isRisky;
-
+  final PitchPowerRange? rivalRange;
+  final bool attacking;
   @override
   State<ShotMeterOverlay> createState() => _ShotMeterOverlayState();
 }
 
 class _ShotMeterOverlayState extends State<ShotMeterOverlay>
     with SingleTickerProviderStateMixin {
-  static const double _sweetCenter = 0.72;
-  static const double _halfZone = 0.07;
-
   final _meterKey = GlobalKey();
-
-  List<SpotlightStep> get _spotlightSteps => [
-    SpotlightStep(
-      targetKey: _meterKey,
-      title: 'Shot Meter',
-      body: 'Tap in the sweet zone for up to +20 power.',
-      icon: Icons.speed,
-      accent: widget.accent,
-      padding: 10,
-    ),
-  ];
-
-  late final AnimationController _sweep;
-  bool _struck = false;
-  double _frozenAt = 0;
-  String _tier = '';
-  int _surge = 0;
-  int _lastTickBucket = -1;
+  late final AnimationController _sweep = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+  Timer? _startTimer;
+  Timer? _resultTimer;
+  ShotTimingResult? _result;
+  bool _booted = false;
+  bool _ready = false;
+  bool _tutorialPending = false;
 
   @override
-  void initState() {
-    super.initState();
-    _sweep =
-        AnimationController(
-            vsync: this,
-            duration: const Duration(milliseconds: 900),
-          )
-          ..addListener(_onSweep)
-          ..repeat(reverse: true);
-    // Build tension the moment the meter appears.
-    playSound(SoundEffect.riser);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_booted) return;
+    _booted = true;
+    try {
+      _tutorialPending = !context.read<GameBloc>().state.tutorialSeen.contains(
+        'shot-meter',
+      );
+    } catch (_) {
+      _tutorialPending = false;
+    }
+    if (!_tutorialPending) _startSweep();
   }
 
-  void _onSweep() {
-    if (_struck) return;
-    // Escalating tick as the marker closes on the sweet zone.
-    final near = (1 - (_sweep.value - _sweetCenter).abs() / 0.5).clamp(
-      0.0,
-      1.0,
-    );
-    if (near > 0.55) {
-      final bucket = (near * 6).floor();
-      if (bucket != _lastTickBucket) {
-        _lastTickBucket = bucket;
-        playSound(SoundEffect.countdownTick);
-        HapticFeedback.selectionClick();
-      }
+  void _startSweep() {
+    if (_ready || _startTimer != null) return;
+    _startTimer = Timer(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      setState(() {
+        _ready = true;
+        _tutorialPending = false;
+      });
+      _sweep.repeat(reverse: true);
+      playSound(SoundEffect.riser);
+    });
+  }
+
+  void _strike() {
+    if (!_ready || _result != null) return;
+    final result = ShotTimingResult.at(_sweep.value);
+    _sweep.stop();
+    setState(() => _result = result);
+    if (result.quality == ShotTimingQuality.perfect) {
+      HapticFeedback.heavyImpact();
+      playSound(SoundEffect.special);
+    } else if (result.quality == ShotTimingQuality.great) {
+      HapticFeedback.mediumImpact();
+      playSound(SoundEffect.commit);
+    } else if (result.bonus > 0) {
+      HapticFeedback.lightImpact();
+      playSound(SoundEffect.commit);
+    } else {
+      HapticFeedback.selectionClick();
+      playSound(SoundEffect.miss);
     }
+    _resultTimer = Timer(const Duration(milliseconds: 600), () {
+      if (mounted) Navigator.of(context).pop(result);
+    });
   }
 
   @override
   void dispose() {
+    _startTimer?.cancel();
+    _resultTimer?.cancel();
     _sweep.dispose();
     super.dispose();
   }
 
-  void _strike() {
-    if (_struck) return;
-    final pos = _sweep.value;
-    _sweep.stop();
-    final d = (pos - _sweetCenter).abs();
-    final quality = (1.0 - d / 0.5).clamp(0.0, 1.0);
-    final surge = (20.0 * quality).round();
-    final String tier;
-    if (d <= 0.045) {
-      tier = 'PERFECT';
-    } else if (d <= _halfZone) {
-      tier = 'GREAT';
-    } else if (quality >= 0.45) {
-      tier = 'GOOD';
-    } else {
-      tier = pos < _sweetCenter ? 'EARLY' : 'LATE';
-    }
-    if (tier == 'PERFECT') {
-      HapticFeedback.heavyImpact();
-      playSound(SoundEffect.special);
-    } else {
-      HapticFeedback.mediumImpact();
-    }
-    setState(() {
-      _struck = true;
-      _frozenAt = pos;
-      _tier = tier;
-      _surge = surge;
-    });
-    // Hold the result briefly, then resolve into the cinematic round result.
-    Future.delayed(const Duration(milliseconds: 740), () {
-      if (mounted) Navigator.of(context).pop(surge.toDouble());
-    });
-  }
-
-  Color get _resultColor => switch (_tier) {
-    'PERFECT' || 'GREAT' => Cyber.success,
-    'GOOD' => Cyber.amber,
-    _ => Cyber.danger,
-  };
-
   @override
   Widget build(BuildContext context) {
-    final pct = (widget.successChance * 100).round();
-    final minP = widget.base.round();
-    final maxP = (widget.base + 20).round();
-    return Stack(
-      children: [
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: _strike,
-          child: SafeArea(
-            child: Align(
-              alignment: const Alignment(0, 0.55),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: AngularBorderContainer(
-                  accent: widget.accent,
-                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.end,
+    final rival = widget.rivalRange;
+    final result = _result;
+    return Material(
+      color: Cyber.bg.withValues(alpha: 0),
+      child: Stack(
+        children: [
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _strike,
+            child: SafeArea(
+              child: Align(
+                alignment: const Alignment(0, 0.3),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 460),
+                    child: CyberPanel(
+                      cornerCuts: true,
+                      accent: widget.accent,
+                      glow: true,
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.chanceLabel,
-                                style: Cyber.label(
-                                  10,
-                                  color: widget.accent,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text('$pct%', style: Cyber.display(28)),
-                            ],
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                'POWER',
-                                style: Cyber.label(
-                                  10,
-                                  color: Cyber.muted,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '$minP–$maxP',
-                                style: Cyber.display(22, color: Cyber.gold),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 18),
-                      SpotlightTarget(
-                        spotlightKey: _meterKey,
-                        child: SizedBox(
-                          height: 30,
-                          width: double.infinity,
-                          child: AnimatedBuilder(
-                            animation: _sweep,
-                            builder: (context, _) => CustomPaint(
-                              painter: _ShotMeterPainter(
-                                progress: _struck ? _frozenAt : _sweep.value,
-                                sweetCenter: _sweetCenter,
-                                halfZone: _halfZone,
-                              ),
-                              child: const SizedBox.expand(),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      if (_struck)
-                        Text(
-                          _tier == 'EARLY' || _tier == 'LATE'
-                              ? '$_tier   +$_surge'
-                              : '$_tier!   +$_surge POWER',
-                          style: Cyber.display(20, color: _resultColor),
-                        )
-                      else ...[
-                        Text(
-                          '— TAP TO STRIKE —',
-                          style: Cyber.label(
-                            13,
-                            color: widget.accent,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                        if (widget.isRisky) ...[
-                          const SizedBox(height: 8),
                           Text(
-                            'RISKY · HIGH POWER',
-                            style: Cyber.label(
-                              9,
-                              color: Cyber.danger,
-                              letterSpacing: 1.5,
+                            widget.attacking
+                                ? 'TIME YOUR STRIKE'
+                                : 'TIME YOUR BLOCK',
+                            style: Cyber.display(
+                              18,
+                              color: AppTheme.whiteColor,
                             ),
                           ),
+                          const SizedBox(height: 16),
+                          Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            spacing: 16,
+                            runSpacing: 10,
+                            children: [
+                              _TimingStat(
+                                label: 'CARD POWER',
+                                value: '${widget.power.base}',
+                                color: widget.accent,
+                              ),
+                              _TimingStat(
+                                label: 'TIMING',
+                                value: '+0–8',
+                                color: Cyber.cyan,
+                              ),
+                              _TimingStat(
+                                label: 'RIVAL POWER RANGE',
+                                value: rival == null
+                                    ? '—'
+                                    : '${rival.min}–${rival.max}',
+                                color: Cyber.muted,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          Center(
+                            child: Text(
+                              'PERFECT +${ShotTimingQuality.perfect.bonus}',
+                              style: Cyber.label(10, color: Cyber.cyan),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SpotlightTarget(
+                            spotlightKey: _meterKey,
+                            child: SizedBox(
+                              height: 48,
+                              width: double.infinity,
+                              child: AnimatedBuilder(
+                                animation: _sweep,
+                                builder: (_, _) => CustomPaint(
+                                  painter: _ShotMeterPainter(
+                                    progress: result?.position ?? _sweep.value,
+                                    accent: widget.accent,
+                                    frozen: result != null,
+                                  ),
+                                  child: const SizedBox.expand(),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            spacing: 12,
+                            runSpacing: 4,
+                            children: [
+                              Text(
+                                'EARLY +0',
+                                style: Cyber.label(8, color: Cyber.muted),
+                              ),
+                              Text(
+                                'GOOD +${ShotTimingQuality.good.bonus}  ·  GREAT +${ShotTimingQuality.great.bonus}',
+                                style: Cyber.label(
+                                  8,
+                                  color: Cyber.cyan,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              Text(
+                                'LATE +0',
+                                style: Cyber.label(8, color: Cyber.muted),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          if (result != null) ...[
+                            Text(
+                              '${result.label}  +${result.bonus}',
+                              textAlign: TextAlign.center,
+                              style: Cyber.display(
+                                24,
+                                color: result.bonus > 0
+                                    ? Cyber.cyan
+                                    : Cyber.muted,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'FINAL POWER ${widget.power.base + result.bonus}',
+                              textAlign: TextAlign.center,
+                              style: Cyber.label(
+                                11,
+                                color: AppTheme.whiteColor,
+                              ),
+                            ),
+                          ] else
+                            CyberCtaButton(
+                              label: _ready
+                                  ? 'TAP TO ${widget.attacking ? 'STRIKE' : 'BLOCK'}'
+                                  : 'GET READY',
+                              primary: true,
+                              onPressed: _ready ? _strike : null,
+                            ),
                         ],
-                      ],
-                    ],
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-        SpotlightTutorial(
-          keyName: 'shot-meter',
-          steps: _spotlightSteps,
-          startDelay: const Duration(milliseconds: 420),
-        ),
-      ],
+          if (_tutorialPending)
+            SpotlightTutorial(
+              keyName: 'shot-meter',
+              startDelay: const Duration(milliseconds: 100),
+              onComplete: _startSweep,
+              steps: [
+                SpotlightStep(
+                  targetKey: _meterKey,
+                  title: 'Make the cards count',
+                  body:
+                      'Your cards set the power. Tap the centered target for Perfect +8, Great +6 or Good +4. Timing helps a close play.',
+                  icon: Icons.speed,
+                  accent: widget.accent,
+                  padding: 10,
+                ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 }
 
-class _ShotMeterPainter extends CustomPainter {
-  _ShotMeterPainter({
-    required this.progress,
-    required this.sweetCenter,
-    required this.halfZone,
+class _TimingStat extends StatelessWidget {
+  const _TimingStat({
+    required this.label,
+    required this.value,
+    required this.color,
   });
+  final String label;
+  final String value;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        label,
+        style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.5),
+      ),
+      const SizedBox(height: 6),
+      Text(
+        value,
+        style: Cyber.display(
+          17,
+          color: color,
+          letterSpacing: 0,
+        ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+      ),
+    ],
+  );
+}
 
-  final double progress; // 0..1 marker position
-  final double sweetCenter;
-  final double halfZone;
-
+class _ShotMeterPainter extends CustomPainter {
+  const _ShotMeterPainter({
+    required this.progress,
+    required this.accent,
+    required this.frozen,
+  });
+  final double progress;
+  final Color accent;
+  final bool frozen;
   @override
   void paint(Canvas canvas, Size size) {
-    final radius = Radius.circular(size.height / 2);
-    final rect = Offset.zero & size;
-    final rrect = RRect.fromRectAndRadius(rect, radius);
-
-    canvas.save();
-    canvas.clipRRect(rrect);
-    // Track gradient: danger → amber → success (sweet) → amber → danger.
-    final shader = const LinearGradient(
-      colors: [
-        Cyber.danger,
-        Cyber.amber,
-        Cyber.success,
-        Cyber.amber,
-        Cyber.danger,
-      ],
-      stops: [0.0, 0.45, 0.72, 0.86, 1.0],
-    ).createShader(rect);
-    canvas.drawRect(rect, Paint()..shader = shader);
+    final rect = Rect.fromLTWH(0, 6, size.width, size.height - 12);
+    canvas.drawRect(rect, Paint()..color = Cyber.bg2);
+    for (final zone in [
+      (ShotTimingResult.goodHalfWidth, 0.18),
+      (ShotTimingResult.greatHalfWidth, 0.4),
+      (ShotTimingResult.perfectHalfWidth, 0.85),
+    ]) {
+      canvas.drawRect(
+        Rect.fromLTRB(
+          (0.5 - zone.$1) * size.width,
+          rect.top,
+          (0.5 + zone.$1) * size.width,
+          rect.bottom,
+        ),
+        Paint()..color = accent.withValues(alpha: zone.$2),
+      );
+    }
     canvas.drawRect(
       rect,
-      Paint()..color = Colors.black.withValues(alpha: 0.28),
-    );
-    // Brighter sweet-zone band.
-    final zoneLeft = (sweetCenter - halfZone) * size.width;
-    final zoneRight = (sweetCenter + halfZone) * size.width;
-    canvas.drawRect(
-      Rect.fromLTRB(zoneLeft, 0, zoneRight, size.height),
-      Paint()..color = Cyber.success.withValues(alpha: 0.42),
-    );
-    canvas.restore();
-
-    canvas.drawRRect(
-      rrect,
       Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4
-        ..color = Colors.white.withValues(alpha: 0.22),
+        ..color = Cyber.border
+        ..style = PaintingStyle.stroke,
     );
-
-    // Marker with a soft glow.
-    final x = progress.clamp(0.0, 1.0) * size.width;
+    final x = progress.clamp(0, 1) * size.width;
     canvas.drawLine(
-      Offset(x, -4),
-      Offset(x, size.height + 4),
+      Offset(x, 0),
+      Offset(x, size.height),
       Paint()
-        ..color = Colors.white.withValues(alpha: 0.55)
-        ..strokeWidth = 8
-        ..strokeCap = StrokeCap.round
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+        ..color = AppTheme.whiteColor
+        ..strokeWidth = frozen ? 4 : 3,
     );
-    canvas.drawLine(
-      Offset(x, -4),
-      Offset(x, size.height + 4),
-      Paint()
-        ..color = Colors.white
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round,
-    );
+    final marker = Path()
+      ..moveTo(x - 5, 0)
+      ..lineTo(x + 5, 0)
+      ..lineTo(x, 5)
+      ..close();
+    canvas.drawPath(marker, Paint()..color = AppTheme.whiteColor);
   }
 
   @override
   bool shouldRepaint(covariant _ShotMeterPainter old) =>
-      old.progress != progress ||
-      old.sweetCenter != sweetCenter ||
-      old.halfZone != halfZone;
+      old.progress != progress || old.accent != accent || old.frozen != frozen;
 }
 
 class AngularBorderContainer extends StatelessWidget {

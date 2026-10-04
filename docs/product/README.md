@@ -1,7 +1,7 @@
 # StatOz / Pitch Duel Product Documentation
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
+> **Last verified:** 2026-10-04
 > **Audience:** Product, design, engineering, QA, and coding agents
 
 This folder is the canonical product source of truth for StatOz, the sports
@@ -58,8 +58,20 @@ must be explicitly tagged.
 
 First launch plays WELCOME TO STATOZ, opens the **PROTOTYPE** login/signup
 preview, then enters profile setup. Completing setup saves the player's identity and
-awards an idempotent 1,000 Oz Coin welcome bonus with a reward animation. The
-main app then opens the sports hub with four persistent destinations:
+awards an idempotent 1,000 Oz Coin welcome bonus with a reward animation.
+Setup's single-select **home sport** is the only sport open to a new player:
+the other sports sit on the sport strip as padlocked teasers that unlock for 50
+Oz each. In each unlocked sport, players choose any first game through the
+Games quest-card picker, finish that mission, then choose each subsequent
+unfinished game. Completed games remain available for replay. These choices
+form that sport's **Beginner's Quest**. The home quest is the
+one-time ROOKIE PATH: it replaces Daily Quest UI until three home-sport missions
+are cleared while daily
+activity tracks invisibly. Graduated multi-sport careers receive a combined
+QUESTS list for Daily Quests and remaining sport ladders
+([Sport and Game Unlocks](systems/sport-and-game-unlocks.md)). Profiles
+onboarded before this shipped keep everything open. The main app then opens the
+sports hub with four persistent destinations:
 
 - **Sports**: PREDICT, PICK, and GAMES tabs, each with sport filters.
 - **Shop**: avatars, frames, banners, kits/liveries, coins, packs, and cards,
@@ -74,15 +86,21 @@ leaderboard CTA that opens that game's own board over the lobby, so standings ar
 reachable without leaving the tee-up. Shared systems connect them through XP
 tracks, total level, Oz Coins, cards and decks, achievements, streaks, starter
 packs, reward reveals, and local persistence.
+Game body text uses Exo 2 across the Games hub, arcade flows, and game-related
+parts of shared systems; real sports Matches and Pick content retains Onest.
+Orbitron remains the display/HUD face across both areas.
 
 ## Playable Game Coverage
 
-The current Games tab contains 18 playable entries. The three sport-specific
+The current Games tab contains 18 playable entries. Sport pages and curated
+Trending tiles share [illustrated game launch cards](design/cyber-ui-design-system.md#game-discovery-launch-cards-built)
+with game-specific vector simulations, looping motion, and clear launch rails;
+quest access and streak state still come from their existing systems. The three sport-specific
 Guess the Player entries share one implementation and one product page.
 
 | Sport | Game | Status | Product page |
 |---|---|---|---|
-| Football | Pitch Duel | BUILT | [Pitch Duel](games/pitch-duel.md) |
+| Football | Pitch Duel — combinations, timing and match goals | BUILT | [Pitch Duel](games/pitch-duel.md) |
 | Football | Penalty Shootout | BUILT | [Penalty Shootout](games/penalty-shootout.md) |
 | Football | 5v5 Football Chess | BUILT | [Football Chess](games/football-chess.md) |
 | Football | Football Quiz | BUILT | [Football Quiz](games/football-quiz.md) |
@@ -94,7 +112,7 @@ Guess the Player entries share one implementation and one product page.
 | Basketball | Hoop Duel | BUILT | [Hoop Duel](games/hoop-duel.md) |
 | Basketball | Basketball Quiz | BUILT | [Basketball Quiz](games/basketball-quiz.md) |
 | Basketball | Guess the Player | BUILT | [Guess the Player](games/guess-the-player.md#sport-variants) |
-| F1 | Grand Prix Dash | BUILT | [Grand Prix Dash](games/grand-prix-dash.md) |
+| F1 | Grand Prix Dash — racing, ERS and circuit mastery | BUILT | [Grand Prix Dash](games/grand-prix-dash.md) |
 | F1 | Motorsport Quiz | BUILT | [Motorsport Quiz](games/motorsport-quiz.md) |
 | F1 | Guess the Driver | BUILT | [Guess the Driver](games/guess-the-driver.md) |
 | Tennis | Tennis Rally | BUILT | [Tennis Rally](games/tennis-rally.md) |
@@ -111,12 +129,13 @@ Guess the Player entries share one implementation and one product page.
 | Prediction feedback, rewards, daily quests, and planned accuracy streaks | BUILT / PLANNED | [Prediction Gamification](systems/prediction-gamification.md) |
 | Outcome markets, positions, settlement, and payouts | BUILT / PROTOTYPE DATA | [Picks](systems/picks.md) |
 | Per-mode XP tracks and aggregate player level | BUILT | [Progression and Leveling](systems/progression-and-leveling.md) |
+| Home sport, locked sports (50 Oz unlock), player-chosen mission routes, and the Beginner's Quest game picker | BUILT | [Sport and Game Unlocks](systems/sport-and-game-unlocks.md) |
 | Daily activity streaks, streak shields + at-risk state, escalating streak reminder popups, three daily quests + sweep bonus, milestones, and claims | BUILT | [Streaks](systems/streaks.md) |
 | Cross-app badges and unlock celebrations | BUILT | [Achievements](systems/achievements.md) |
 | Cards, decks, packs, starter packs, and daily drops | BUILT | [Collections, Decks, and Packs](systems/collections-decks-and-packs.md) |
 | Oz Coins, shop, cosmetics, XP/coin ledgers, and settlement | BUILT / PROTOTYPE COMMERCE | [Economy, Shop, and Ledgers](systems/economy-shop-and-ledgers.md) |
 | Leaderboards, per-league player boards, rivals, challenges, and activity history | BUILT / PROTOTYPE DATA | [Leaderboards, Rivals, and History](systems/leaderboards-rivals-and-history.md) |
-| Identity, onboarding, followed leagues, favorite clubs, and settings | BUILT; account entry PROTOTYPE | [Profile, Onboarding, and Settings](systems/profile-onboarding-and-settings.md) |
+| Identity, onboarding, followed leagues, favorite clubs, settings, and the versioned `chiefpai45` returning-career preset | BUILT; account entry PROTOTYPE | [Profile, Onboarding, and Settings](systems/profile-onboarding-and-settings.md) |
 | Local friend bookmarks and CPU-themed challenges | BUILT / PROTOTYPE SOCIAL DATA | [Friends](systems/friends.md) |
 | Invite links and demo referral rewards | PROTOTYPE | [Referrals](systems/referrals.md) |
 | Tutorials, How to Play, and support | BUILT / PARTIAL COVERAGE | [Tutorials, How to Play, and Support](systems/tutorials-how-to-play-and-support.md) |
@@ -146,11 +165,13 @@ Guess the Player entries share one implementation and one product page.
 
 1. Complete predictions, picks, games, or daily mysteries.
 2. Extend activity streaks and unlock milestone claims.
-   The streak hub (opened from any top-bar flame, the Trending quest tile, or a
+   The streak hub (opened from any top-bar flame/rookie flag, the Trending quest tile, or a
    Profile streak badge) has four tabs: TODAY quests, per-mode STREAKS, the
    CALENDAR, and the road-to-365 MILESTONES. Complete three daily quests for up to 50
    extra Oz Coins; predictions and picks each have a game alternative. The
    Daily Sweep forges a streak shield (bank of 2) that covers a missed day.
+   Before home-sport graduation this is a focused ROOKIE PATH instead; after
+   graduation, managed careers receive the combined QUESTS tab.
 3. Claim the 24-hour daily drop and open packs.
 4. Review XP and Oz Coin histories, achievements, leaderboards, rivals, and
    career statistics.
@@ -161,6 +182,7 @@ Guess the Player entries share one implementation and one product page.
 
 - [Gamer-First Experience Principles](design/experience-principles.md)
 - [Cyber UI Design System](design/cyber-ui-design-system.md)
+- [Cyberpunk UI Kit and Component Gallery](design/cyberpunk-ui-kit.md)
 - [Motion, Audio, Haptics, and Celebration](design/motion-audio-haptics.md)
 - [Screen and State Catalog](design/screen-state-catalog.md)
 
@@ -169,7 +191,9 @@ reused before new components are introduced, and every meaningful action must
 produce clear feedback or gratification. Sport identity is consistent across
 tabs, onboarding, Trending, collections, shop, and leaderboards: Football is
 cyan, Cricket white, Basketball yellow, Tennis green, and Motorsport red.
-Semantic state, reward, team, and game-mode colors remain separate. Data-dense
+Game discovery cards use dedicated per-game accents for their animated
+schematics, borders and launch rails, consistently across sport pages and
+Trending. Semantic state, reward, team, and game-mode colors remain separate. Data-dense
 surfaces share one language:
 
 Team identity comes from the checked-in competition-scoped palette. Logos use
@@ -209,6 +233,10 @@ and status; it does not replace those state contracts.
 Current product state is primarily local through `SecureGameStorage` and
 feature repositories. Pages distinguish durable results/ownership/ledgers from
 session-only presentation and identify mock/seeded data that is not a remote service.
+On upgraded devices, a device-global v1 marker installs one catalog-validated
+`chiefpai45` career into the RETURNING PLAYER slot before app blocs load. The
+first-time slot stays blank, and later player edits are preserved because the
+one-time marker is not part of either profile snapshot.
 
 ## Planned Scope and Current Limitations
 
@@ -226,6 +254,7 @@ session-only presentation and identify mock/seeded data that is not a remote ser
 - [`lib/blocs/game/game_bloc.dart`](../../lib/blocs/game/game_bloc.dart)
 - [`lib/models/progression.dart`](../../lib/models/progression.dart)
 - [`lib/services/secure_storage_service.dart`](../../lib/services/secure_storage_service.dart)
+- [`lib/services/returning_profile_preset.dart`](../../lib/services/returning_profile_preset.dart)
 
 ## Tests
 

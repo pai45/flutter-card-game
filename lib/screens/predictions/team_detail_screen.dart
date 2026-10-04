@@ -509,7 +509,8 @@ class _PlayerRow extends StatelessWidget {
                       player.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.body(
+                      style: Cyber.bodyFor(
+                        context,
                         13,
                         color: AppTheme.whiteColor,
                         weight: FontWeight.w700,

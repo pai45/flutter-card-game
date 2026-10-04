@@ -44,7 +44,7 @@ const List<RivalSeed> kRivalRoster = [
   RivalSeed('NovaQ', 3878, 2),
   RivalSeed('Falcon9', 3874, -1),
   RivalSeed('Striker', 3872, 5, isNew: true),
-  RivalSeed('pai', 3870, 3, isUser: true), // rank 12 — current user
+  RivalSeed('PLAYER ONE', 3870, 3, isUser: true),
   RivalSeed('Diwakar', 3860, -2),
   RivalSeed('monika', 3830, 1, badge: 'PRO'),
   RivalSeed('Raja2000', 3740, -1),
@@ -57,6 +57,27 @@ const List<RivalSeed> kRivalRoster = [
   RivalSeed('Volt', 2470, 1),
   RivalSeed('Comet', 2300, -1),
   RivalSeed('Rookie7', 1980, 0, isNew: true),
+];
+
+/// Returns the shared rival field with the synthetic self row replaced by the
+/// active local career. Rival identities stay stable; only the local player's
+/// persisted name and earned XP are projected into player-facing boards.
+List<RivalSeed> rivalRosterForPlayer({
+  required String displayName,
+  required int xp,
+}) => [
+  for (final seed in kRivalRoster)
+    if (seed.isUser)
+      RivalSeed(
+        displayName,
+        xp,
+        seed.movement,
+        isNew: seed.isNew,
+        badge: seed.badge,
+        isUser: true,
+      )
+    else
+      seed,
 ];
 
 /// Unambiguous alphabet for player tags (no 0/O/1/I/L look-alikes).

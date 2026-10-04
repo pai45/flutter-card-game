@@ -1,4 +1,5 @@
 import '../../models/sport_match.dart';
+import '../../models/unlock_progress.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 
 enum TrendingTileKind { match, future, pick, predict, game }
@@ -20,6 +21,11 @@ class TrendingTileConfig {
   final Sport? sport;
   final bool enabled;
 }
+
+/// A tile is shown only when enabled and, for a sport-tagged tile, its sport
+/// is open to this player (locked sports never leak into TRENDING).
+bool trendingTileVisible(TrendingTileConfig item, UnlockProgress unlocks) =>
+    item.enabled && (item.sport == null || unlocks.isSportUnlocked(item.sport!));
 
 const matchTrendingCatalog = <TrendingTileConfig>[
   TrendingTileConfig(

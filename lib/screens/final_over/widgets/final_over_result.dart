@@ -1,3 +1,4 @@
+import '../../../config/game_ladder.dart';
 import 'dart:async';
 
 import 'package:final_over/final_over.dart' show BallResult, ExtraType;
@@ -113,24 +114,29 @@ class _FinalOverResultOverlayState extends State<FinalOverResultOverlay> {
                               Text(
                                 s.resultLabel,
                                 textAlign: TextAlign.center,
-                                style: Cyber.display(
-                                  30,
-                                  color: accent,
-                                  letterSpacing: 3,
-                                ).copyWith(
-                                  shadows: [
-                                    Shadow(
-                                      color: accent.withValues(alpha: 0.55),
-                                      blurRadius: 22,
+                                style:
+                                    Cyber.display(
+                                      30,
+                                      color: accent,
+                                      letterSpacing: 3,
+                                    ).copyWith(
+                                      shadows: [
+                                        Shadow(
+                                          color: accent.withValues(alpha: 0.55),
+                                          blurRadius: 22,
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
                               ),
                               const SizedBox(height: 6),
                               Text(
                                 _reason(s),
                                 textAlign: TextAlign.center,
-                                style: Cyber.body(12, color: Cyber.muted),
+                                style: Cyber.bodyFor(
+                                  context,
+                                  12,
+                                  color: Cyber.muted,
+                                ),
                               ),
                             ],
                           ),
@@ -148,14 +154,15 @@ class _FinalOverResultOverlayState extends State<FinalOverResultOverlay> {
                                   children: [
                                     Text(
                                       s.scoreLine,
-                                      style: Cyber.display(
-                                        38,
-                                        color: Colors.white,
-                                      ).copyWith(
-                                        fontFeatures: const [
-                                          FontFeature.tabularFigures(),
-                                        ],
-                                      ),
+                                      style:
+                                          Cyber.display(
+                                            38,
+                                            color: Colors.white,
+                                          ).copyWith(
+                                            fontFeatures: const [
+                                              FontFeature.tabularFigures(),
+                                            ],
+                                          ),
                                     ),
                                     Text(
                                       'CHASING ${s.target}',
@@ -223,6 +230,10 @@ class _FinalOverResultOverlayState extends State<FinalOverResultOverlay> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
+                              QuestResultReceipt(
+                                game: ArcadeGame.finalOver,
+                                sourceId: widget.summary.matchId,
+                              ),
                               _XpLine(xp: s.xp),
                               const SizedBox(height: 8),
                               Text(
@@ -347,8 +358,10 @@ class _HistoryToken extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, color) = switch (result) {
-      final b when !b.legal =>
-        (b.extra == ExtraType.noBall ? 'NB' : 'WD', Cyber.amber),
+      final b when !b.legal => (
+        b.extra == ExtraType.noBall ? 'NB' : 'WD',
+        Cyber.amber,
+      ),
       final b when b.isWicket => ('W', Cyber.danger),
       final b when b.boundary == 6 => ('6', Cyber.gold),
       final b when b.boundary == 4 => ('4', Cyber.cyan),
@@ -363,10 +376,7 @@ class _HistoryToken extends StatelessWidget {
         color: color.withValues(alpha: 0.14),
         border: Border.all(color: color.withValues(alpha: 0.6)),
       ),
-      child: Text(
-        label,
-        style: Cyber.display(13, color: color),
-      ),
+      child: Text(label, style: Cyber.display(13, color: color)),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../blocs/game/game_bloc.dart';
 import '../blocs/game/game_event.dart';
+import '../config/theme.dart';
 import '../config/tutorial_steps.dart';
 import 'cyber/cyber_widgets.dart';
 
@@ -137,7 +138,7 @@ class _TutorialDialogState extends State<TutorialDialog> {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: accent,
-                      fontFamily: 'Onest',
+                      fontFamily: Cyber.gameBodyFont,
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.8,
@@ -205,7 +206,7 @@ class _TutorialDialogState extends State<TutorialDialog> {
               step.body,
               style: const TextStyle(
                 color: Color(0xffd1d5db),
-                fontFamily: 'Onest',
+                fontFamily: Cyber.gameBodyFont,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 height: 1.45,
@@ -304,7 +305,6 @@ class _TutorialDialogState extends State<TutorialDialog> {
   }
 }
 
-
 void showTutorialNow(
   BuildContext context, {
   required String keyName,
@@ -320,4 +320,3 @@ void showTutorialNow(
     ),
   );
 }
-

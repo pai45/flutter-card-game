@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/game/game_bloc.dart';
 import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/picks/picks_state.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
@@ -10,7 +11,6 @@ import '../../blocs/match_circle/match_circle_cubit.dart';
 import '../../blocs/match_circle/match_circle_state.dart';
 import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
-import '../../data/rival_roster.dart';
 import '../../data/team_palettes.dart';
 import '../../models/match_circle.dart';
 import '../../models/picks.dart';
@@ -326,7 +326,11 @@ class _MatchCircleCtaState extends State<_MatchCircleCta> {
                       const SizedBox(width: 9),
                       Text(
                         'Match Circle',
-                        style: Cyber.body(12, weight: FontWeight.w700),
+                        style: Cyber.bodyFor(
+                          context,
+                          12,
+                          weight: FontWeight.w700,
+                        ),
                       ),
                       const SizedBox(width: 5),
                       if (loading)
@@ -341,7 +345,7 @@ class _MatchCircleCtaState extends State<_MatchCircleCta> {
                       else if (countLabel != null)
                         Text(
                           countLabel,
-                          style: Cyber.body(10, color: Cyber.muted),
+                          style: Cyber.bodyFor(context, 10, color: Cyber.muted),
                         ),
                     ],
                   ),
@@ -456,7 +460,7 @@ class _AllPicksCta extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     'Browse every open market',
-                    style: Cyber.body(11, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, 11, color: Cyber.muted),
                   ),
                 ],
               ),
@@ -768,7 +772,7 @@ class _MatchBoardUserBar extends StatelessWidget {
       );
     }
 
-    final name = kRivalRoster.firstWhere((seed) => seed.isUser).name;
+    final name = context.watch<GameBloc>().state.displayName;
     final answered = prediction?.answers.length ?? 0;
     final pending = prediction != null;
     return RankUserBar(
@@ -1115,7 +1119,7 @@ class _TimelineRow extends StatelessWidget {
         children: [
           Text(
             event.playerName,
-            style: Cyber.body(14, weight: FontWeight.w600),
+            style: Cyber.bodyFor(context, 14, weight: FontWeight.w600),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -1224,7 +1228,7 @@ class _CommentaryRow extends StatelessWidget {
           Expanded(
             child: Text(
               item.text,
-              style: Cyber.body(13, color: Colors.white70),
+              style: Cyber.bodyFor(context, 13, color: Colors.white70),
             ),
           ),
         ],
@@ -1308,7 +1312,10 @@ class _StatePanel extends StatelessWidget {
               children: [
                 Text(title, style: Cyber.display(15, letterSpacing: 0.8)),
                 const SizedBox(height: 5),
-                Text(message, style: Cyber.body(12, color: Cyber.muted)),
+                Text(
+                  message,
+                  style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                ),
               ],
             ),
           ),
@@ -1516,7 +1523,7 @@ class _FactRow extends StatelessWidget {
             child: Text(
               value,
               textAlign: TextAlign.end,
-              style: Cyber.body(12, weight: FontWeight.w800),
+              style: Cyber.bodyFor(context, 12, weight: FontWeight.w800),
             ),
           ),
         ],

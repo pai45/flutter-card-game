@@ -320,7 +320,8 @@ class _PitchPlayer extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.body(
+              style: Cyber.bodyFor(
+                context,
                 8.5,
                 weight: FontWeight.w800,
                 color: dim ? Cyber.muted : Colors.white,
@@ -478,7 +479,7 @@ class _BenchPanel extends StatelessWidget {
           if (lineup.substitutes.isEmpty)
             Text(
               'No substitutes supplied.',
-              style: Cyber.body(12, color: Cyber.muted),
+              style: Cyber.bodyFor(context, 12, color: Cyber.muted),
             )
           else
             LayoutBuilder(
@@ -546,7 +547,7 @@ class _BenchPlayerTile extends StatelessWidget {
                   player.shortName ?? player.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.body(10, weight: FontWeight.w800),
+                  style: Cyber.bodyFor(context, 10, weight: FontWeight.w800),
                 ),
                 Text(
                   (player.role ?? 'Squad player').toUpperCase(),

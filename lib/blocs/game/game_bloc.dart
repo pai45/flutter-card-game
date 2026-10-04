@@ -5,6 +5,8 @@ import 'dart:math';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../config/enums.dart';
+import '../../config/game_ladder.dart';
+import '../../config/sport_modules.dart';
 import '../../config/tutorial_steps.dart';
 import '../../data/random_opponent_names.dart';
 import '../../data/basketball_teams.dart';
@@ -18,9 +20,13 @@ import '../../models/grand_prix.dart' show formatLapTime;
 import '../../models/match.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/packs.dart';
+import '../../models/pitch_duel_rules.dart';
+import '../../models/pitch_duel_mastery.dart';
 import '../../models/progression.dart';
 import '../../models/streak.dart';
 import '../../models/daily_quest.dart';
+import '../../models/sport_match.dart';
+import '../../models/unlock_progress.dart';
 import '../../models/xp_ledger.dart';
 import '../../services/secure_storage_service.dart';
 import '../../utils/card_helpers.dart';
@@ -179,6 +185,50 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<DailyQuestRewardConsumed>(
       (event, emit) => emit(state.copyWith(questRewardCoins: 0)),
     );
+    on<HomeSportChosen>(
+      (event, emit) =>
+          _withUnlockMutation(() => _onHomeSportChosen(event, emit)),
+    );
+    on<SportUnlockPurchased>(
+      (event, emit) =>
+          _withUnlockMutation(() => _onSportUnlockPurchased(event, emit)),
+    );
+    on<QuestGameSelected>(
+      (event, emit) => _withUnlockMutation(() async {
+        if (state.loading || !state.unlocks.canSelect(event.game)) {
+          event.result.complete(QuestGameSelectionResult.rejected);
+          return;
+        }
+        final next = state.unlocks.selectGame(event.game);
+        try {
+          await _storage.saveUnlockProgress(next);
+          emit(state.copyWith(unlocks: next));
+          event.result.complete(QuestGameSelectionResult.selected);
+        } catch (_) {
+          event.result.complete(QuestGameSelectionResult.saveFailed);
+        }
+      }),
+    );
+    on<ArcadeGamePlayed>(
+      (event, emit) =>
+          _recordArcadePlay(event.game, event.sourceId, emit, countDaily: true),
+    );
+    on<RookieTicketUsed>(
+      (event, emit) => _withUnlockMutation(() async {
+        if (!state.unlocks.hasRookieTicket(event.sport)) return;
+        final next = state.unlocks.useRookieTicket(event.sport);
+        emit(state.copyWith(unlocks: next));
+        await _storage.saveUnlockProgress(next);
+      }),
+    );
+    on<UnlockRevealConsumed>(
+      (event, emit) => _withUnlockMutation(() async {
+        if (state.unlocks.pendingReveals.isEmpty) return;
+        final next = state.unlocks.consumeReveal();
+        emit(state.copyWith(unlocks: next));
+        await _storage.saveUnlockProgress(next);
+      }),
+    );
     on<MatchReset>((_, emit) => emit(_resetMatch(state)));
     on<MatchStarted>(_onMatchStarted);
     on<TossChoiceChanged>(
@@ -196,12 +246,31 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     );
     on<ScenarioShown>(_onScenarioShown);
     on<PlayStarted>(_onPlayStarted);
-    on<PlayerSelected>(
-      (event, emit) => emit(state.copyWith(selectedPlayerCard: event.card)),
-    );
-    on<ActionSelected>(
-      (event, emit) => emit(state.copyWith(selectedActionCard: event.card)),
-    );
+    on<PlayerSelected>((event, emit) {
+      if (state.phase != MatchPhase.play) return;
+      final pool = state.playerAttacking
+          ? state.deckAttackers
+          : state.deckDefenders;
+      final card = pool
+          .where(
+            (c) =>
+                c.id == event.card.id &&
+                !state.usedPlayerCards.contains(c.id) &&
+                !state.redCardedCards.contains(c.id),
+          )
+          .firstOrNull;
+      if (card != null) emit(state.copyWith(selectedPlayerCard: card));
+    });
+    on<ActionSelected>((event, emit) {
+      if (state.phase != MatchPhase.play) return;
+      final card = pitchLegalActions(
+        actions: state.deckActions,
+        usedIds: state.usedActionCards,
+        round: state.currentRound,
+        attacking: state.playerAttacking,
+      ).where((c) => c.id == event.card.id).firstOrNull;
+      if (card != null) emit(state.copyWith(selectedActionCard: card));
+    });
     on<MovePlayed>(_onMovePlayed);
     on<RoundAdvanced>(_onRoundAdvanced);
     on<MatchFinished>(_onMatchFinished);
@@ -299,8 +368,127 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final streak = swept ? state.streak.grantShield(now) : state.streak;
     if (!identical(streak, state.streak)) await _storage.saveStreak(streak);
     emit(
-      state.copyWith(dailyQuests: quests, streak: streak, clearQuestError: true),
+      state.copyWith(
+        dailyQuests: quests,
+        streak: streak,
+        clearQuestError: true,
+      ),
     );
+  }
+
+  Future<void> _onHomeSportChosen(
+    HomeSportChosen event,
+    Emitter<GameState> emit,
+  ) async {
+    final next = state.unlocks.chooseHomeSport(event.sport);
+    emit(state.copyWith(unlocks: next));
+    await _storage.saveUnlockProgress(next);
+  }
+
+  Future<void> _unlockMutationTail = Future.value();
+
+  /// Selection and settlements share one queue so a slow save cannot overwrite
+  /// another sport's progress or a consumed celebration.
+  Future<void> _withUnlockMutation(Future<void> Function() action) {
+    final operation = _unlockMutationTail.then((_) => action());
+    _unlockMutationTail = operation.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return operation;
+  }
+
+  Future<void> _onSportUnlockPurchased(
+    SportUnlockPurchased event,
+    Emitter<GameState> emit,
+  ) async {
+    if (state.unlocks.isSportUnlocked(event.sport) ||
+        state.coins < sportUnlockCostOz) {
+      return;
+    }
+    await _applyCoinDelta(
+      delta: -sportUnlockCostOz,
+      emit: emit,
+      source: OzCoinTransactionSource.sportUnlock,
+      type: OzCoinTransactionType.spend,
+      title: 'SPORT UNLOCK',
+      subtitle: sportModuleFor(event.sport).label.toUpperCase(),
+    );
+    final next = state.unlocks.unlockSport(event.sport);
+    emit(state.copyWith(unlocks: next));
+    await _storage.saveUnlockProgress(next);
+  }
+
+  /// Counts a finished GAMES-tab mode against the Beginner's Quest (and, for
+  /// modes without their own daily-quest activity, the daily game quests).
+  /// Runs after the game's own settle so its result screen is never delayed.
+  Future<void> _recordArcadePlay(
+    ArcadeGame game,
+    String sourceId,
+    Emitter<GameState> emit, {
+    required bool countDaily,
+  }) => _withUnlockMutation(
+    () =>
+        _recordSelectedArcadePlay(game, sourceId, emit, countDaily: countDaily),
+  );
+
+  Future<void> _recordSelectedArcadePlay(
+    ArcadeGame game,
+    String sourceId,
+    Emitter<GameState> emit, {
+    required bool countDaily,
+  }) async {
+    if (sourceId.isEmpty) return;
+    if (countDaily) {
+      await _onQuestActivity(
+        DailyQuestActivityRecorded(
+          DailyQuestActivity.arcadeGame,
+          sourceId: '${game.name}:$sourceId',
+        ),
+        emit,
+      );
+    }
+    final result = state.unlocks.recordPlay(game, sourceId);
+    if (!result.stepCleared) return;
+    final sportLabel = sportModuleFor(game.sport).label.toUpperCase();
+    final receipt = QuestCompletionReceipt(
+      game: game,
+      sourceId: sourceId,
+      completed: result.progress.stepsCleared(game.sport),
+      total: sportGameLadder[game.sport]!.length,
+      graduated: result.graduated,
+      questCompleted: result.questCompleted,
+      nextGame: result.unlockedGame,
+    );
+    final xp = _nextXpSnapshot(
+      delta: beginnerQuestStepXp,
+      source: XpTransactionSource.beginnerQuest,
+      title: "BEGINNER'S QUEST",
+      details: result.questCompleted
+          ? '$sportLabel QUEST COMPLETE'
+          : '${game.title} MISSION COMPLETE',
+    );
+    emit(
+      state.copyWith(
+        unlocks: result.progress,
+        questReceipts: {...state.questReceipts, receipt.id: receipt},
+        progression: xp.progression,
+        xpLedger: xp.ledger,
+      ),
+    );
+    await _storage.saveUnlockProgress(result.progress);
+    await _storage.saveProgression(xp.progression);
+    await _storage.saveXpLedger(xp.ledger);
+    if (result.questCompleted) {
+      await _applyCoinDelta(
+        delta: beginnerQuestCompleteOz,
+        emit: emit,
+        source: OzCoinTransactionSource.beginnerQuestReward,
+        type: OzCoinTransactionType.earn,
+        title: "BEGINNER'S QUEST",
+        subtitle: '$sportLabel COMPLETE',
+      );
+    }
   }
 
   Future<void> _onQuestClaim(
@@ -415,13 +603,26 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       developer.log(
         'GameLoaded: Loaded progression (level ${progression.playerLevel})',
       );
+      final displayName = await _storage.loadDisplayName().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => 'PLAYER ONE',
+      );
 
       var streak = await _storage.loadStreak().timeout(
         const Duration(seconds: 2),
         onTimeout: () => null,
       );
       if (streak == null) {
-        streak = StreakSnapshot.seeded(DateTime.now());
+        // An untouched first-time slot must start at level 1 with no streak.
+        // Completed legacy careers retain the seeded fallback used before
+        // local profile slots shipped.
+        final onboarded = await _storage.loadOnboardingComplete().timeout(
+          const Duration(seconds: 2),
+          onTimeout: () => false,
+        );
+        streak = onboarded
+            ? StreakSnapshot.seeded(DateTime.now())
+            : StreakSnapshot.fromJson(const <String, dynamic>{});
         await _storage.saveStreak(streak);
       }
       final shielded = streak.applyShields(DateTime.now());
@@ -430,6 +631,24 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         await _storage.saveStreak(streak);
       }
       developer.log('GameLoaded: Loaded daily streak');
+
+      // No stored progress + a finished onboarding = a profile from before
+      // unlocks shipped: grandfather it (everything open, no quest). A fresh
+      // install stays unmanaged until onboarding sends [HomeSportChosen].
+      var unlocks = await _storage.loadUnlockProgress().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => null,
+      );
+      if (unlocks == null) {
+        final onboarded = await _storage.loadOnboardingComplete().timeout(
+          const Duration(seconds: 2),
+          onTimeout: () => false,
+        );
+        unlocks = onboarded
+            ? const UnlockProgress.grandfathered()
+            : const UnlockProgress();
+        if (onboarded) await _storage.saveUnlockProgress(unlocks);
+      }
 
       final starterPackClaimed = await _storage
           .loadStarterPackClaimed()
@@ -585,6 +804,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       emit(
         state.copyWith(
           loading: false,
+          displayName: displayName,
           deckSlots: safeSlots,
           activeDeckId: activeAfterMigration.id,
           deckAttackers: cardsByIds(attackers, activeAfterMigration.attackers),
@@ -638,6 +858,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           progression: migratedProgression,
           streak: streak,
           dailyQuests: dailyQuests,
+          unlocks: unlocks,
         ),
       );
       developer.log('GameLoaded: Complete');
@@ -895,6 +1116,20 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     } catch (_) {
       _guessPlayerSettlementsSeen.remove(event.settlementId);
       rethrow;
+    }
+    final game = switch (event.sport) {
+      Sport.football => ArcadeGame.footballGuessPlayer,
+      Sport.cricket => ArcadeGame.cricketGuessPlayer,
+      Sport.basketball => ArcadeGame.basketballGuessPlayer,
+      Sport.motorsport || Sport.tennis => null,
+    };
+    if (game != null) {
+      await _recordArcadePlay(
+        game,
+        event.settlementId,
+        emit,
+        countDaily: false,
+      );
     }
   }
 
@@ -1577,6 +1812,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     );
     emit(
       _resetMatch(state).copyWith(
+        pitchSessionId: _pitchSessionId,
         phase: MatchPhase.toss,
         currentRound: 1,
         opponentAttackers: opponent.attackers,
@@ -1655,54 +1891,49 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
     final oppPlayers = state.playerAttacking
         ? state.opponentDefenders
-              .where((card) => !state.opponentRedCarded.contains(card.id))
+              .where(
+                (card) =>
+                    !state.opponentRedCarded.contains(card.id) &&
+                    !state.opponentUsedPlayerCards.contains(card.id),
+              )
               .toList()
         : state.opponentAttackers
-              .where((card) => !state.opponentRedCarded.contains(card.id))
+              .where(
+                (card) =>
+                    !state.opponentRedCarded.contains(card.id) &&
+                    !state.opponentUsedPlayerCards.contains(card.id),
+              )
               .toList();
-    final fallback = state.playerAttacking
-        ? state.opponentDefenders.first
-        : state.opponentAttackers.first;
-    final PlayerCard oppPlayer;
-    if (oppPlayers.isEmpty) {
-      oppPlayer = fallback;
-    } else {
-      oppPlayer = chooseOpponentPlayer(
-        oppPlayers,
-        state.progression.levelFor(ProgressTrack.pitchDuel),
-        random: _random,
-      );
-    }
-
-    // Action choice respects the opponent's role and the scenario.
-    final oppDefending = state.playerAttacking;
-    final relevantCategory = oppDefending
-        ? ActionCategory.defense
-        : ActionCategory.attack;
-    final roleActions = state.opponentActions
-        .where(
-          (a) =>
-              a.category == relevantCategory ||
-              a.category == ActionCategory.special,
-        )
-        .toList();
-    final actionPool = roleActions.isEmpty
-        ? state.opponentActions
-        : roleActions;
-    final scenarioFavorsOpp = oppDefending
-        ? scenario.defenseBonus > 8
-        : scenario.attackBonus > 8;
+    final actionPool = pitchLegalActions(
+      actions: state.opponentActions,
+      usedIds: state.opponentUsedActionCards,
+      round: state.currentRound,
+      attacking: !state.playerAttacking,
+    );
+    final pairs = [
+      for (final player in oppPlayers)
+        for (final action in actionPool) (player: player, action: action),
+    ];
+    if (pairs.isEmpty) return null;
     final pitchLevel = state.progression.levelFor(ProgressTrack.pitchDuel);
-    final ActionCard oppAction;
-    if (scenarioFavorsOpp && _random.nextDouble() < cpuSmartness(pitchLevel)) {
-      oppAction = actionPool.reduce((a, b) => a.power >= b.power ? a : b);
-    } else {
-      oppAction = chooseOpponentAction(actionPool, pitchLevel, random: _random);
+    if (_random.nextDouble() < cpuSmartness(pitchLevel)) {
+      int score(({PlayerCard player, ActionCard action}) pair) => pitchPower(
+        player: pair.player,
+        action: pair.action,
+        scenario: scenario,
+        attacking: !state.playerAttacking,
+      ).base;
+      final best = pairs.map(score).reduce(max);
+      final tied = pairs.where((pair) => score(pair) == best).toList();
+      return tied[_random.nextInt(tied.length)];
     }
-    return (player: oppPlayer, action: oppAction);
+    return pairs[_random.nextInt(pairs.length)];
   }
 
   void _onPlayStarted(PlayStarted event, Emitter<GameState> emit) {
+    if (state.phase != MatchPhase.scenario || state.currentScenario == null) {
+      return;
+    }
     final pick = _pickOpponentMove();
     emit(
       state.copyWith(
@@ -1714,10 +1945,25 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   }
 
   void _onMovePlayed(MovePlayed event, Emitter<GameState> emit) {
+    if (state.phase != MatchPhase.play) return;
     final playerCard = state.selectedPlayerCard;
     final actionCard = state.selectedActionCard;
     final scenario = state.currentScenario;
     if (playerCard == null || actionCard == null || scenario == null) return;
+    final playerPool = state.playerAttacking
+        ? state.deckAttackers
+        : state.deckDefenders;
+    if (!playerPool.any((c) => c.id == playerCard.id) ||
+        state.usedPlayerCards.contains(playerCard.id) ||
+        state.redCardedCards.contains(playerCard.id) ||
+        !pitchLegalActions(
+          actions: state.deckActions,
+          usedIds: state.usedActionCards,
+          round: state.currentRound,
+          attacking: state.playerAttacking,
+        ).any((c) => c.id == actionCard.id)) {
+      return;
+    }
 
     // Consume the pick committed at play start; fall back to a fresh pick for
     // states that never went through PlayStarted (tests, dev paths).
@@ -1735,23 +1981,28 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final defenderCard = state.playerAttacking ? oppPlayer : playerCard;
     final attackAction = state.playerAttacking ? actionCard : oppAction;
     final defenseAction = state.playerAttacking ? oppAction : actionCard;
-    // The player's swing comes from the Shot Meter when provided; the opponent
-    // always rolls randomly. A null surge (reduced-motion bypass) falls back to
-    // a random roll, leaving the original behaviour unchanged.
-    final playerSwing = event.playerSurge ?? _random.nextDouble() * 20;
-    final oppSwing = _random.nextDouble() * 20;
+    final playerSwing =
+        event.shotTiming?.bonus ??
+        (event.playerSurge?.round() ?? 4).clamp(0, pitchTimingMax);
+    final oppSwing = _random.nextInt(pitchTimingMax + 1);
     final attackSwing = state.playerAttacking ? playerSwing : oppSwing;
     final defenseSwing = state.playerAttacking ? oppSwing : playerSwing;
-    final attackPower =
-        attackerCard.rating +
-        attackAction.power +
-        scenario.attackBonus +
-        attackSwing;
-    final defensePower =
-        defenderCard.rating +
-        defenseAction.power +
-        scenario.defenseBonus +
-        defenseSwing;
+    final attackBreakdown = pitchPower(
+      player: attackerCard,
+      action: attackAction,
+      scenario: scenario,
+      attacking: true,
+      timing: attackSwing,
+    );
+    final defenseBreakdown = pitchPower(
+      player: defenderCard,
+      action: defenseAction,
+      scenario: scenario,
+      attacking: false,
+      timing: defenseSwing,
+    );
+    final attackPower = attackBreakdown.total.toDouble();
+    final defensePower = defenseBreakdown.total.toDouble();
     final outcome = _resolveRound(attackPower, defensePower);
 
     final opponentRedCarded = [...state.opponentRedCarded];
@@ -1777,6 +2028,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       outcome: outcome,
       attackPower: attackPower,
       defensePower: defensePower,
+      attackBreakdown: attackBreakdown,
+      defenseBreakdown: defenseBreakdown,
+      shotTiming: event.shotTiming,
     );
 
     emit(
@@ -1786,6 +2040,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         opponentScore: state.opponentScore + (opponentGoal ? 1 : 0),
         usedPlayerCards: [...state.usedPlayerCards, playerCard.id],
         usedActionCards: [...state.usedActionCards, actionCard.id],
+        opponentUsedPlayerCards: [
+          ...state.opponentUsedPlayerCards,
+          oppPlayer.id,
+        ],
+        opponentUsedActionCards: [
+          ...state.opponentUsedActionCards,
+          oppAction.id,
+        ],
         redCardedCards: redCarded,
         opponentRedCarded: opponentRedCarded,
         roundResults: [...state.roundResults, result],
@@ -1796,6 +2058,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   }
 
   void _onRoundAdvanced(RoundAdvanced event, Emitter<GameState> emit) {
+    if (state.phase != MatchPhase.roundResult) return;
     if (state.currentRound >= 4) {
       // A level score after 4 rounds is a draw — no penalties.
       add(MatchFinished());
@@ -1821,6 +2084,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     MatchFinished event,
     Emitter<GameState> emit,
   ) async {
+    // GameBloc serializes events across types; a repeated finish sees finalResult.
     if (state.phase == MatchPhase.finalResult) return;
     _pitchSessionId ??= 'pitch-${DateTime.now().microsecondsSinceEpoch}';
     await _onQuestActivity(
@@ -1858,6 +2122,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         .firstOrNull;
     final historyEntry = MatchHistoryEntry(
       id: 'match-${DateTime.now().microsecondsSinceEpoch}',
+      pitchMasteryIndex: pitchMasteryGoal(state.matchHistory).kind.index,
       deckName: activeDeck?.name ?? 'Unknown Deck',
       timestampIso: DateTime.now().toIso8601String(),
       resultLabel: resultLabel,
@@ -1870,6 +2135,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
               scenarioTitle: round.scenario.title,
               outcomeLabel: outcomeLabel(round.outcome),
               playerAttacking: round.playerAttacking,
+              playerBreakdown: round.playerAttacking
+                  ? round.attackBreakdown
+                  : round.defenseBreakdown,
+              opponentBreakdown: round.playerAttacking
+                  ? round.defenseBreakdown
+                  : round.attackBreakdown,
             ),
           )
           .toList(),
@@ -1901,6 +2172,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _saveWallet(coins: coins);
     await _storage.saveCoinLedger(coinLedger);
     await _storage.saveStreak(streak);
+    await _recordArcadePlay(
+      ArcadeGame.pitchDuel,
+      _pitchSessionId!,
+      emit,
+      countDaily: false,
+    );
   }
 
   Future<void> _onShootoutFinished(
@@ -1977,12 +2254,22 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _saveWallet(coins: coins);
     await _storage.saveCoinLedger(coinLedger);
     await _storage.saveStreak(streak);
+    await _recordArcadePlay(
+      ArcadeGame.penaltyShootout,
+      event.sessionId,
+      emit,
+      countDaily: false,
+    );
   }
 
   Future<void> _onGrandPrixFinished(
     GrandPrixFinished event,
     Emitter<GameState> emit,
   ) async {
+    if (event.matchId != null &&
+        state.matchHistory.any((entry) => entry.id == event.matchId)) {
+      return;
+    }
     final xp = _nextXpSnapshot(
       delta: event.xp,
       source: XpTransactionSource.grandPrix,
@@ -1990,7 +2277,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       details: 'P${event.position} · ${event.circuitName}',
     );
     final historyEntry = MatchHistoryEntry(
-      id: 'grandprix-${DateTime.now().microsecondsSinceEpoch}',
+      id: event.matchId ?? 'grandprix-${DateTime.now().microsecondsSinceEpoch}',
       mode: 'grandprix',
       deckName: '${event.circuitName} · ${formatLapTime(event.lapTimeMs)}',
       timestampIso: DateTime.now().toIso8601String(),
@@ -2015,12 +2302,22 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _storage.saveMatchHistory(history);
     await _storage.saveProgression(xp.progression);
     await _storage.saveXpLedger(xp.ledger);
+    await _recordArcadePlay(
+      ArcadeGame.grandPrixDash,
+      historyEntry.id,
+      emit,
+      countDaily: true,
+    );
   }
 
   Future<void> _onBasketballFinished(
     BasketballFinished event,
     Emitter<GameState> emit,
   ) async {
+    if (event.matchId != null &&
+        state.matchHistory.any((entry) => entry.id == event.matchId)) {
+      return;
+    }
     final xp = _nextXpSnapshot(
       delta: event.xp,
       source: XpTransactionSource.basketball,
@@ -2030,7 +2327,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           '${event.overtime ? ' (OT)' : ''}',
     );
     final historyEntry = MatchHistoryEntry(
-      id: 'basketball-${DateTime.now().microsecondsSinceEpoch}',
+      id:
+          event.matchId ??
+          'basketball-${DateTime.now().microsecondsSinceEpoch}',
       mode: 'basketball',
       deckName: 'HOOP DUEL · ${event.difficultyLabel}',
       timestampIso: DateTime.now().toIso8601String(),
@@ -2055,6 +2354,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _storage.saveMatchHistory(history);
     await _storage.saveProgression(xp.progression);
     await _storage.saveXpLedger(xp.ledger);
+    await _recordArcadePlay(
+      ArcadeGame.hoopDuel,
+      historyEntry.id,
+      emit,
+      countDaily: true,
+    );
   }
 
   Future<void> _onFinalOverFinished(
@@ -2099,6 +2404,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _storage.saveMatchHistory(history);
     await _storage.saveProgression(xp.progression);
     await _storage.saveXpLedger(xp.ledger);
+    await _recordArcadePlay(
+      ArcadeGame.finalOver,
+      event.matchId,
+      emit,
+      countDaily: true,
+    );
   }
 
   Future<void> _onTennisFinished(
@@ -2161,6 +2472,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       _storage.saveCoinLedger(coinLedger),
       _storage.saveTennisRewardSettlementIds(settled),
     ]);
+    await _recordArcadePlay(
+      ArcadeGame.tennisRally,
+      event.matchId,
+      emit,
+      countDaily: true,
+    );
   }
 
   /// Live path: higher total wins. Exact ties coin-flip GOAL vs BLOCKED.
@@ -2348,6 +2665,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
   GameState _resetMatch(GameState old) => GameState.initial().copyWith(
     loading: false,
+    displayName: old.displayName,
     deckSlots: old.deckSlots,
     activeDeckId: old.activeDeckId,
     deckAttackers: old.deckAttackers,
@@ -2380,6 +2698,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     questClaiming: old.questClaiming,
     questError: old.questError,
     questRewardCoins: old.questRewardCoins,
+    unlocks: old.unlocks,
     matchHistory: old.matchHistory,
     tutorialSeen: old.tutorialSeen,
     pendingPackReveal: old.pendingPackReveal,
@@ -2747,6 +3066,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         'GUESS PLAYER EXTRA ATTEMPT',
       OzCoinTransactionSource.guessDriverHint => 'GUESS DRIVER TEAM HINT',
       OzCoinTransactionSource.openingBalance => 'OPENING BALANCE',
+      OzCoinTransactionSource.sportUnlock => 'SPORT UNLOCK',
+      OzCoinTransactionSource.beginnerQuestReward => 'BEGINNER\'S QUEST',
       OzCoinTransactionSource.manual =>
         positive ? 'COINS ADDED' : 'COINS SPENT',
     };

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/game/game_bloc.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
 import '../../config/sport_modules.dart';
@@ -11,6 +12,7 @@ import '../../config/theme.dart';
 import '../../data/team_palettes.dart';
 import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
+import '../../models/unlock_progress.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/staggered_card_entrance.dart';
@@ -101,7 +103,15 @@ class _MatchSearchScreenState extends State<MatchSearchScreen> {
                 builder: (context, state) {
                   final groups = _query.length < 2
                       ? const <_MatchSearchGroup>[]
-                      : _groupsForQuery(state, _query);
+                      : _groupsForQuery(
+                          state,
+                          _query,
+                          // Locked sports stay teasers: search never surfaces
+                          // their fixtures.
+                          (context.read<GameBloc?>()?.state.unlocks ??
+                                  const UnlockProgress())
+                              .isSportUnlocked,
+                        );
                   final missingSports = Sport.values
                       .where((sport) => !state.loadedSports.contains(sport))
                       .toList(growable: false);
@@ -241,10 +251,12 @@ class _MatchSearchGroup {
 List<_MatchSearchGroup> _groupsForQuery(
   PredictionState state,
   String normalizedQuery,
+  bool Function(Sport sport) sportOpen,
 ) {
   final groups = <_MatchSearchGroup>[];
   final fixturesByLeague = <String, List<SportMatch>>{};
   for (final fixture in state.fixtures) {
+    if (!sportOpen(fixture.sport)) continue;
     fixturesByLeague.putIfAbsent(fixture.leagueId, () => []).add(fixture);
   }
 

@@ -5,7 +5,7 @@ const Object _sentinel = Object();
 
 /// Race lifecycle. The 60fps simulation itself lives in the Flame game — this
 /// phase machine only tracks the coarse beats around it.
-enum GrandPrixPhase { idle, grid, lights, racing, finished, result }
+enum GrandPrixPhase { idle, grid, lights, racing, paused, finished, result }
 
 class GrandPrixState {
   const GrandPrixState({

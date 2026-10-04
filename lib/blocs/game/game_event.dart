@@ -1,5 +1,9 @@
+import 'dart:async';
+
+import '../../config/game_ladder.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
+import '../../models/pitch_duel_rules.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/streak.dart';
 import '../../models/daily_quest.dart';
@@ -273,6 +277,44 @@ class DailyQuestRewardsClaimed extends GameEvent {}
 
 class DailyQuestRewardConsumed extends GameEvent {}
 
+/// Onboarding picked the player's home sport; starts gated unlock progress.
+class HomeSportChosen extends GameEvent {
+  HomeSportChosen(this.sport);
+  final Sport sport;
+}
+
+enum QuestGameSelectionResult { selected, rejected, saveFailed }
+
+/// Resolves only after the selected mission has been durably saved.
+class QuestGameSelected extends GameEvent {
+  QuestGameSelected(this.game);
+  final ArcadeGame game;
+  final Completer<QuestGameSelectionResult> result = Completer();
+}
+
+/// Spend [sportUnlockCostOz] to open another sport.
+class SportUnlockPurchased extends GameEvent {
+  SportUnlockPurchased(this.sport);
+  final Sport sport;
+}
+
+/// A GAMES-tab mode was finished (win or lose). Advances the Beginner's Quest
+/// and counts towards the daily game quests.
+class ArcadeGamePlayed extends GameEvent {
+  ArcadeGamePlayed(this.game, {required this.sourceId});
+  final ArcadeGame game;
+  final String sourceId;
+}
+
+/// The free first quiz entry of a Beginner's Quest was used.
+class RookieTicketUsed extends GameEvent {
+  RookieTicketUsed(this.sport);
+  final Sport sport;
+}
+
+/// The app root finished playing the head of the unlock reveal queue.
+class UnlockRevealConsumed extends GameEvent {}
+
 class StreakMilestoneClaimed extends GameEvent {
   StreakMilestoneClaimed(this.days);
   final int days;
@@ -332,12 +374,11 @@ class ActionSelected extends GameEvent {
 }
 
 class MovePlayed extends GameEvent {
-  MovePlayed({this.playerSurge});
+  MovePlayed({this.playerSurge, this.shotTiming});
 
-  /// The player's power swing (0..20) from the Shot Meter, replacing the hidden
-  /// random roll on the player's side. Null falls back to a random swing
-  /// (e.g. the reduced-motion bypass).
+  /// Legacy callers are clamped to 0..8. Absent timing uses the accessible +4.
   final double? playerSurge;
+  final ShotTimingResult? shotTiming;
 }
 
 class RoundAdvanced extends GameEvent {}
@@ -365,6 +406,7 @@ class ShootoutFinished extends GameEvent {
 /// XP only: racing never pays coins.
 class GrandPrixFinished extends GameEvent {
   GrandPrixFinished({
+    this.matchId,
     required this.position,
     required this.fieldSize,
     required this.circuitName,
@@ -373,6 +415,7 @@ class GrandPrixFinished extends GameEvent {
     required this.xp,
   });
 
+  final String? matchId;
   final int position;
   final int fieldSize;
   final String circuitName;
@@ -386,6 +429,7 @@ class GrandPrixFinished extends GameEvent {
 /// [GrandPrixFinished]. XP only: the court never pays coins.
 class BasketballFinished extends GameEvent {
   BasketballFinished({
+    this.matchId,
     required this.playerScore,
     required this.cpuScore,
     required this.resultLabel,
@@ -395,6 +439,7 @@ class BasketballFinished extends GameEvent {
     required this.xp,
   });
 
+  final String? matchId;
   final int playerScore;
   final int cpuScore;
   final String resultLabel; // 'Victory' | 'Defeat'

@@ -42,6 +42,23 @@ void main() {
     },
   );
 
+  test('current author uses the persisted profile display name', () async {
+    FlutterSecureStorage.setMockInitialValues({
+      'pd_player_tag_v1': 'CHIEF-TAG',
+      'pd_selected_avatar_v1': 'bellingham',
+      'pd_display_name_v1': 'chiefpai45',
+    });
+    final cubit = MatchCircleCubit(
+      LocalMatchCircleRepository(now: () => now),
+      SecureGameStorage(),
+    );
+
+    await cubit.ensureThread(_match());
+
+    expect(cubit.currentAuthor?.displayName, 'chiefpai45');
+    await cubit.close();
+  });
+
   test('mutations update the thread and its visible count', () async {
     final cubit = MatchCircleCubit(
       LocalMatchCircleRepository(now: () => now),

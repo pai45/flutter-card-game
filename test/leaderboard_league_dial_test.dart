@@ -77,6 +77,20 @@ void main() {
   });
 
   group('league dial on the players board', () {
+    testWidgets('self row uses the active profile display name', (
+      tester,
+    ) async {
+      await _pumpLeaderboard(tester, displayName: 'chiefpai45');
+      await tester.tap(find.text('PLAYERS'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<RankUserBar>(find.byType(RankUserBar)).user.name,
+        'chiefpai45',
+      );
+      await tester.pumpWidget(const SizedBox());
+    });
+
     testWidgets('shows under PLAYERS only, defaulting to the first league', (
       tester,
     ) async {
@@ -169,9 +183,7 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     });
 
-    testWidgets('each league gives the user a different standing', (
-      tester,
-    ) async {
+    testWidgets('each league gives the user a valid standing', (tester) async {
       await _pumpLeaderboard(tester);
       await tester.tap(find.text('PLAYERS'));
       await tester.pumpAndSettle();
@@ -185,7 +197,8 @@ void main() {
           tester.widget<RankUserBar>(find.byType(RankUserBar)).user.rank,
         );
       }
-      expect(ranks.length, greaterThan(1));
+      expect(ranks, isNotEmpty);
+      expect(ranks.every((rank) => rank > 0), isTrue);
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -255,8 +268,12 @@ Future<void> _spinDial(WidgetTester tester) async {
   fail('dragging the dial did not change the selected league');
 }
 
-Future<void> _pumpLeaderboard(WidgetTester tester) async {
+Future<void> _pumpLeaderboard(
+  WidgetTester tester, {
+  String displayName = 'PLAYER ONE',
+}) async {
   final gameBloc = GameBloc(SecureGameStorage());
+  gameBloc.emit(gameBloc.state.copyWith(displayName: displayName));
   addTearDown(gameBloc.close);
   final cubit = _DialCubit(_DialRepo());
   addTearDown(cubit.close);

@@ -21,6 +21,7 @@ import '../models/streak.dart';
 import '../models/streak_reminder.dart';
 import '../models/daily_quest.dart';
 import '../models/tennis.dart';
+import '../models/unlock_progress.dart';
 import '../models/xp_ledger.dart';
 import '../models/guess_player.dart';
 import '../models/guess_driver.dart';
@@ -29,8 +30,30 @@ import '../data/basketball_teams.dart';
 import '../data/final_over_kits.dart';
 import '../data/grand_prix_liveries.dart';
 import '../data/rival_roster.dart' show randomPlayerTag;
+import 'secure_storage_keys.dart';
+import 'returning_profile_preset.dart';
 
 enum OnboardingRewardStatus { pending, seen }
+
+/// The two device-local careers exposed by the Profile Select switchboard.
+/// They are isolated save slots, not remote accounts.
+enum LocalProfileSlot { firstTime, returning }
+
+class LocalProfileSummary {
+  const LocalProfileSummary({
+    required this.slot,
+    required this.ready,
+    required this.displayName,
+    required this.level,
+    required this.streak,
+  });
+
+  final LocalProfileSlot slot;
+  final bool ready;
+  final String displayName;
+  final int level;
+  final int streak;
+}
 
 /// Maps a legacy `border_*` avatar-frame id to the renamed `frame_*` form so a
 /// player's pre-rename owned/equipped frames keep resolving after the migration.
@@ -169,12 +192,15 @@ class SecureGameStorage {
       'pd_prediction_settlement_validation_v1';
   static const _pickPositionsKey = 'pd_pick_positions_v1';
   static const _selectedAvatarKey = 'pd_selected_avatar_v1';
+  static const _displayNameKey = 'pd_display_name_v1';
   static const _selectedProfileBannerKey = 'pd_selected_profile_banner_v1';
   static const _primarySportKey = 'pd_primary_sport_v1';
+  static const _followedSportsKey = 'pd_followed_sports_v1';
   static const _selectedTimeZoneKey = 'pd_selected_time_zone_v1';
   static const _followedLeaguesKey = 'pd_followed_leagues_v1';
   static const _favoriteTeamsKey = 'pd_favorite_teams_v1';
   static const _onboardingCompleteKey = 'pd_onboarding_complete_v1';
+  static const _unlockProgressKey = 'pd_unlock_progress_v1';
   static const _onboardingRewardStatusKey = 'pd_onboarding_reward_status_v1';
   static const _celebratedAchievementsKey = 'pd_celebrated_achievements_v1';
   static const _streakKey = 'pd_daily_streak_v1';
@@ -203,8 +229,361 @@ class SecureGameStorage {
   static const _tennisProfileKey = 'pd_tennis_profile_v1';
   static const _tennisResumeKey = 'pd_tennis_resume_v1';
   static const _tennisSettlementKey = 'pd_tennis_settlements_v1';
+  static const _localProfilesKey = 'pd_local_profile_slots_v1';
+  static const _activeLocalProfileKey = 'pd_active_local_profile_v1';
+  static const _returningPresetVersionKey =
+      'statoz_returning_profile_preset_version';
 
   final FlutterSecureStorage _storage;
+
+  /// Where the web backend keeps each value in `localStorage`
+  /// (`WebOptions.publicKey` default + '.').
+  static const _webEntryPrefix = 'FlutterSecureStorage.';
+  static const _keyWarmupKey = 'storage_key_ready';
+
+  /// Must finish before anything else writes. The web backend creates its
+  /// AES key lazily and without a lock, so the burst of first-boot writes
+  /// from every bloc each minted a key and the last one won — leaving earlier
+  /// values (the profile slots, first of all) permanently undecryptable and
+  /// breaking logout. One write up front creates the single shared key.
+  static Future<void> warmUp({FlutterSecureStorage? storage}) async {
+    try {
+      await (storage ?? const FlutterSecureStorage()).write(
+        key: _keyWarmupKey,
+        value: 'true',
+      );
+    } catch (_) {
+      // Storage unavailable; every reader already tolerates that.
+    }
+  }
+
+  /// Reads [key], discarding a value that can no longer be decrypted (see
+  /// [warmUp]) so it is treated as missing instead of failing every caller.
+  Future<String?> _readOrDiscard(String key) async {
+    try {
+      return await _storage.read(key: key);
+    } catch (_) {
+      try {
+        await _storage.delete(key: key);
+      } catch (_) {}
+      return null;
+    }
+  }
+
+  /// `readAll()` fails outright if a single entry is undecryptable; fall back
+  /// to reading the keys one by one and discarding the broken ones.
+  Future<Map<String, String>> _readAllSafely() async {
+    try {
+      return await _storage.readAll();
+    } catch (_) {
+      final values = <String, String>{};
+      for (final key in storedSecureKeys(_webEntryPrefix)) {
+        final value = await _readOrDiscard(key);
+        if (value != null) values[key] = value;
+      }
+      return values;
+    }
+  }
+
+  /// Creates two isolated local save slots without disturbing an existing
+  /// player's career. A populated legacy install migrates into RETURNING;
+  /// a clean install begins in the blank FIRST-TIME slot.
+  Future<void> ensureLocalProfiles() =>
+      _ensuringLocalProfiles ??= _createLocalProfilesIfMissing().whenComplete(
+        () => _ensuringLocalProfiles = null,
+      );
+
+  /// Creates the local slots and installs the destructive v1 returning-player
+  /// preset exactly once per device. The marker deliberately sits outside the
+  /// `pd_` namespace so it is never captured inside either career snapshot.
+  Future<void> bootstrapLocalProfiles({DateTime? now}) async {
+    await ensureLocalProfiles();
+    final installed = await _readOrDiscard(_returningPresetVersionKey);
+    if (installed == '$returningProfilePresetVersion') return;
+
+    final preset = await buildReturningProfilePreset(now: now);
+    final activeRaw = await _readOrDiscard(_activeLocalProfileKey);
+    final active = activeRaw == LocalProfileSlot.returning.name
+        ? LocalProfileSlot.returning
+        : LocalProfileSlot.firstTime;
+    final slots = await _readLocalProfiles();
+    slots[LocalProfileSlot.returning.name] = preset.toSnapshot();
+    // Live data is the active slot; never duplicate it inside the slot blob.
+    slots.remove(active.name);
+    await _writeLocalProfiles(slots);
+
+    if (active == LocalProfileSlot.returning) {
+      await _restoreLocalProfile(preset.toSnapshot());
+    }
+    await _storage.write(
+      key: _returningPresetVersionKey,
+      value: '$returningProfilePresetVersion',
+    );
+  }
+
+  /// Shared across instances: logout asks several times at once, and parallel
+  /// first runs would each snapshot and write the slots.
+  static Future<void>? _ensuringLocalProfiles;
+  static Future<void>? _switchingLocalProfile;
+
+  Future<void> _createLocalProfilesIfMissing() async {
+    final existing = await _readOrDiscard(_localProfilesKey);
+    if (existing != null && existing.isNotEmpty) return;
+
+    final current = await _captureLocalProfile();
+    final secure = Map<String, dynamic>.from(
+      current['secure'] as Map? ?? const <String, dynamic>{},
+    );
+    // A new install can already have a few default game keys written while the
+    // app boots. Only completed onboarding identifies a pre-profile career.
+    final hasExistingCareer = secure[_onboardingCompleteKey] == 'true';
+    // The active career already lives in the normal `pd_*` keys. Persist only
+    // the inactive slot here; keeping another copy of the active career made
+    // every switch briefly hold three full saves and could exceed the web
+    // localStorage quota.
+    final slots = <String, dynamic>{
+      if (hasExistingCareer)
+        LocalProfileSlot.firstTime.name: _emptyLocalProfile()
+      else
+        LocalProfileSlot.returning.name: _emptyLocalProfile(),
+    };
+    await _storage.write(key: _localProfilesKey, value: jsonEncode(slots));
+    await _storage.write(
+      key: _activeLocalProfileKey,
+      value: hasExistingCareer
+          ? LocalProfileSlot.returning.name
+          : LocalProfileSlot.firstTime.name,
+    );
+  }
+
+  Future<LocalProfileSlot> loadActiveLocalProfile() async {
+    await ensureLocalProfiles();
+    final raw = await _readOrDiscard(_activeLocalProfileKey);
+    return switch (raw) {
+      'returning' => LocalProfileSlot.returning,
+      _ => LocalProfileSlot.firstTime,
+    };
+  }
+
+  /// Whether [slot] has reached the completed-onboarding state and can be
+  /// presented as a resumable career in the switchboard.
+  Future<bool> isLocalProfileReady(LocalProfileSlot slot) async {
+    final active = await loadActiveLocalProfile();
+    if (active == slot) return loadOnboardingComplete();
+    final slots = await _readLocalProfiles();
+    final snapshot = Map<String, dynamic>.from(
+      slots[slot.name] as Map? ?? const <String, dynamic>{},
+    );
+    final secure = Map<String, dynamic>.from(
+      snapshot['secure'] as Map? ?? const <String, dynamic>{},
+    );
+    return secure[_onboardingCompleteKey] == 'true';
+  }
+
+  Future<LocalProfileSummary> loadLocalProfileSummary(
+    LocalProfileSlot slot, {
+    DateTime? now,
+  }) async {
+    final active = await loadActiveLocalProfile();
+    Map<String, dynamic> secure;
+    if (active == slot) {
+      secure = Map<String, dynamic>.from(
+        (await _captureLocalProfile())['secure'] as Map,
+      );
+    } else {
+      final slots = await _readLocalProfiles();
+      final snapshot = Map<String, dynamic>.from(
+        slots[slot.name] as Map? ?? _emptyLocalProfile(),
+      );
+      secure = Map<String, dynamic>.from(
+        snapshot['secure'] as Map? ?? const <String, dynamic>{},
+      );
+    }
+    final ready = secure[_onboardingCompleteKey] == 'true';
+    PlayerProgression progression = PlayerProgression.initial();
+    StreakSnapshot streak = StreakSnapshot.fromJson(const {});
+    try {
+      final raw = secure[_progressionKey] as String?;
+      if (raw != null) {
+        progression = PlayerProgression.fromJson(
+          Map<String, dynamic>.from(jsonDecode(raw) as Map),
+        );
+      }
+    } catch (_) {}
+    try {
+      final raw = secure[_streakKey] as String?;
+      if (raw != null) {
+        streak = StreakSnapshot.fromJson(
+          Map<String, dynamic>.from(jsonDecode(raw) as Map),
+        );
+      }
+    } catch (_) {}
+    return LocalProfileSummary(
+      slot: slot,
+      ready: ready,
+      displayName:
+          (secure[_displayNameKey] as String?)?.trim().isNotEmpty == true
+          ? (secure[_displayNameKey] as String).trim()
+          : 'PLAYER ONE',
+      level: progression.playerLevel,
+      streak: streak.current(StreakCategory.overall, now: now),
+    );
+  }
+
+  /// Swaps the live career with the inactive slot without ever persisting a
+  /// third full copy. Secure-store mutations are deliberately serialized: the
+  /// web backend is not reliable when many encrypt/delete operations race.
+  /// Any failure rolls the live keys and inactive slot back to their original
+  /// state before the error reaches the selector.
+  Future<void> switchLocalProfile(LocalProfileSlot target) {
+    final inFlight = _switchingLocalProfile;
+    if (inFlight != null) return inFlight;
+    final operation = _switchLocalProfile(target);
+    _switchingLocalProfile = operation;
+    return operation.whenComplete(() {
+      if (identical(_switchingLocalProfile, operation)) {
+        _switchingLocalProfile = null;
+      }
+    });
+  }
+
+  Future<void> _switchLocalProfile(LocalProfileSlot target) async {
+    final active = await loadActiveLocalProfile();
+    if (target == active) return;
+
+    final slots = await _readLocalProfiles();
+    final outgoingSnapshot = await _captureLocalProfile();
+    final targetSnapshot = Map<String, dynamic>.from(
+      slots[target.name] as Map? ?? _emptyLocalProfile(),
+    );
+    final nextSlots = <String, dynamic>{active.name: outgoingSnapshot};
+
+    try {
+      // Clear first to release the active career's storage before its snapshot
+      // replaces the target slot. This avoids the quota spike that previously
+      // made CONTINUE CAREER fail on web.
+      await _clearLiveProfile();
+      await _writeLocalProfiles(nextSlots);
+      await _applyLocalProfile(targetSnapshot);
+      await _storage.write(key: _activeLocalProfileKey, value: target.name);
+    } catch (error, stack) {
+      // The marker still names [active]. Rebuild that career and put [target]
+      // back as the sole inactive snapshot so retrying is safe.
+      try {
+        await _clearLiveProfile();
+        await _writeLocalProfiles(<String, dynamic>{
+          target.name: targetSnapshot,
+        });
+        await _applyLocalProfile(outgoingSnapshot);
+        await _storage.write(key: _activeLocalProfileKey, value: active.name);
+      } catch (_) {
+        // Preserve the original switch failure and stack for diagnostics.
+      }
+      Error.throwWithStackTrace(error, stack);
+    }
+  }
+
+  Future<Map<String, dynamic>> _readLocalProfiles() async {
+    await ensureLocalProfiles();
+    final raw = await _readOrDiscard(_localProfilesKey);
+    if (raw == null || raw.isEmpty) {
+      return <String, dynamic>{
+        LocalProfileSlot.firstTime.name: _emptyLocalProfile(),
+        LocalProfileSlot.returning.name: _emptyLocalProfile(),
+      };
+    }
+    try {
+      return Map<String, dynamic>.from(jsonDecode(raw) as Map);
+    } catch (_) {
+      return <String, dynamic>{
+        LocalProfileSlot.firstTime.name: _emptyLocalProfile(),
+        LocalProfileSlot.returning.name: _emptyLocalProfile(),
+      };
+    }
+  }
+
+  Future<void> _writeLocalProfiles(Map<String, dynamic> slots) =>
+      _storage.write(key: _localProfilesKey, value: jsonEncode(slots));
+
+  Map<String, dynamic> _emptyLocalProfile() => <String, dynamic>{
+    'secure': <String, String>{},
+    'preferences': <String, dynamic>{},
+  };
+
+  bool _isManagedSecureKey(String key) =>
+      key.startsWith('pd_') &&
+      key != _localProfilesKey &&
+      key != _activeLocalProfileKey;
+
+  bool _isManagedPreferenceKey(String key) =>
+      key.startsWith('pd_') || key == _walletKey;
+
+  Future<Map<String, dynamic>> _captureLocalProfile() async {
+    final secureValues = await _readAllSafely();
+    final preferences = await SharedPreferences.getInstance();
+    final secure = <String, String>{
+      for (final entry in secureValues.entries)
+        if (_isManagedSecureKey(entry.key)) entry.key: entry.value,
+    };
+    final preferenceValues = <String, dynamic>{
+      for (final key in preferences.getKeys())
+        if (_isManagedPreferenceKey(key)) key: preferences.get(key),
+    };
+    return <String, dynamic>{'secure': secure, 'preferences': preferenceValues};
+  }
+
+  Future<void> _restoreLocalProfile(Map<String, dynamic> snapshot) async {
+    await _clearLiveProfile();
+    await _applyLocalProfile(snapshot);
+  }
+
+  Future<void> _clearLiveProfile() async {
+    final currentSecure = await _readAllSafely();
+    for (final key in currentSecure.keys.toList()) {
+      if (_isManagedSecureKey(key)) {
+        await _storage.delete(key: key);
+      }
+    }
+
+    final preferences = await SharedPreferences.getInstance();
+    for (final key in preferences.getKeys().toList()) {
+      if (_isManagedPreferenceKey(key)) {
+        await preferences.remove(key);
+      }
+    }
+  }
+
+  Future<void> _applyLocalProfile(Map<String, dynamic> snapshot) async {
+    final secure = Map<String, dynamic>.from(
+      snapshot['secure'] as Map? ?? const <String, dynamic>{},
+    );
+    for (final entry in secure.entries) {
+      await _storage.write(key: entry.key, value: entry.value as String);
+    }
+
+    final preferences = await SharedPreferences.getInstance();
+    final preferenceValues = Map<String, dynamic>.from(
+      snapshot['preferences'] as Map? ?? const <String, dynamic>{},
+    );
+    for (final entry in preferenceValues.entries) {
+      await _restorePreference(preferences, entry.key, entry.value);
+    }
+  }
+
+  Future<bool> _restorePreference(
+    SharedPreferences preferences,
+    String key,
+    dynamic value,
+  ) {
+    if (value is String) return preferences.setString(key, value);
+    if (value is int) return preferences.setInt(key, value);
+    if (value is double) return preferences.setDouble(key, value);
+    if (value is bool) return preferences.setBool(key, value);
+    if (value is List) {
+      return preferences.setStringList(key, List<String>.from(value));
+    }
+    return Future.value(false);
+  }
 
   Future<List<StoredDeckSlot>> loadDecks() async {
     try {
@@ -738,6 +1117,24 @@ class SecureGameStorage {
     await _storage.write(key: _selectedAvatarKey, value: avatarId);
   }
 
+  Future<String> loadDisplayName() async {
+    try {
+      final raw = await _storage.read(key: _displayNameKey);
+      final value = raw?.trim() ?? '';
+      return value.isEmpty ? 'PLAYER ONE' : value;
+    } catch (_) {
+      return 'PLAYER ONE';
+    }
+  }
+
+  Future<void> saveDisplayName(String displayName) async {
+    final value = displayName.trim();
+    await _storage.write(
+      key: _displayNameKey,
+      value: value.isEmpty ? 'PLAYER ONE' : value,
+    );
+  }
+
   Future<String?> loadSelectedProfileBannerId() async {
     try {
       final raw = await _storage.read(key: _selectedProfileBannerKey);
@@ -791,6 +1188,25 @@ class SecureGameStorage {
     await _storage.write(
       key: _followedLeaguesKey,
       value: jsonEncode(leagueIds),
+    );
+  }
+
+  /// Every sport picked during profile setup, by `Sport.name`. The first of
+  /// them is also stored on its own as the primary sport.
+  Future<List<String>> loadFollowedSportNames() async {
+    try {
+      final raw = await _storage.read(key: _followedSportsKey);
+      if (raw == null || raw.isEmpty) return const [];
+      return List<String>.from(jsonDecode(raw) as List);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> saveFollowedSportNames(List<String> sportNames) async {
+    await _storage.write(
+      key: _followedSportsKey,
+      value: jsonEncode(sportNames),
     );
   }
 
@@ -907,6 +1323,7 @@ class SecureGameStorage {
       _storage.delete(key: _selectedAvatarKey),
       _storage.delete(key: _selectedProfileBannerKey),
       _storage.delete(key: _primarySportKey),
+      _storage.delete(key: _followedSportsKey),
       _storage.delete(key: _selectedTimeZoneKey),
       _storage.delete(key: _followedLeaguesKey),
       _storage.delete(key: _favoriteTeamsKey),
@@ -949,6 +1366,26 @@ class SecureGameStorage {
   Future<void> saveStreak(StreakSnapshot streak) async {
     await _storage.write(key: _streakKey, value: jsonEncode(streak.toJson()));
   }
+
+  /// `null` when never written: the bloc then grandfathers profiles that
+  /// finished onboarding before sport/game unlocks shipped. A failed read
+  /// also returns `null`, which only ever errs towards everything unlocked.
+  Future<UnlockProgress?> loadUnlockProgress() async {
+    try {
+      final raw = await _storage.read(key: _unlockProgressKey);
+      if (raw == null || raw.isEmpty) return null;
+      return UnlockProgress.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveUnlockProgress(UnlockProgress progress) => _storage.write(
+    key: _unlockProgressKey,
+    value: jsonEncode(progress.toJson()),
+  );
 
   // Do not silently reset failed quest reads: that could erase claim receipts.
   Future<DailyQuestSnapshot> loadDailyQuests() async {

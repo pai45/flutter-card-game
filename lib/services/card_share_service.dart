@@ -7,6 +7,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../config/theme.dart';
 import '../models/cards.dart';
+import '../models/pitch_duel_rules.dart';
 import '../utils/label_helpers.dart';
 import '../widgets/cyber/cyber_widgets.dart';
 
@@ -123,17 +124,16 @@ class CardShareController {
 String playerCardShareText(PlayerCard card) {
   return 'I just pulled ${_article(card.tier.name)} '
       '${card.tier.name.toUpperCase()} ${playerRoleLabel(card)} card: '
-      '${card.name} (${card.rating} OVR). ${card.trait}. '
+      '${card.name} (${card.rating} OVR). ${pitchPlayerAbility(card)} '
       'Can your squad stop this?';
 }
 
 @visibleForTesting
 String actionCardShareText(ActionCard card) {
-  final risk = card.risky ? ' High risk, high reward.' : '';
   return 'I just packed ${_article(card.category.name)} '
       '${card.category.name.toUpperCase()} action card: ${card.title} '
       '(${card.power > 0 ? '+' : ''}${card.power} PWR). '
-      '${card.effect}.$risk';
+      '${pitchActionAbility(card)}';
 }
 
 String _article(String word) {
@@ -169,7 +169,10 @@ class _CardSharePayload {
       stats: [
         ('OVR', '${card.rating}'),
         ('POS', card.position),
-        ('TRAIT', card.trait.toUpperCase()),
+        (
+          pitchAffinityFor(card) == null ? 'TRAIT' : 'AFFINITY',
+          pitchAffinityFor(card)?.label ?? card.trait.toUpperCase(),
+        ),
       ],
       caption:
           'I just pulled $tier ${playerRoleLabel(card)} heat. '
@@ -194,11 +197,9 @@ class _CardSharePayload {
       stats: [
         ('PWR', '${card.power > 0 ? '+' : ''}${card.power}'),
         ('TYPE', actionCode(card.category)),
-        ('RISK', card.risky ? 'YES' : 'NO'),
+        ('USE', '1 / MATCH'),
       ],
-      caption:
-          'This card can flip a match in one move.'
-          '${card.risky ? ' High risk, high reward.' : ''}',
+      caption: card.effect,
       shareText: actionCardShareText(card),
       card: CyberActionCardTile(
         card: card,
@@ -276,7 +277,7 @@ class _CardSharePoster extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontFamily: 'Onest',
+                    fontFamily: Cyber.gameBodyFont,
                     fontWeight: FontWeight.w800,
                     fontSize: 15,
                     height: 1.15,

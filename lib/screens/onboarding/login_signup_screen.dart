@@ -83,7 +83,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                         const SizedBox(height: 24),
                         Text(
                           'Enter Your Email',
-                          style: Cyber.body(16, color: Cyber.muted),
+                          style: Cyber.bodyFor(context, 16, color: Cyber.muted),
                         ),
                         const SizedBox(height: 12),
                         TextField(
@@ -94,7 +94,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                           textInputAction: TextInputAction.done,
                           autocorrect: false,
                           enableSuggestions: false,
-                          style: Cyber.body(16),
+                          style: Cyber.bodyFor(context, 16),
                           onChanged: (_) => setState(() => _edited = true),
                           onSubmitted: (_) {
                             setState(() => _edited = true);
@@ -102,7 +102,11 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                           },
                           decoration: InputDecoration(
                             hintText: 'champion@arena.com',
-                            hintStyle: Cyber.body(16, color: Cyber.muted),
+                            hintStyle: Cyber.bodyFor(
+                              context,
+                              16,
+                              color: Cyber.muted,
+                            ),
                             filled: true,
                             fillColor: Cyber.bg2,
                             contentPadding: const EdgeInsets.all(20),
@@ -120,7 +124,11 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                             errorText: _edited && !_valid
                                 ? 'Enter a valid email to continue.'
                                 : null,
-                            errorStyle: Cyber.body(12, color: Cyber.danger),
+                            errorStyle: Cyber.bodyFor(
+                              context,
+                              12,
+                              color: Cyber.danger,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -150,7 +158,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                         const SizedBox(height: 16),
                         Text(
                           'By continuing, you agree to our',
-                          style: Cyber.body(14, color: Cyber.muted),
+                          style: Cyber.bodyFor(context, 14, color: Cyber.muted),
                         ),
                         Wrap(
                           crossAxisAlignment: WrapCrossAlignment.center,
@@ -161,7 +169,11 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                             ),
                             Text(
                               ' & ',
-                              style: Cyber.body(14, color: Cyber.muted),
+                              style: Cyber.bodyFor(
+                                context,
+                                14,
+                                color: Cyber.muted,
+                              ),
                             ),
                             _PolicyLink(
                               label: 'Privacy Policy',
@@ -185,7 +197,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                         Text(
                           'Preview — no account will be created',
                           textAlign: TextAlign.center,
-                          style: Cyber.body(11, color: Cyber.muted),
+                          style: Cyber.bodyFor(context, 11, color: Cyber.muted),
                         ),
                       ],
                     ),
@@ -214,7 +226,8 @@ class _PolicyLink extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Text(
           label,
-          style: Cyber.body(
+          style: Cyber.bodyFor(
+            context,
             14,
             color: Cyber.cyan,
           ).copyWith(decoration: TextDecoration.underline),

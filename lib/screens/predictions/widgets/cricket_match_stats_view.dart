@@ -140,7 +140,7 @@ class _CricketOverview extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   details.seriesNote,
-                  style: Cyber.body(12, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, 12, color: Cyber.muted),
                 ),
               ],
             ),
@@ -715,13 +715,13 @@ class _BallCard extends StatelessWidget {
                 if (ball.preText != null) ...[
                   Text(
                     ball.preText!,
-                    style: Cyber.body(10.5, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, 10.5, color: Cyber.muted),
                   ),
                   const SizedBox(height: 4),
                 ],
                 Text(ball.shortText, style: Cyber.label(8, color: accent)),
                 const SizedBox(height: 4),
-                Text(ball.text, style: Cyber.body(12)),
+                Text(ball.text, style: Cyber.bodyFor(context, 12)),
                 if (ball.dismissal != null) ...[
                   const SizedBox(height: 4),
                   Text(
@@ -733,7 +733,7 @@ class _BallCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     ball.postText!,
-                    style: Cyber.body(10.5, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, 10.5, color: Cyber.muted),
                   ),
                 ],
                 const SizedBox(height: 6),
@@ -770,7 +770,7 @@ class _CricketInfo extends StatelessWidget {
               style: Cyber.label(7.5, color: Cyber.muted),
             ),
           ),
-          Expanded(child: Text(value, style: Cyber.body(11.5))),
+          Expanded(child: Text(value, style: Cyber.bodyFor(context, 11.5))),
         ],
       ),
     );

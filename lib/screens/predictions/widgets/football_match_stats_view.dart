@@ -139,7 +139,7 @@ class _MatchIntelPanel extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             details?.season ?? 'Live competition feed',
-            style: Cyber.body(12, color: Cyber.muted),
+            style: Cyber.bodyFor(context, 12, color: Cyber.muted),
           ),
           const SizedBox(height: 16),
           _IntelCell(
@@ -175,7 +175,7 @@ class _FeedStatePanel extends StatelessWidget {
         children: [
           Text(
             _feedMessage(match),
-            style: Cyber.body(12.5, color: Colors.white70),
+            style: Cyber.bodyFor(context, 12.5, color: Colors.white70),
           ),
           const SizedBox(height: 12),
           _FeedFact(
@@ -214,7 +214,7 @@ class _FeedFact extends StatelessWidget {
           Text(
             value,
             textAlign: TextAlign.right,
-            style: Cyber.body(11, color: Colors.white70),
+            style: Cyber.bodyFor(context, 11, color: Colors.white70),
           ),
         ],
       ),
@@ -274,7 +274,7 @@ class _IntelCell extends StatelessWidget {
             style:
                 (numeric
                         ? Cyber.display(13, letterSpacing: 0.6)
-                        : Cyber.body(11.5, weight: FontWeight.w700))
+                        : Cyber.bodyFor(context, 11.5, weight: FontWeight.w700))
                     .copyWith(
                       fontFeatures: numeric
                           ? const [FontFeature.tabularFigures()]
@@ -784,9 +784,10 @@ class _EventBody extends StatelessWidget {
           Text(
             event.scoreDisplay!,
             textAlign: align,
-            style: Cyber.display(11, color: accent).copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+            style: Cyber.display(
+              11,
+              color: accent,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
         );
       }
@@ -906,7 +907,7 @@ class _EventReport extends StatelessWidget {
           child: Text(
             text,
             textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-            style: Cyber.body(11.5, color: Cyber.muted),
+            style: Cyber.bodyFor(context, 11.5, color: Cyber.muted),
           ),
         ),
       ),
@@ -1065,7 +1066,10 @@ class _CommentaryRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 5),
                 ],
-                Text(item.text, style: Cyber.body(12, color: Cyber.muted)),
+                Text(
+                  item.text,
+                  style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                ),
                 if (item.players.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(

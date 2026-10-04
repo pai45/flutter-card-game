@@ -41,12 +41,21 @@ class SportUnderlineTabs extends StatelessWidget {
 
 /// MATCH / GAMES browse strip: TRENDING, Football, Cricket, Basketball,
 /// Motorsport, then MORE. MORE is an action, not a selectable destination.
+///
+/// With sport unlocks active, pass [sports] (the unlocked sports, home sport
+/// first) and [lockedSports]: locked sports trail as dimmed padlocked teasers
+/// that call [onLockedSportTap] instead of switching tab, and [showTrending]
+/// hides the cross-sport TRENDING feed while only one sport is open.
 class SportHubTabs extends StatelessWidget {
   const SportHubTabs({
     required this.activeIndex,
     required this.onTap,
     required this.onMore,
     this.trailingAction,
+    this.sports,
+    this.lockedSports = const [],
+    this.showTrending = true,
+    this.onLockedSportTap,
     super.key,
   });
 
@@ -54,6 +63,10 @@ class SportHubTabs extends StatelessWidget {
   final ValueChanged<int> onTap;
   final VoidCallback onMore;
   final Widget? trailingAction;
+  final List<Sport>? sports;
+  final List<Sport> lockedSports;
+  final bool showTrending;
+  final ValueChanged<Sport>? onLockedSportTap;
 
   /// The sports that get a shortcut on the compact strip. Everything else is
   /// reached through ALL SPORTS: the strip also carries TRENDING, the overflow
@@ -74,44 +87,50 @@ class SportHubTabs extends StatelessWidget {
       .where(_shortcutSports.contains)
       .toList(growable: false);
 
-  static final _labels = <String>[
-    'TRENDING',
-    for (final sport in _visibleSports)
-      sportModuleFor(sport).label.toUpperCase(),
-    'ALL SPORTS',
-  ];
-
-  static final _icons = <IconData>[
-    Icons.local_fire_department_rounded,
-    for (final sport in _visibleSports) sportModuleFor(sport).icon,
-    Icons.more_horiz_rounded,
-  ];
-
-  static final _iconColors = <Color>[
-    Cyber.cyan,
-    for (final sport in _visibleSports) sportModuleFor(sport).accent,
-    Cyber.muted,
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final open = sports ?? _visibleSports;
+    final strip = [...open, ...lockedSports];
+    final lead = showTrending ? 1 : 0;
+    final labels = <String>[
+      if (showTrending) 'TRENDING',
+      for (final sport in strip) sportModuleFor(sport).label.toUpperCase(),
+      'ALL SPORTS',
+    ];
+    final icons = <IconData>[
+      if (showTrending) Icons.local_fire_department_rounded,
+      for (final sport in strip) sportModuleFor(sport).icon,
+      Icons.more_horiz_rounded,
+    ];
+    final iconColors = <Color>[
+      if (showTrending) Cyber.cyan,
+      for (final sport in strip) sportModuleFor(sport).accent,
+      Cyber.muted,
+    ];
+    final locked = <bool>[
+      if (showTrending) false,
+      for (final sport in strip) lockedSports.contains(sport),
+      false,
+    ];
+
     final selectedSport = sportForHubIndex(activeIndex);
     final selectedShortcut = selectedSport == null
         ? -1
-        : _visibleSports.indexOf(selectedSport);
+        : open.indexOf(selectedSport);
     final visibleActiveIndex = activeIndex == hubTrendingTabIndex
-        ? hubTrendingTabIndex
+        ? (showTrending ? 0 : -1)
         : selectedShortcut < 0
         ? -1
-        : selectedShortcut + 1;
-    final moreIndex = _labels.length - 1;
+        : selectedShortcut + lead;
+    final moreIndex = labels.length - 1;
     final accent = selectedSport == null
         ? Cyber.cyan
         : sportModuleFor(selectedSport).accent;
     final tabs = CyberUnderlineTabs(
-      labels: _labels,
-      icons: _icons,
-      iconColors: _iconColors,
+      labels: labels,
+      icons: icons,
+      iconColors: iconColors,
+      locked: lockedSports.isEmpty ? null : locked,
       activeIndex: visibleActiveIndex,
       accent: accent,
       onTap: (index) {
@@ -119,11 +138,16 @@ class SportHubTabs extends StatelessWidget {
           onMore();
           return;
         }
-        if (index == hubTrendingTabIndex) {
+        if (showTrending && index == 0) {
           onTap(hubTrendingTabIndex);
           return;
         }
-        onTap(hubIndexForSport(_visibleSports[index - 1]));
+        final sport = strip[index - lead];
+        if (lockedSports.contains(sport)) {
+          onLockedSportTap?.call(sport);
+          return;
+        }
+        onTap(hubIndexForSport(sport));
       },
     );
     return CyberUnderlineTabsWithAction(

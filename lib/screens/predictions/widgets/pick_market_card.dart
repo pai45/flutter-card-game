@@ -109,7 +109,12 @@ class _PickMarketCardState extends State<PickMarketCard>
               market.question,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.body(18, weight: FontWeight.w700, height: 1.12),
+              style: Cyber.bodyFor(
+                context,
+                18,
+                weight: FontWeight.w700,
+                height: 1.12,
+              ),
             ),
             if (_contextLine(market) != null) ...[
               const SizedBox(height: 4),
@@ -117,7 +122,8 @@ class _PickMarketCardState extends State<PickMarketCard>
                 _contextLine(market)!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.body(
+                style: Cyber.bodyFor(
+                  context,
                   11,
                   color: const Color(0xff9fb0c2),
                   weight: FontWeight.w600,
@@ -149,8 +155,7 @@ class _PickMarketCardState extends State<PickMarketCard>
                           : null,
                     ),
                   ),
-                  if (i != visibleOutcomes.length - 1)
-                    const SizedBox(width: 8),
+                  if (i != visibleOutcomes.length - 1) const SizedBox(width: 8),
                 ],
               ],
             ),
@@ -287,7 +292,12 @@ class _TeamNameText extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         textAlign: textAlign,
-        style: Cyber.body(18, weight: FontWeight.w700, height: 1.12),
+        style: Cyber.bodyFor(
+          context,
+          18,
+          weight: FontWeight.w700,
+          height: 1.12,
+        ),
       ),
     );
   }
@@ -331,7 +341,8 @@ class _StatusTag extends StatelessWidget {
                 ? 'LIVE'
                 : 'LIVE ${market.liveLabel}',
             style:
-                Cyber.body(
+                Cyber.bodyFor(
+                  context,
                   12.5,
                   color: Cyber.danger,
                   weight: FontWeight.w800,
@@ -346,8 +357,13 @@ class _StatusTag extends StatelessWidget {
     if (market.canBuy) {
       return Text(
         'CLOSES ${_closesLabel(market.closesAt)}',
-        style: Cyber.body(12, color: kFixtureTimeGold, weight: FontWeight.w700)
-            .copyWith(
+        style:
+            Cyber.bodyFor(
+              context,
+              12,
+              color: kFixtureTimeGold,
+              weight: FontWeight.w700,
+            ).copyWith(
               letterSpacing: 1,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
@@ -355,7 +371,8 @@ class _StatusTag extends StatelessWidget {
     }
     return Text(
       pickMarketStatusLabel(market.status),
-      style: Cyber.body(
+      style: Cyber.bodyFor(
+        context,
         11,
         color: pickMarketStatusColor(market.status),
         weight: FontWeight.w700,

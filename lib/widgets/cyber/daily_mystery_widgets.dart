@@ -515,7 +515,12 @@ class _LandingHero extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 description,
-                style: Cyber.body(11.5, color: Cyber.muted, height: 1.3),
+                style: Cyber.bodyFor(
+                  context,
+                  11.5,
+                  color: Cyber.muted,
+                  height: 1.3,
+                ),
               ),
               const SizedBox(height: 10),
               Wrap(
@@ -1093,13 +1098,10 @@ class _CaseHeaderStrip extends StatelessWidget {
                 caseCode!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style:
-                    Cyber.label(
-                      compact ? 7 : 7.5,
-                      color: Cyber.muted,
-                    ).copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+                style: Cyber.label(
+                  compact ? 7 : 7.5,
+                  color: Cyber.muted,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
             ],
           ],
@@ -1294,14 +1296,11 @@ class _RedactedName extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: Text(
               '$maskedTotal CHARS',
-              style:
-                  Cyber.label(
-                    compact ? 6.5 : 7,
-                    color: Cyber.muted,
-                    letterSpacing: 1,
-                  ).copyWith(
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+              style: Cyber.label(
+                compact ? 6.5 : 7,
+                color: Cyber.muted,
+                letterSpacing: 1,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ),
         ],
@@ -1443,7 +1442,8 @@ class DailyMysteryAutocomplete extends StatelessWidget {
               controller: textController,
               focusNode: fieldFocus,
               textInputAction: TextInputAction.search,
-              style: Cyber.body(
+              style: Cyber.bodyFor(
+                context,
                 12,
                 color: AppTheme.textPrimary,
                 weight: FontWeight.w700,
@@ -1548,7 +1548,8 @@ class DailyMysteryAutocomplete extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   option,
-                                  style: Cyber.body(
+                                  style: Cyber.bodyFor(
+                                    context,
                                     12,
                                     color: AppTheme.textPrimary,
                                     weight: FontWeight.w700,
@@ -1978,7 +1979,8 @@ class _ArchiveCard extends StatelessWidget {
                         entry.prompt,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.body(
+                        style: Cyber.bodyFor(
+                          context,
                           10.5,
                           color: AppTheme.textPrimary,
                           weight: FontWeight.w700,
@@ -2040,10 +2042,12 @@ class DailyMysteryDebrief extends StatefulWidget {
     required this.onHome,
     required this.onLogs,
     required this.onConsumeReveal,
+    this.questReceipt,
     this.audioProfile = const DailyMysteryAudioProfile(),
     super.key,
   });
 
+  final Widget? questReceipt;
   final String title;
   final String subtitle;
   final bool won;
@@ -2182,7 +2186,7 @@ class _DailyMysteryDebriefState extends State<DailyMysteryDebrief> {
                 Text(
                   widget.promptDetail,
                   textAlign: TextAlign.center,
-                  style: Cyber.body(11, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, 11, color: Cyber.muted),
                 ),
               ],
             ),
@@ -2201,6 +2205,7 @@ class _DailyMysteryDebriefState extends State<DailyMysteryDebrief> {
               ),
             ],
           ),
+          if (_fresh && widget.questReceipt != null) widget.questReceipt!,
           const SizedBox(height: 20),
           HudCtaButton(
             label: 'RETURN HOME',

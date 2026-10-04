@@ -208,8 +208,10 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
           );
         }
       case GameplayEventType.overComplete:
-        final nextOver = event.payload['nextOver'] as int? ?? (s.currentOver + 1);
-        final name = event.payload['bowler'] as String? ?? s.currentBowler?.name;
+        final nextOver =
+            event.payload['nextOver'] as int? ?? (s.currentOver + 1);
+        final name =
+            event.payload['bowler'] as String? ?? s.currentBowler?.name;
         if (name != null) {
           playSound(SoundEffect.bannerSlam);
           HapticFeedback.mediumImpact();
@@ -347,7 +349,7 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
   void _rematch() {
     final config = _cubit.buildMatch(batsmanIds: widget.config.batsmanIds);
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(
+      gamePageRoute<void>(
         builder: (_) => BlocProvider.value(
           value: _cubit,
           child: FinalOverMatchScreen(config: config, onExit: widget.onExit),
@@ -574,7 +576,7 @@ class _FinalOverMatchGateState extends State<_FinalOverMatchGate> {
         title: 'FINAL OVER',
         queueLabel: 'SCANNING GLOBAL CRICKET QUEUE',
         player: MatchmakingFighter(
-          name: 'PLAYER ONE',
+          name: game.displayName,
           avatarAsset: playerAvatar.assetPath,
           frame: frame,
           badge: 'LV $level',

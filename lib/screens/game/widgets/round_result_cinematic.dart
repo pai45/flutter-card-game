@@ -6,7 +6,6 @@ import '../../../config/enums.dart';
 import '../../../config/theme.dart';
 import '../../../utils/label_helpers.dart';
 
-
 /// Reserved height for the verdict hero zone (icon row + 2-line narration).
 const _kVerdictH = 120.0;
 
@@ -302,7 +301,12 @@ class VerdictHero extends StatelessWidget {
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.body(13, color: Cyber.muted, height: 1.25),
+                      style: Cyber.bodyFor(
+                        context,
+                        13,
+                        color: Cyber.muted,
+                        height: 1.25,
+                      ),
                     ),
                   ],
                 ),

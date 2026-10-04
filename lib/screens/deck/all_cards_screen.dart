@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../models/pitch_duel_rules.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/game/game_bloc.dart';
@@ -199,11 +200,15 @@ class _SportCollectionTab extends StatelessWidget {
   final CardShareController shareController;
 
   List<PlayerCard> get _players {
-    final owned = _playerPoolFor(sport)
-        .where((card) => state.ownedCardIds.contains(card.id))
-        .where((card) => filter == 'ACT' ? false : _playerMatchesFilter(card, filter))
-        .toList()
-      ..sort((a, b) => b.rating.compareTo(a.rating));
+    final owned =
+        _playerPoolFor(sport)
+            .where((card) => state.ownedCardIds.contains(card.id))
+            .where(
+              (card) =>
+                  filter == 'ACT' ? false : _playerMatchesFilter(card, filter),
+            )
+            .toList()
+          ..sort((a, b) => b.rating.compareTo(a.rating));
     return owned;
   }
 
@@ -265,11 +270,8 @@ class _SportCollectionTab extends StatelessWidget {
                       card: card,
                       selected: false,
                       size: VisualCardSize.md,
-                      onTap: () => _showActionCardDetail(
-                        context,
-                        card,
-                        shareController,
-                      ),
+                      onTap: () =>
+                          _showActionCardDetail(context, card, shareController),
                     );
                   },
                 ),
@@ -394,9 +396,7 @@ class _CardGrid extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border(
               // Vertical net lines between columns (not on outer edges).
-              right: isLastInRow
-                  ? BorderSide.none
-                  : BorderSide(color: line),
+              right: isLastInRow ? BorderSide.none : BorderSide(color: line),
               // Horizontal net lines under every row.
               bottom: BorderSide(color: line),
             ),
@@ -657,14 +657,28 @@ class _PlayerCardDetailOverlayState extends State<_PlayerCardDetailOverlay>
                                   const SizedBox(width: 8),
                                   Flexible(
                                     child: _StatBadge(
-                                      label: 'TRAIT',
-                                      value: card.trait.toUpperCase(),
+                                      label: pitchAffinityFor(card) == null
+                                          ? 'TRAIT'
+                                          : 'AFFINITY',
+                                      value:
+                                          pitchAffinityFor(card)?.label ??
+                                          card.trait.toUpperCase(),
                                       color: Cyber.cyan,
                                     ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 18),
+                              if (pitchAffinityFor(card) != null)
+                                Text(
+                                  pitchPlayerAbility(card),
+                                  textAlign: TextAlign.center,
+                                  style: Cyber.bodyFor(
+                                    context,
+                                    12,
+                                    color: Cyber.cyan,
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -873,7 +887,7 @@ class _ActionCardDetailOverlayState extends State<_ActionCardDetailOverlay>
                                   ),
                                 ),
                                 child: Text(
-                                  card.effect,
+                                  pitchActionAbility(card),
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     color: Colors.white70,
@@ -892,14 +906,12 @@ class _ActionCardDetailOverlayState extends State<_ActionCardDetailOverlay>
                                         '${card.power > 0 ? '+' : ''}${card.power}',
                                     color: accent,
                                   ),
-                                  if (card.risky) ...[
-                                    const SizedBox(width: 8),
-                                    _StatBadge(
-                                      label: 'RISKY',
-                                      value: '⚠',
-                                      color: Cyber.amber,
-                                    ),
-                                  ],
+                                  const SizedBox(width: 8),
+                                  const _StatBadge(
+                                    label: 'MATCH',
+                                    value: 'ONE USE',
+                                    color: Cyber.cyan,
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 18),

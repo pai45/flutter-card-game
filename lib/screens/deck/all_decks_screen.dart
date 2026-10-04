@@ -153,8 +153,8 @@ class _DeckLockerViewState extends State<_DeckLockerView> {
                     key: ValueKey<Sport>(_selectedSport),
                     child: _SportLoadoutTab(
                       entry: entries[_activeSportTab],
-                      justSaved: entries[_activeSportTab].sport ==
-                          _lastSavedSport,
+                      justSaved:
+                          entries[_activeSportTab].sport == _lastSavedSport,
                       onEdit: () => _openEditor(entries[_activeSportTab].sport),
                       onPlaySport: widget.onPlaySport,
                     ),
@@ -187,7 +187,8 @@ class _DeckLockerViewState extends State<_DeckLockerView> {
         ],
         keeper: game.deckKeeper,
         actions: game.deckActions,
-        filled: game.deckAttackers.length +
+        filled:
+            game.deckAttackers.length +
             game.deckDefenders.length +
             (game.deckKeeper == null ? 0 : 1),
         total: 5,
@@ -263,37 +264,34 @@ class _DeckLockerViewState extends State<_DeckLockerView> {
     final basketball = context.read<BasketballCubit>();
     final grandPrix = context.read<GrandPrixCubit>();
     final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
+      gamePageRoute<bool>(
         builder: (routeContext) {
           void back() => Navigator.of(routeContext).pop(false);
           void onSaved() => Navigator.of(routeContext).pop(true);
           return switch (sport) {
             Sport.football => DeckBuilderScreen.management(
-                onBack: back,
-                onSaved: onSaved,
-              ),
+              onBack: back,
+              onSaved: onSaved,
+            ),
             Sport.cricket => FinalOverDeckBuilderScreen(
-                onBack: back,
-                onSaved: onSaved,
-              ),
+              onBack: back,
+              onSaved: onSaved,
+            ),
             Sport.basketball => BlocProvider.value(
-                value: basketball,
-                child: BasketballDeckBuilderScreen(
-                  onBack: back,
-                  onSaved: onSaved,
-                ),
-              ),
-            Sport.tennis => TennisDeckBuilderScreen(
+              value: basketball,
+              child: BasketballDeckBuilderScreen(
                 onBack: back,
                 onSaved: onSaved,
               ),
+            ),
+            Sport.tennis => TennisDeckBuilderScreen(
+              onBack: back,
+              onSaved: onSaved,
+            ),
             Sport.motorsport => BlocProvider.value(
-                value: grandPrix,
-                child: GrandPrixPitDeckScreen(
-                  onBack: back,
-                  onSaved: onSaved,
-                ),
-              ),
+              value: grandPrix,
+              child: GrandPrixPitDeckScreen(onBack: back, onSaved: onSaved),
+            ),
           };
         },
       ),
@@ -490,8 +488,12 @@ class _SportLoadoutTab extends StatelessWidget {
       _dealt(
         cardIndex++,
         entry.starter != null
-            ? _playerTile(entry.starter!, accent, VisualCardSize.lg,
-                starred: true)
+            ? _playerTile(
+                entry.starter!,
+                accent,
+                VisualCardSize.lg,
+                starred: true,
+              )
             : _EmptyLoadoutSlot(
                 label: label,
                 accent: accent,
@@ -503,12 +505,12 @@ class _SportLoadoutTab extends StatelessWidget {
   }
 
   Widget _dealt(int index, Widget child) => CyberDealtCard(
-        index: index,
-        initialDelay: const Duration(milliseconds: 60),
-        staggerMs: 45,
-        flyDistance: 72,
-        child: child,
-      );
+    index: index,
+    initialDelay: const Duration(milliseconds: 60),
+    staggerMs: 45,
+    flyDistance: 72,
+    child: child,
+  );
 
   Widget _playerTile(
     PlayerCard card,
@@ -631,9 +633,7 @@ class _EmptyLoadoutSlot extends StatelessWidget {
         alignment: Alignment.center,
         color: Cyber.bg.withValues(alpha: 0.5),
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border.all(color: Cyber.line),
-          ),
+          decoration: BoxDecoration(border: Border.all(color: Cyber.line)),
           child: SizedBox(
             width: width,
             height: height,
@@ -713,11 +713,7 @@ class _LoadoutLockedSeal extends StatelessWidget {
           Expanded(
             child: Text(
               '$label LOADOUT LOCKED',
-              style: Cyber.label(
-                10,
-                color: Cyber.success,
-                letterSpacing: 1.4,
-              ),
+              style: Cyber.label(10, color: Cyber.success, letterSpacing: 1.4),
             ),
           ),
           Text(

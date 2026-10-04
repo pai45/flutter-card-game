@@ -1,7 +1,7 @@
 # Tutorials, How to Play, and Support
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
+> **Last verified:** 2026-10-04
 > **Scope:** Contextual tutorials, rules/help hub, per-mode guides, and Talk to StatOz support entry
 
 ## Product Purpose
@@ -32,6 +32,32 @@ Talk to StatOz provides direct Bug, Feature Request, Score / Data Mismatch, and
 Shoutout channels. The same screen includes a Follow Us On panel for Instagram,
 Reddit, and YouTube, keeping the community destinations visible without
 competing with the support actions.
+
+### Pitch Duel clarity [BUILT]
+
+Briefing lists matching actions and +6. Card details and deck selection explain
+each affinity's +4, and RESERVED labels explain later-role coverage. Play/help
+copy describes one-use cards for both sides, two additive combinations, higher
+total resolution and exact-tie coin flips. Inactive fouls/red-card risks and old
+accuracy/bypass promises are removed from visible football card descriptions.
+The shot-meter tutorial pauses the 900 ms sweep until dismissed. Returning
+players keep their seen flags and take the faster one-second briefing path;
+first-time guidance remains skippable. The full guide explains draws and the
+separate Penalty Shootout mode. `pitch_duel_presentation_test.dart` directly
+checks pause and layout behavior.
+
+### Spotlight visibility and lifecycle [BUILT]
+
+The shared spotlight uses a root overlay entry, leaving the source route visible.
+Bounds include transforms and are measured after layout/scrolling in overlay
+coordinates. Overlapping clear regions are unioned, so they cannot become dark
+again. Highlighted controls receive real taps; surrounding controls are blocked.
+Only one spotlight can exist per overlay. The owner cancels it when disabled or
+disposed, and no full-screen dim is painted before valid target bounds exist.
+When the same coach widget is reused by the next phase, it cancels the old entry
+and schedules the new tutorial identity, rather than inheriting a completed flag.
+Pitch Duel play guidance follows player → action → power/COMMIT, showing full
+scrollable copy. Existing seen flags and skip persistence remain intact.
 
 ## Rewards and Progression
 
@@ -64,6 +90,7 @@ state; support delivery depends on the current Talk to StatOz implementation.
 
 ## Implementation References
 
+- [`lib/widgets/spotlight_walkthrough.dart`](../../../lib/widgets/spotlight_walkthrough.dart)
 - [`lib/widgets/tutorial.dart`](../../../lib/widgets/tutorial.dart)
 - [`lib/config/tutorial_steps.dart`](../../../lib/config/tutorial_steps.dart)
 - [`lib/screens/how_to_play/how_to_play_hub_screen.dart`](../../../lib/screens/how_to_play/how_to_play_hub_screen.dart)
@@ -72,6 +99,9 @@ state; support delivery depends on the current Talk to StatOz implementation.
 
 ## Tests
 
-No dedicated tutorial/How to Play test file is currently present. Participating
+`test/spotlight_walkthrough_test.dart` checks visible scaled/overlapping cutouts,
+tap routing, scrolling, disposal and phase-identity reuse.
+`test/pitch_duel_presentation_test.dart` checks the Pitch Duel meter tutorial pause.
+No dedicated whole-app How to Play test file is currently present. Participating
 mode widget tests provide indirect navigation coverage; new help behavior should
 add targeted tests.

@@ -5380,7 +5380,7 @@ const _actionBlueprints = <_ActionBlueprint>[
     basePower: 20,
     risky: false,
     icon: Icons.sports_soccer,
-    effectTemplate: '+{p} Attack, -5 Accuracy',
+    effectTemplate: '+{p} Attack Power',
   ),
   _ActionBlueprint(
     baseId: 'act3',
@@ -5389,7 +5389,7 @@ const _actionBlueprints = <_ActionBlueprint>[
     basePower: 12,
     risky: false,
     icon: Icons.auto_awesome,
-    effectTemplate: '+{p} Attack, Bypass Trait',
+    effectTemplate: '+{p} Attack Power',
   ),
   _ActionBlueprint(
     baseId: 'act4',
@@ -5398,7 +5398,7 @@ const _actionBlueprints = <_ActionBlueprint>[
     basePower: 10,
     risky: false,
     icon: Icons.turn_right,
-    effectTemplate: '+{p} Attack, +5 Scenario',
+    effectTemplate: '+{p} Attack Power',
   ),
   _ActionBlueprint(
     baseId: 'act5',
@@ -5407,7 +5407,7 @@ const _actionBlueprints = <_ActionBlueprint>[
     basePower: 25,
     risky: true,
     icon: Icons.my_location,
-    effectTemplate: '+{p} Attack, High Risk',
+    effectTemplate: '+{p} Attack Power',
   ),
   _ActionBlueprint(
     baseId: 'act6',
@@ -5416,7 +5416,7 @@ const _actionBlueprints = <_ActionBlueprint>[
     basePower: 18,
     risky: false,
     icon: Icons.flash_on,
-    effectTemplate: '+{p} Counter Bonus',
+    effectTemplate: '+{p} Attack Power',
   ),
   _ActionBlueprint(
     baseId: 'act7',
@@ -5434,7 +5434,7 @@ const _actionBlueprints = <_ActionBlueprint>[
     basePower: 12,
     risky: false,
     icon: Icons.compress,
-    effectTemplate: '+{p} Defense, Disrupt',
+    effectTemplate: '+{p} Defense Power',
   ),
   _ActionBlueprint(
     baseId: 'act9',
@@ -5443,7 +5443,7 @@ const _actionBlueprints = <_ActionBlueprint>[
     basePower: 10,
     risky: false,
     icon: Icons.block,
-    effectTemplate: '+{p} Defense, +5 Position',
+    effectTemplate: '+{p} Defense Power',
   ),
   _ActionBlueprint(
     baseId: 'act10',
@@ -5461,7 +5461,7 @@ const _actionBlueprints = <_ActionBlueprint>[
     basePower: 18,
     risky: false,
     icon: Icons.call_split,
-    effectTemplate: '+{p} Defense, Read Play',
+    effectTemplate: '+{p} Defense Power',
   ),
   _ActionBlueprint(
     baseId: 'act12',
@@ -5470,7 +5470,7 @@ const _actionBlueprints = <_ActionBlueprint>[
     basePower: 22,
     risky: true,
     icon: Icons.warning,
-    effectTemplate: '+{p} Defense, Foul Risk',
+    effectTemplate: '+{p} Defense Power',
   ),
   _ActionBlueprint(
     baseId: 'act13',
@@ -5479,16 +5479,16 @@ const _actionBlueprints = <_ActionBlueprint>[
     basePower: 30,
     risky: true,
     icon: Icons.local_fire_department,
-    effectTemplate: '+{p} Power, Red Card Risk',
+    effectTemplate: '+{p} Flexible Power',
   ),
   _ActionBlueprint(
     baseId: 'act14',
-    title: 'Tactical Foul',
+    title: 'Disrupt Play',
     category: ActionCategory.special,
     basePower: 8,
     risky: true,
     icon: Icons.flag,
-    effectTemplate: '+{p} Disrupt, Yellow Risk',
+    effectTemplate: '+{p} Flexible Power',
   ),
   _ActionBlueprint(
     baseId: 'act15',
@@ -5497,7 +5497,7 @@ const _actionBlueprints = <_ActionBlueprint>[
     basePower: 10,
     risky: false,
     icon: Icons.psychology,
-    effectTemplate: '-{p} Opponent Power',
+    effectTemplate: '+{p} Flexible Power',
   ),
   _ActionBlueprint(
     baseId: 'act16',
@@ -5506,7 +5506,7 @@ const _actionBlueprints = <_ActionBlueprint>[
     basePower: 8,
     risky: false,
     icon: Icons.healing,
-    effectTemplate: '+{p} All Stats',
+    effectTemplate: '+{p} Flexible Power',
   ),
 ];
 

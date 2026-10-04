@@ -1,7 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+/// Opt-in technical UI family. Colors and typography remain owned by Cyber.
+abstract final class CyberKit {
+  static const gap = 8.0;
+  static const inset = 16.0;
+  static const cut = 16.0;
+  static const smallCut = 8.0;
+  static const stroke = 1.0;
+  static const focusStroke = 2.0;
+  static const touchTarget = 48.0;
+  static const actionHeight = 56.0;
+  static const dockMinHeight = 620.0;
+  static const borderAlpha = 0.45;
+  static const entrance = Duration(milliseconds: 220);
+  static const press = Duration(milliseconds: 90);
+}
+
 class AppTheme {
+  static LinearGradient get pitchPortraitVeil => LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      backgroundPrimary.withValues(alpha: 0.05),
+      backgroundPrimary.withValues(alpha: 0.12),
+      backgroundPrimary,
+    ],
+    stops: const [0, 0.55, 1],
+  );
   static const Color whiteColor = Color(0xFFFFFFFF);
   static const Color blackColor = Color(0xFF000000);
   static const Color activeButtonColor = Color(0xFF2B7FFF);
@@ -140,6 +166,27 @@ class AppTheme {
   static const Color chartSurface = Color(0xFF10192D);
   static const Color gameCtaFill = Color(0xFF0F3E4F);
   static const Color gameCtaBorder = Color(0xFF087B95);
+
+  // Discovery-card identity only. Sport navigation and semantic state colours
+  // keep their existing tokens. White titles remain the common visual anchor.
+  static const Color gamePitchDuel = textPrimary;
+  static const Color gamePenalty = Color(0xFFFFA08C); // coral
+  static const Color gameFootballChess = profileBorder; // ice blue
+  static const Color gameFootballQuiz = matchesLabel; // electric violet
+  static const Color gameFootballBingo = Color(0xFFFFB968); // amber
+  static const Color gameFootballMystery = Color(0xFFFF94C1); // rose
+  static const Color gameFinalOver = white227; // silver
+  static const Color gameCricketQuiz = Color(0xFF9CE8C3); // seafoam
+  static const Color gameCricketMystery = Color(0xFF53D9BA); // jade
+  static const Color gameHoopDuel = yellowColor;
+  static const Color gameBasketballQuiz = Color(0xFFFFC08C); // apricot
+  static const Color gameBasketballMystery = Color(0xFFE5A4EA); // orchid
+  static const Color gameGrandPrix = Color(0xFFFF777D); // racing coral-red
+  static const Color gameMotorsportQuiz = Color(0xFFF58ACA); // hot pink
+  static const Color gameDriverMystery = Color(0xFFAFA9FF); // periwinkle
+  static const Color gameTennisRally = pickLabel;
+  static const Color gameTennisQuiz = Color(0xFFD4E887); // citron
+  static const Color gameWinnerMystery = Color(0xFF7CEAE5); // aqua
 
   // Shared animated arena background tokens.
   static const Color arenaSky = Color(0xFF020812);
@@ -566,6 +613,7 @@ class Cyber {
   static const cyan = AppTheme.textPrimary;
   static const accentGlow = Color(0x405cdfff);
   static const magenta = AppTheme.matchesLabel;
+
   /// Grand Prix Dash brand accent (racing red).
   static const f1Red = Color(0xFFF42D29);
   static const lime = AppTheme.pickLabel;
@@ -575,7 +623,7 @@ class Cyber {
   static const success = AppTheme.green700;
   static const red = AppTheme.redColor;
   static const violet = AppTheme.matchesLabel;
-  static const pink = Color(0xFFFF94C1); // pastel pink
+  static const pink = AppTheme.gameFootballMystery; // pastel pink
 
   static const border = AppTheme.border;
   static const line = AppTheme.settingsBorderColor;
@@ -593,6 +641,53 @@ class Cyber {
 
   static const displayFont = 'Orbitron';
   static const bodyFont = 'Onest';
+  static const gameBodyFont = 'Exo 2';
+
+  static String bodyFontFor(BuildContext context) =>
+      Theme.of(context).textTheme.bodyMedium?.fontFamily ?? bodyFont;
+
+  static ThemeData gameTypographyTheme(ThemeData base) {
+    TextStyle? withGameBody(TextStyle? style) => style?.fontFamily == bodyFont
+        ? style!.copyWith(fontFamily: gameBodyFont)
+        : style;
+
+    TextTheme withGameText(TextTheme theme) => theme.copyWith(
+      displayLarge: withGameBody(theme.displayLarge),
+      displayMedium: withGameBody(theme.displayMedium),
+      displaySmall: withGameBody(theme.displaySmall),
+      headlineLarge: withGameBody(theme.headlineLarge),
+      headlineMedium: withGameBody(theme.headlineMedium),
+      headlineSmall: withGameBody(theme.headlineSmall),
+      titleLarge: withGameBody(theme.titleLarge),
+      titleMedium: withGameBody(theme.titleMedium),
+      titleSmall: withGameBody(theme.titleSmall),
+      bodyLarge: withGameBody(theme.bodyLarge),
+      bodyMedium: withGameBody(theme.bodyMedium),
+      bodySmall: withGameBody(theme.bodySmall),
+      labelLarge: withGameBody(theme.labelLarge),
+      labelMedium: withGameBody(theme.labelMedium),
+      labelSmall: withGameBody(theme.labelSmall),
+    );
+
+    final listTiles = base.listTileTheme;
+    return base.copyWith(
+      textTheme: withGameText(base.textTheme),
+      primaryTextTheme: withGameText(base.primaryTextTheme),
+      listTileTheme: listTiles.copyWith(
+        titleTextStyle: listTiles.titleTextStyle?.copyWith(
+          fontFamily: gameBodyFont,
+        ),
+        subtitleTextStyle: listTiles.subtitleTextStyle?.copyWith(
+          fontFamily: gameBodyFont,
+        ),
+      ),
+      snackBarTheme: base.snackBarTheme.copyWith(
+        contentTextStyle: base.snackBarTheme.contentTextStyle?.copyWith(
+          fontFamily: gameBodyFont,
+        ),
+      ),
+    );
+  }
 
   static List<BoxShadow> glow(
     Color color, {
@@ -639,6 +734,23 @@ class Cyber {
     fontFeatures: fontFeatures,
     decoration: TextDecoration.none,
   );
+
+  static TextStyle bodyFor(
+    BuildContext context,
+    double size, {
+    Color color = Colors.white,
+    FontWeight weight = FontWeight.w500,
+    double letterSpacing = 0,
+    double height = 1.35,
+    List<FontFeature>? fontFeatures,
+  }) => body(
+    size,
+    color: color,
+    weight: weight,
+    letterSpacing: letterSpacing,
+    height: height,
+    fontFeatures: fontFeatures,
+  ).copyWith(fontFamily: bodyFontFor(context));
 
   static TextStyle label(
     double size, {

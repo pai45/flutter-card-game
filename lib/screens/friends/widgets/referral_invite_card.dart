@@ -77,7 +77,7 @@ class ReferralInviteCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 'Share your link. Earn when your friend joins.',
-                style: Cyber.body(12, color: Cyber.muted),
+                style: Cyber.bodyFor(context, 12, color: Cyber.muted),
               ),
               const SizedBox(height: 13),
               Container(

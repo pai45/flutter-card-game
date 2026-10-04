@@ -70,8 +70,80 @@ class _FakeAudioBackend implements AudioPlaybackBackend {
   Future<void> stopDynamicLoop() async => dynamicStops++;
 }
 
+class _LayeredBackend extends _FakeAudioBackend
+    implements GrandPrixAudioPlaybackBackend {
+  var starts = 0;
+  var stops = 0;
+  final mixes = <({double rpm, double load, double speed, double scrub})>[];
+  @override
+  Future<void> startGrandPrixLayers() async => starts++;
+  @override
+  Future<void> stopGrandPrixLayers() async => stops++;
+  @override
+  Future<void> updateGrandPrixLayers({
+    required double rpm,
+    required double load,
+    required double speed,
+    required double scrub,
+  }) async {
+    mixes.add((rpm: rpm, load: load, speed: speed, scrub: scrub));
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  testWidgets(
+    'race audio is owned by the active route and respects pause and mute',
+    (tester) async {
+      final backend = _LayeredBackend();
+      final controller = AudioController(backend: backend);
+      await controller.enterGrandPrixScene('first');
+      await controller.startGrandPrixAudio('first');
+      await controller.updateGrandPrixAudio(
+        'first',
+        rpm: .7,
+        load: 1,
+        speed: .8,
+        scrub: .2,
+      );
+      expect(backend.mixes.last.rpm, .7);
+      await controller.stopGrandPrixAudio('first');
+      final stopped = backend.mixes.length;
+      await controller.updateGrandPrixAudio(
+        'first',
+        rpm: 1,
+        load: 1,
+        speed: 1,
+        scrub: 1,
+      );
+      expect(backend.mixes.length, stopped);
+      final beforeRetry = backend.stops;
+      await controller.enterGrandPrixScene('retry');
+      // Retry grid does not retain old engine layers.
+      expect(backend.stops, greaterThan(beforeRetry));
+      await controller.startGrandPrixAudio('retry');
+      final stops = backend.stops;
+      await controller.leaveGrandPrixScene('first');
+      await controller.stopGrandPrixAudio('first');
+      expect(backend.stops, stops);
+      await controller.setMuted(true, persist: false);
+      final starts = backend.starts;
+      await controller.startGrandPrixAudio('retry');
+      expect(backend.starts, starts);
+      await controller.setMuted(false, persist: false);
+      expect(backend.starts, starts + 1);
+      controller.didChangeAppLifecycleState(AppLifecycleState.paused);
+      await tester.pump();
+      await controller.stopGrandPrixAudio('retry');
+      controller.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await tester.pump();
+      expect(backend.starts, starts + 1);
+      await controller.leaveGrandPrixScene('retry');
+      expect(controller.currentScene, isNull);
+      await controller.disposeAll();
+    },
+  );
 
   test('all runtime cue paths are unique and shipped', () {
     final cuePaths = SoundEffect.values.map((cue) => cue.spec.asset).toList();

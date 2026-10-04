@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../blocs/game/game_bloc.dart';
 import '../../../blocs/picks/picks_cubit.dart';
 import '../../../blocs/picks/picks_state.dart';
 import '../../../blocs/prediction/prediction_cubit.dart';
@@ -12,6 +13,7 @@ import '../../../config/sport_modules.dart';
 import '../../../config/theme.dart';
 import '../../../models/picks.dart';
 import '../../../models/sport_match.dart';
+import '../../../models/unlock_progress.dart';
 import '../../../utils/prediction_helpers.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
@@ -94,8 +96,10 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
     // PredictionCubit merges each sport result into its current fixture
     // snapshot. Keep these catalog-scoped loads ordered so concurrent
     // completions cannot replace fixtures added by another sport.
+    final unlocks =
+        context.read<GameBloc?>()?.state.unlocks ?? const UnlockProgress();
     for (final sport in matchTrendingSports) {
-      await cubit.loadSport(sport);
+      if (unlocks.isSportUnlocked(sport)) await cubit.loadSport(sport);
     }
     final catalogFixtures = await cubit.resolveCatalogFixtures(
       catalogFixtureIds,
@@ -113,8 +117,11 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
       builder: (context, predictionState) {
         return BlocBuilder<PicksCubit, PicksState>(
           builder: (context, picksState) {
+            final unlocks = context.select<GameBloc?, UnlockProgress>(
+              (bloc) => bloc?.state.unlocks ?? const UnlockProgress(),
+            );
             final catalog = matchTrendingCatalog
-                .where((item) => item.enabled)
+                .where((item) => trendingTileVisible(item, unlocks))
                 .toList(growable: false);
             final animate = widget.animateIntro && !_introReported;
             if (animate && catalog.isNotEmpty) {
@@ -147,7 +154,9 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
                         rowHeight:
                             catalog[index].kind == TrendingTileKind.match &&
                                 catalog[index].span == CyberBentoSpan.wide
-                            ? _kScoreboardRowHeight
+                            ? catalog[index].sport == Sport.cricket
+                                  ? _kCricketScoreboardRowHeight
+                                  : _kScoreboardRowHeight
                             : null,
                         child: StaggeredCardEntrance(
                           key: ValueKey(catalog[index].id),
@@ -264,6 +273,16 @@ class _TrendingMatchCard extends StatelessWidget {
     final module = sportModuleFor(match.sport);
     final live = match.status == MatchStatus.live;
     final finished = match.status == MatchStatus.finished;
+    if (match.sport == Sport.cricket) {
+      return _CricketTrendingMatchCard(
+        match: match,
+        leagueLabel: leagueLabel,
+        volumeOz: volumeOz,
+        potentialXp: potentialXp,
+        isFavorite: isFavorite,
+        onTap: onTap,
+      );
+    }
     final centerLabel = live
         ? '${match.liveMinute ?? 0}′'
         : finished
@@ -377,9 +396,235 @@ class _TrendingMatchCard extends StatelessWidget {
   }
 }
 
+/// Cricket has two innings, not one shared scoreline. Keep each score and its
+/// overs with its team, then give the outcome its own beat below the innings.
+class _CricketTrendingMatchCard extends StatelessWidget {
+  const _CricketTrendingMatchCard({
+    required this.match,
+    required this.leagueLabel,
+    required this.volumeOz,
+    required this.potentialXp,
+    required this.isFavorite,
+    required this.onTap,
+  });
+
+  final SportMatch match;
+  final String leagueLabel;
+  final int volumeOz;
+  final int potentialXp;
+  final bool isFavorite;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final live = match.status == MatchStatus.live;
+    final finished = match.status == MatchStatus.finished;
+    final result = (match.resultLine ?? match.cricketDetails?.result ?? '')
+        .trim();
+    final status = live
+        ? 'LIVE'
+        : isFavorite
+        ? 'YOUR CLUB'
+        : finished
+        ? 'FINISHED'
+        : 'UPCOMING';
+    final footer = live
+        ? 'IN PLAY'
+        : finished
+        ? 'FULL TIME'
+        : '+${potentialXp > 0 ? potentialXp : 50} XP MISSION';
+    final home = _cricketInningsDisplay(match, match.home);
+    final away = _cricketInningsDisplay(match, match.away);
+
+    return _TrendSignalShell(
+      semanticsLabel:
+          '${match.home.name} ${home.score}, ${match.away.name} ${away.score}'
+          '${result.isEmpty ? '' : ', $result'}',
+      accent: live ? Cyber.success : Cyber.cyan,
+      tag: status,
+      live: live,
+      scoreboard: true,
+      onTap: onTap,
+      child: Column(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 25, 14, 7),
+              child: Column(
+                children: [
+                  Text(
+                    leagueLabel.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Cyber.label(
+                      10,
+                      color: Cyber.muted,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  _CricketTrendingTeamRow(
+                    match: match,
+                    team: match.home,
+                    innings: home,
+                  ),
+                  const SizedBox(height: 6),
+                  _CricketTrendingTeamRow(
+                    match: match,
+                    team: match.away,
+                    innings: away,
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                    decoration: BoxDecoration(
+                      color: Cyber.bg.withValues(alpha: 0.4),
+                      border: Border(
+                        left: BorderSide(
+                          color: live ? Cyber.success : Cyber.cyan,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      result.isNotEmpty
+                          ? result
+                          : live
+                          ? 'MATCH IN PROGRESS'
+                          : finished
+                          ? 'FINAL SCORE'
+                          : '${_shortDate(match.kickoff)} · ${_kickoffTime(match.kickoff)}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Cyber.bodyFor(
+                        context,
+                        11,
+                        color: result.isNotEmpty
+                            ? AppTheme.textContrast
+                            : Cyber.muted,
+                        weight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          CyberTelemetryFooter(
+            key: ValueKey('trending-match-footer-${match.id}'),
+            leading: footer,
+            trailing: 'VOL ${formatOzCompact(volumeOz)} OZ',
+            leadingColor: live ? Cyber.success : Cyber.cyan,
+            leadingIcon: Icons.sports_cricket,
+            leadingIconColor: sportModuleFor(Sport.cricket).accent,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+typedef _CricketInningsDisplay = ({String score, String? context});
+
+_CricketInningsDisplay _cricketInningsDisplay(
+  SportMatch match,
+  SportTeam team,
+) {
+  final raw = team.id == match.home.id ? match.homeScore : match.awayScore;
+  final innings = match.cricketDetails?.innings
+      .where((value) => value.teamId == team.id)
+      .firstOrNull;
+  final value = raw?.trim().isNotEmpty == true
+      ? raw!.trim()
+      : innings?.score.trim();
+  if (value == null || value.isEmpty) return (score: '—', context: null);
+  final contextStart = value.indexOf('(');
+  final score = contextStart < 0
+      ? value
+      : value.substring(0, contextStart).trim();
+  final context = contextStart < 0
+      ? innings == null
+            ? null
+            : '${innings.overs} OV'
+      : value.substring(contextStart).trim();
+  return (score: score, context: context);
+}
+
+class _CricketTrendingTeamRow extends StatelessWidget {
+  const _CricketTrendingTeamRow({
+    required this.match,
+    required this.team,
+    required this.innings,
+  });
+
+  final SportMatch match;
+  final SportTeam team;
+  final _CricketInningsDisplay innings;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            TeamLogo(
+              team: team,
+              width: 32,
+              height: 32,
+              sport: Sport.cricket,
+              competition: match.leagueId,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                team.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.bodyFor(
+                  context,
+                  13,
+                  color: AppTheme.textContrast,
+                  weight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              innings.score,
+              maxLines: 1,
+              style: Cyber.display(
+                18,
+                color: AppTheme.textContrast,
+                letterSpacing: 0,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ],
+        ),
+        if (innings.context != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              innings.context!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: Cyber.label(
+                9,
+                color: Cyber.muted,
+                letterSpacing: 0,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 typedef _PickCategory = ({PickMarketType type, String label, IconData icon});
 
-/// Market categories surfaced as square shortcuts above the Trending grid.
+/// Market categories surfaced as compact shortcuts above the Trending grid.
 const _pickCategories = <_PickCategory>[
   (
     type: PickMarketType.match,
@@ -394,6 +639,8 @@ const _pickCategories = <_PickCategory>[
   (type: PickMarketType.event, label: 'EVENTS', icon: Icons.bolt_rounded),
 ];
 
+const double _kCategoryTabHeight = 116;
+
 class _PickCategoryStrip extends StatelessWidget {
   const _PickCategoryStrip({required this.picksState, required this.animate});
 
@@ -402,30 +649,25 @@ class _PickCategoryStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440),
-        child: Row(
-          children: [
-            for (var i = 0; i < _pickCategories.length; i++) ...[
-              if (i > 0) const SizedBox(width: 10),
-              Expanded(
-                child: AspectRatio(
-                  key: ValueKey(
-                    'trend-category-${_pickCategories[i].label.toLowerCase()}',
-                  ),
-                  aspectRatio: 1,
-                  child: StaggeredCardEntrance(
-                    index: i,
-                    animate: animate,
-                    child: _buildCard(context, _pickCategories[i]),
-                  ),
-                ),
+    return Row(
+      children: [
+        for (var i = 0; i < _pickCategories.length; i++) ...[
+          if (i > 0) const SizedBox(width: 8),
+          Expanded(
+            child: SizedBox(
+              key: ValueKey(
+                'trend-category-${_pickCategories[i].label.toLowerCase()}',
               ),
-            ],
-          ],
-        ),
-      ),
+              height: _kCategoryTabHeight,
+              child: StaggeredCardEntrance(
+                index: i,
+                animate: animate,
+                child: _buildCard(context, _pickCategories[i]),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -433,18 +675,16 @@ class _PickCategoryStrip extends StatelessWidget {
     final open = picksState.markets
         .where((market) => market.type == category.type && market.canBuy)
         .toList(growable: false);
-    final hot = open.any((market) {
-      final delta = market.latestDeltaFor(market.leadingOutcome.id);
-      return delta != null &&
-          delta.abs() >= _kHotDeltaThreshold &&
-          !market.isResultKnown;
-    });
+    int moveOf(PickMarket market) =>
+        (market.latestDeltaFor(market.leadingOutcome.id) ?? 0).abs();
+    bool isHot(PickMarket market) =>
+        moveOf(market) >= _kHotDeltaThreshold && !market.isResultKnown;
     return _PickCategoryCard(
       type: category.type,
       label: category.label,
       icon: category.icon,
       openCount: picksState.loading ? null : open.length,
-      hot: !picksState.loading && hot,
+      hot: !picksState.loading && open.any(isHot),
       onTap: () => AllPicksScreen.openFiltered(context, category.type),
     );
   }
@@ -480,74 +720,137 @@ class _PickCategoryCard extends StatelessWidget {
           : '$label, $openCount open markets',
       accent: Cyber.cyan,
       tag: label,
+      showTag: false,
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 28, 10, 10),
+        padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Spacer(),
             Row(
               children: [
-                Flexible(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      openCount?.toString() ?? '—',
-                      maxLines: 1,
-                      style: Cyber.display(
-                        20,
-                        color: Colors.white,
-                        letterSpacing: 0.3,
-                      ).copyWith(
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
+                _CategoryGlyph(icon: icon, color: typeColor, dimension: 28),
+                const Spacer(),
+                if (hot)
+                  _HotMoverTag(color: typeColor)
+                else
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 16,
+                    color: Cyber.cyan,
                   ),
-                ),
-                if (hot) ...[
-                  const SizedBox(width: 6),
-                  CyberPulse(
-                    period: const Duration(milliseconds: 700),
-                    builder: (context, t) => Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: typeColor.withValues(alpha: 0.25 + 0.75 * t),
-                        shape: BoxShape.circle,
-                        boxShadow: Cyber.glow(
-                          typeColor,
-                          alpha: 0.5 * t,
-                          blur: 6,
-                          spread: 0,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ),
-            const SizedBox(height: 3),
-            Row(
-              children: [
-                Icon(icon, size: 13, color: typeColor),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    'OPEN',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(
-                      10,
-                      color: Cyber.muted,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                ),
-              ],
+            const Spacer(),
+            Text(
+              label,
+              maxLines: 1,
+              style: Cyber.display(11, color: Colors.white, letterSpacing: 0.4),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              openCount?.toString() ?? '—',
+              maxLines: 1,
+              style: Cyber.display(
+                20,
+                color: Colors.white,
+                letterSpacing: 0.3,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+            Text(
+              'OPEN',
+              style: Cyber.label(10, color: Cyber.muted, letterSpacing: 0.2),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Chamfered type badge on a category shortcut — flat fill +
+/// border only (always-on chrome never glows).
+class _CategoryGlyph extends StatelessWidget {
+  const _CategoryGlyph({
+    required this.icon,
+    required this.color,
+    this.dimension = 42,
+  });
+
+  final IconData icon;
+  final Color color;
+  final double dimension;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: dimension,
+      child: CustomPaint(
+        painter: _CategoryGlyphPainter(color: color),
+        child: Center(
+          child: Icon(icon, size: dimension * 0.48, color: color),
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryGlyphPainter extends CustomPainter {
+  const _CategoryGlyphPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const cut = 8.0;
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width - cut, 0)
+      ..lineTo(size.width, cut)
+      ..lineTo(size.width, size.height)
+      ..lineTo(cut, size.height)
+      ..lineTo(0, size.height - cut)
+      ..close();
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Color.alphaBlend(color.withValues(alpha: 0.12), Cyber.bg),
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = color.withValues(alpha: 0.5),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _CategoryGlyphPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Pulsing HOT flag — only shown when a category holds a genuine mover, so
+/// the glow stays scarce.
+class _HotMoverTag extends StatelessWidget {
+  const _HotMoverTag({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPulse(
+      period: const Duration(milliseconds: 700),
+      builder: (context, t) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10 + 0.08 * t),
+          border: Border.all(color: color.withValues(alpha: 0.4 + 0.4 * t)),
+          boxShadow: Cyber.glow(color, alpha: 0.35 * t, blur: 6, spread: -2),
+        ),
+        child: Text(
+          'HOT',
+          style: Cyber.label(9, color: color, letterSpacing: 1),
         ),
       ),
     );
@@ -588,7 +891,8 @@ class _TeamLockup extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           textAlign: alignEnd ? TextAlign.end : TextAlign.start,
-          style: Cyber.body(
+          style: Cyber.bodyFor(
+            context,
             _kTrendingTileHeadingSize,
             weight: FontWeight.w800,
             height: 1.05,
@@ -773,7 +1077,8 @@ class _TrendingMarketCard extends StatelessWidget {
                             ? 4
                             : 3,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.body(
+                        style: Cyber.bodyFor(
+                          context,
                           _kTrendingTileHeadingSize,
                           weight: FontWeight.w800,
                           height: 1.12,
@@ -941,6 +1246,7 @@ class _TrendSignalShell extends StatelessWidget {
     this.live = false,
     this.scoreboard = false,
     this.hardElevated = true,
+    this.showTag = true,
   });
 
   final String semanticsLabel;
@@ -951,6 +1257,9 @@ class _TrendSignalShell extends StatelessWidget {
   final bool live;
   final bool scoreboard;
   final bool hardElevated;
+
+  /// Long tabs carry their own headline, so the corner tag can be dropped.
+  final bool showTag;
 
   @override
   Widget build(BuildContext context) {
@@ -993,7 +1302,7 @@ class _TrendSignalShell extends StatelessWidget {
                         color: chromeColor.withValues(alpha: 0.8),
                       ),
                     ),
-                    if (!scoreboard)
+                    if (!scoreboard && (showTag || live))
                       Positioned(
                         top: 10,
                         left: 12,
@@ -1254,6 +1563,7 @@ const _scoreboardNotchDepth = 16.0;
 
 /// Wide live-scoreboard cards are a strip, not a square cell — shorter row.
 const _kScoreboardRowHeight = 148.0;
+const _kCricketScoreboardRowHeight = 224.0;
 
 Path _trendSignalPath(Size size, {required bool scoreboard}) {
   const cut = 12.0;

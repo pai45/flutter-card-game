@@ -33,30 +33,40 @@ class FinalOverBowlerRevealOverlay extends StatelessWidget {
               children: [
                 Text(
                   'OVER $overNumber',
-                  style: Cyber.label(11, color: Cyber.muted, letterSpacing: 2.4),
+                  style: Cyber.label(
+                    11,
+                    color: Cyber.muted,
+                    letterSpacing: 2.4,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   bowlerName,
-                  style: Cyber.display(
-                    34,
-                    color: Colors.white,
-                    letterSpacing: 2,
-                  ).copyWith(
-                    shadows: Cyber.glow(Cyber.magenta, alpha: 0.45, blur: 18)
-                        .map(
-                          (s) => Shadow(
-                            color: s.color,
-                            blurRadius: s.blurRadius,
-                          ),
-                        )
-                        .toList(),
-                  ),
+                  style:
+                      Cyber.display(
+                        34,
+                        color: Colors.white,
+                        letterSpacing: 2,
+                      ).copyWith(
+                        shadows:
+                            Cyber.glow(Cyber.magenta, alpha: 0.45, blur: 18)
+                                .map(
+                                  (s) => Shadow(
+                                    color: s.color,
+                                    blurRadius: s.blurRadius,
+                                  ),
+                                )
+                                .toList(),
+                      ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'TAKES THE BALL',
-                  style: Cyber.label(10, color: Cyber.magenta, letterSpacing: 2),
+                  style: Cyber.label(
+                    10,
+                    color: Cyber.magenta,
+                    letterSpacing: 2,
+                  ),
                 ),
               ],
             ),
@@ -109,7 +119,7 @@ class FinalOverPauseOverlay extends StatelessWidget {
                     Text(
                       'The over is held exactly where you left it.',
                       textAlign: TextAlign.center,
-                      style: Cyber.body(12, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, 12, color: Cyber.muted),
                     ),
                     const SizedBox(height: 20),
                     HudCtaButton(

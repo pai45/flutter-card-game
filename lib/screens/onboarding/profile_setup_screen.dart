@@ -4,10 +4,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../config/game_ladder.dart';
 import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
 import '../../data/followable_leagues.dart';
-import '../../data/team_palettes.dart';
 import '../../models/avatar_option.dart';
 import '../../models/profile_banner_option.dart';
 import '../../models/sport_match.dart';
@@ -26,13 +26,19 @@ class ProfileSetupResult {
     required this.avatarId,
     required this.bannerId,
     required this.primarySport,
+    required this.sports,
     required this.followedLeagueIds,
     required this.favoriteTeams,
   });
 
   final String avatarId;
   final String bannerId;
+
+  /// The player's home sport — the only sport open until they unlock more.
   final Sport primarySport;
+
+  /// Always `[primarySport]`; kept as a list for the followed-sports store.
+  final List<Sport> sports;
   final List<String> followedLeagueIds;
   final Map<String, String> favoriteTeams;
 }
@@ -58,28 +64,51 @@ class ProfileSetupScreen extends StatefulWidget {
 }
 
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
-  static const int _stepCount = 3;
+  /// Avatar -> banner -> home sport, then that sport's club page.
+  static const int _fixedStepCount = 3;
 
   int _step = 0;
 
   late String _avatarId = avatarOptionById(widget.initialAvatarId).id;
   String _bannerId = profileBannerOptions.first.id;
-  Sport _primarySport = Sport.football;
+
+  /// The single home sport picked on step 3 (always exactly one entry).
+  final List<Sport> _selectedSports = [Sport.football];
   final List<String> _followedLeagueIds = [];
   final Map<String, String> _favoriteTeams = {};
 
-  String _activeLeagueId = followableLeaguesForSport(
-    Sport.football,
-  ).first.league.id;
+  /// Which league each sport's club page is showing. Kept per sport so paging
+  /// back returns to the league that sport was left on.
+  final Map<Sport, String> _activeLeagueBySport = {};
   bool _completing = false;
   // First-run brand splash + WELCOME reveal, shown before the setup steps.
   _EntryPhase _entryPhase = _EntryPhase.welcome;
 
-  List<FollowableLeague> get _availableLeagues =>
-      followableLeaguesForSport(_primarySport);
+  int get _stepCount => _fixedStepCount + _selectedSports.length;
 
-  FollowableLeague get _activeLeague =>
-      followableLeagueById(_activeLeagueId) ?? _availableLeagues.first;
+  /// The sport whose club page is on screen, or null on avatar/banner/sports.
+  Sport? get _activeClubSport =>
+      _step < _fixedStepCount ? null : _selectedSports[_step - _fixedStepCount];
+
+  Sport get _primarySport => _selectedSports.single;
+
+  List<FollowableLeague> _leaguesFor(Sport sport) =>
+      followableLeaguesForSport(sport);
+
+  String _activeLeagueIdFor(Sport sport) =>
+      _activeLeagueBySport[sport] ?? _leaguesFor(sport).first.league.id;
+
+  FollowableLeague _activeLeagueFor(Sport sport) =>
+      followableLeagueById(_activeLeagueIdFor(sport)) ??
+      _leaguesFor(sport).first;
+
+  /// Re-keys the step body so the slide-up entrance replays on every move —
+  /// including between two club pages, which share a widget type.
+  String get _stepIdentity {
+    final sport = _activeClubSport;
+    if (sport == null) return 'step_$_step';
+    return 'step_${_step}_${sport.name}_${_activeLeagueIdFor(sport)}';
+  }
 
   bool get _isLastVisibleStep => _step == _stepCount - 1;
 
@@ -98,18 +127,39 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   void _skip() {
+    // On a club page "DECIDE LATER" drops only that sport's picks; clubs
+    // chosen on earlier sport pages survive.
+    final sport = _activeClubSport;
+    if (sport != null) setState(() => _clearPicksFor(sport));
     if (_isLastVisibleStep) {
-      setState(() {
-        _followedLeagueIds.clear();
-        _favoriteTeams.clear();
-      });
       _finish();
       return;
     }
     _next();
   }
 
+  /// Drops every followed league and favourite club belonging to [sport].
+  /// Call from inside a setState.
+  void _clearPicksFor(Sport sport) {
+    for (final entry in _leaguesFor(sport)) {
+      _followedLeagueIds.remove(entry.league.id);
+      _favoriteTeams.remove(entry.league.id);
+    }
+  }
+
   void _finish() => setState(() => _completing = true);
+
+  void _selectAvatar(String id) {
+    setState(() => _avatarId = id);
+    HapticFeedback.selectionClick();
+    playSound(SoundEffect.cardSelect);
+  }
+
+  void _selectBanner(String id) {
+    setState(() => _bannerId = id);
+    HapticFeedback.selectionClick();
+    playSound(SoundEffect.cardSelect);
+  }
 
   void _emit() {
     widget.onComplete(
@@ -117,6 +167,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         avatarId: _avatarId,
         bannerId: _bannerId,
         primarySport: _primarySport,
+        sports: List.unmodifiable(_selectedSports),
         followedLeagueIds: List.unmodifiable(_followedLeagueIds),
         favoriteTeams: Map.unmodifiable(_favoriteTeams),
       ),
@@ -132,48 +183,74 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         if (entry.teams.isNotEmpty) {
           _favoriteTeams[entry.league.id] = entry.teams.first.id;
         }
-        _activeLeagueId = entry.league.id;
+        _activeLeagueBySport[entry.sport] = entry.league.id;
       }
     });
   }
 
+  /// The sports step is single-select: the home sport is the only one open
+  /// in the app until the player unlocks more. Switching drops the previous
+  /// sport's league and club picks.
   void _selectSport(Sport sport) {
+    if (_primarySport == sport) {
+      HapticFeedback.selectionClick();
+      return;
+    }
     setState(() {
-      if (_primarySport == sport) return;
-      _primarySport = sport;
-      _followedLeagueIds.clear();
-      _favoriteTeams.clear();
-      _activeLeagueId = followableLeaguesForSport(sport).first.league.id;
+      final previous = _primarySport;
+      _clearPicksFor(previous);
+      _activeLeagueBySport.remove(previous);
+      _selectedSports
+        ..clear()
+        ..add(sport);
+      // A sport with a single competition (F1, the NBA, T20Is) shows no
+      // league row, so follow it up front and let its club grid read enabled.
+      final leagues = _leaguesFor(sport);
+      final soleId = leagues.first.league.id;
+      if (leagues.length < 2 && !_followedLeagueIds.contains(soleId)) {
+        _followedLeagueIds.add(soleId);
+      }
     });
+    HapticFeedback.mediumImpact();
+    playSound(SoundEffect.cardSelect);
   }
 
   void _selectLeague(FollowableLeague entry) {
-    setState(() => _activeLeagueId = entry.league.id);
+    setState(() => _activeLeagueBySport[entry.sport] = entry.league.id);
+    HapticFeedback.selectionClick();
   }
 
   void _selectTeam(FollowableLeague entry, String teamId) {
     setState(() {
-      if (_primarySport != entry.sport) {
-        _primarySport = entry.sport;
-        _followedLeagueIds.clear();
-        _favoriteTeams.clear();
-      }
-      _activeLeagueId = entry.league.id;
+      _activeLeagueBySport[entry.sport] = entry.league.id;
       if (!_followedLeagueIds.contains(entry.league.id)) {
         _followedLeagueIds.add(entry.league.id);
       }
       _favoriteTeams[entry.league.id] = teamId;
     });
+    HapticFeedback.mediumImpact();
+    playSound(SoundEffect.cardSelect);
   }
 
   String get _skipLabel => _isLastVisibleStep ? 'DECIDE LATER' : 'SKIP';
   String get _ctaLabel => _isLastVisibleStep ? 'FINISH SETUP' : 'NEXT';
 
-  String get _helperText => switch (_step) {
-    0 => 'STEP 1 OF 3 // CHOOSE THE FACE FOR YOUR DOSSIER',
-    1 => 'STEP 2 OF 3 // SET YOUR BANNER COLOURS',
-    _ => 'STEP 3 OF 3 // PICK SPORTS, LEAGUES, AND CLUBS IN ONE PLACE',
-  };
+  String get _helperText {
+    final position = 'STEP ${_step + 1} OF $_stepCount';
+    final sport = _activeClubSport;
+    if (sport != null) {
+      // Single-competition sports show no league row, so do not ask for one.
+      final what = _leaguesFor(sport).length < 2
+          ? 'PICK YOUR CLUB'
+          : 'PICK YOUR LEAGUE AND CLUB';
+      return '$position // ${sportModuleFor(sport).label.toUpperCase()} - $what';
+    }
+    return switch (_step) {
+      0 => '$position // CHOOSE THE FACE FOR YOUR DOSSIER',
+      1 => '$position // SET YOUR BANNER COLOURS',
+      _ => '$position // PICK YOUR HOME SPORT',
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -204,11 +281,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 _SetupTopBar(skipLabel: _skipLabel, onSkip: _skip),
                 Expanded(
                   child: Align(
-                    alignment: Alignment.topLeft,
+                    alignment: Alignment.topCenter,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 520),
                       child: KeyedSubtree(
-                        key: ValueKey('step_${_step}_$_activeLeagueId'),
+                        key: ValueKey(_stepIdentity),
                         child: CyberSlideUpFadeIn(child: _buildStepBody()),
                       ),
                     ),
@@ -234,27 +311,28 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     );
   }
 
-  Widget _buildStepBody() => switch (_step) {
-    0 => _AvatarStep(
-      selectedId: _avatarId,
-      onSelect: (id) => setState(() => _avatarId = id),
-    ),
-    1 => _BannerStep(
-      selectedId: _bannerId,
-      onSelect: (id) => setState(() => _bannerId = id),
-    ),
-    _ => _ClubsStep(
-      sport: _primarySport,
-      activeLeagueId: _activeLeague.league.id,
-      leagues: _availableLeagues,
+  Widget _buildStepBody() {
+    if (_step == 0) {
+      return _AvatarStep(selectedId: _avatarId, onSelect: _selectAvatar);
+    }
+    if (_step == 1) {
+      return _BannerStep(selectedId: _bannerId, onSelect: _selectBanner);
+    }
+    final sport = _activeClubSport;
+    if (sport == null) {
+      return _SportsStep(selected: _primarySport, onSelect: _selectSport);
+    }
+    return _ClubsStep(
+      sport: sport,
+      activeLeagueId: _activeLeagueFor(sport).league.id,
+      leagues: _leaguesFor(sport),
       followedIds: _followedLeagueIds,
       favoriteTeams: _favoriteTeams,
-      onSelectSport: _selectSport,
       onSelectLeague: _selectLeague,
       onToggleLeague: _toggleLeague,
       onSelectTeam: _selectTeam,
-    ),
-  };
+    );
+  }
 }
 
 // ─── Background ───────────────────────────────────────────────────────────────
@@ -480,7 +558,7 @@ class _SetupDock extends StatelessWidget {
                 Text(
                   helper,
                   textAlign: TextAlign.center,
-                  style: Cyber.body(12, color: const Color(0xFF90A1B9)),
+                  style: Cyber.bodyFor(context, 12, color: AppTheme.textMedium),
                 ),
               ],
             ),
@@ -507,10 +585,17 @@ class _StepShell extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(title, style: Cyber.display(23, letterSpacing: 1.0)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(title, style: Cyber.display(23, letterSpacing: 1.0)),
+          ),
           if (subtitle != null) ...[
             const SizedBox(height: 6),
-            Text(subtitle!, style: Cyber.body(13, color: Cyber.muted)),
+            Text(
+              subtitle!,
+              style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+            ),
           ],
           const SizedBox(height: 16),
           Expanded(child: child),
@@ -568,7 +653,6 @@ class _AvatarTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = selected ? Cyber.lime : Cyber.line;
     return Semantics(
       button: true,
       selected: selected,
@@ -576,15 +660,10 @@ class _AvatarTile extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          decoration: BoxDecoration(
-            color: Cyber.panel,
-            border: Border.all(color: borderColor, width: selected ? 2 : 1),
-            boxShadow: selected
-                ? Cyber.glow(Cyber.lime, alpha: 0.18, blur: 14, spread: -2)
-                : null,
-          ),
+        child: CyberSelectableCard(
+          selected: selected,
+          accent: Cyber.lime,
+          borderColor: Cyber.line,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -593,7 +672,11 @@ class _AvatarTile extends StatelessWidget {
                 fit: BoxFit.cover,
                 alignment: Alignment.topCenter,
               ),
-              if (selected) const SelectedCheckCorner(size: 32),
+              if (selected)
+                const SelectedCheckCorner(
+                  size: 32,
+                  alignment: Alignment.topRight,
+                ),
             ],
           ),
         ),
@@ -636,6 +719,133 @@ class _BannerStep extends StatelessWidget {
   }
 }
 
+/// Step 3 - the single-select home-sport board. The pick becomes the only
+/// sport open in the app; the rest unlock later for Oz.
+class _SportsStep extends StatelessWidget {
+  const _SportsStep({required this.selected, required this.onSelect});
+
+  final Sport selected;
+  final ValueChanged<Sport> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return _StepShell(
+      title: 'PICK YOUR HOME SPORT',
+      subtitle:
+          'Its matches and games open first. Unlock more sports later for '
+          '$sportUnlockCostOz Oz each.',
+      child: GridView.builder(
+        key: const ValueKey('onboarding_sport_grid'),
+        itemCount: sportModules.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 1.24,
+        ),
+        itemBuilder: (context, index) {
+          final module = sportModules[index];
+          return _SportTile(
+            module: module,
+            selected: selected == module.sport,
+            onTap: () => onSelect(module.sport),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// A sport pick - the avatar-style panel tile the avatar, league and club
+/// steps already use. Unselected reads calm but enabled; selected takes the
+/// sport's own accent border, a soft glow and the corner check seal.
+class _SportTile extends StatelessWidget {
+  const _SportTile({
+    required this.module,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final SportModule module;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = module.accent;
+    final iconColor = accent.withValues(alpha: selected ? 1 : 0.62);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: module.label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: CyberSelectableCard(
+          selected: selected,
+          accent: accent,
+          fillColor: AppTheme.onboardingPanelFill,
+          borderColor: AppTheme.onboardingPanelBorder,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    AnimatedScale(
+                      duration: const Duration(milliseconds: 150),
+                      scale: selected ? 1.1 : 1,
+                      child: Icon(module.icon, color: iconColor, size: 30),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      module.label.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Cyber.display(
+                        14,
+                        color: selected ? AppTheme.whiteColor : Cyber.muted,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      selected ? 'HOME SPORT' : module.systemCode,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Cyber.label(
+                        8,
+                        color: iconColor.withValues(
+                          alpha: selected ? 0.85 : 0.45,
+                        ),
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (selected)
+                const SelectedCheckCorner(
+                  size: 20,
+                  alignment: Alignment.topRight,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The home sport's club page - the wizard's final step.
 class _ClubsStep extends StatelessWidget {
   const _ClubsStep({
     required this.sport,
@@ -643,7 +853,6 @@ class _ClubsStep extends StatelessWidget {
     required this.leagues,
     required this.followedIds,
     required this.favoriteTeams,
-    required this.onSelectSport,
     required this.onSelectLeague,
     required this.onToggleLeague,
     required this.onSelectTeam,
@@ -654,47 +863,24 @@ class _ClubsStep extends StatelessWidget {
   final List<FollowableLeague> leagues;
   final List<String> followedIds;
   final Map<String, String> favoriteTeams;
-  final ValueChanged<Sport> onSelectSport;
   final ValueChanged<FollowableLeague> onSelectLeague;
   final ValueChanged<FollowableLeague> onToggleLeague;
   final void Function(FollowableLeague entry, String teamId) onSelectTeam;
 
   @override
   Widget build(BuildContext context) {
-    final isFormulaOne = sport == Sport.motorsport;
+    final module = sportModuleFor(sport);
+    // A sport with a single competition (F1, the NBA, T20Is) needs no league
+    // row - it is followed up front, so the club grid is the whole page.
+    final singleLeague = leagues.length < 2;
     final activeLeague = followableLeagueById(activeLeagueId) ?? leagues.first;
     final selectedTeamId = favoriteTeams[activeLeague.league.id];
-    final followedCount = followedIds.length;
-
     return _StepShell(
-      title: 'CHOOSE CLUBS',
-      subtitle: isFormulaOne
-          ? 'Pick your Formula 1 constructor. No league selection needed.'
-          : followedCount == 0
-          ? 'Pick a sport, choose leagues, or tap any club to follow it.'
-          : '$followedCount followed - tap any club to update your picks.',
+      title: 'CHOOSE YOUR ${module.label.toUpperCase()} CLUBS',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(
-            height: 48,
-            child: ListView.separated(
-              key: const ValueKey('onboarding_sport_selector'),
-              scrollDirection: Axis.horizontal,
-              itemBuilder: (context, index) {
-                final module = sportModules[index];
-                return _ClubSportPill(
-                  module: module,
-                  selected: module.sport == sport,
-                  onTap: () => onSelectSport(module.sport),
-                );
-              },
-              separatorBuilder: (context, index) => const SizedBox(width: 8),
-              itemCount: sportModules.length,
-            ),
-          ),
-          if (!isFormulaOne) ...[
-            const SizedBox(height: 12),
+          if (!singleLeague) ...[
             SizedBox(
               height: 92,
               child: ListView.separated(
@@ -704,6 +890,7 @@ class _ClubsStep extends StatelessWidget {
                   final entry = leagues[index];
                   return _ClubLeaguePill(
                     entry: entry,
+                    accent: module.accent,
                     active: entry.league.id == activeLeagueId,
                     selected: followedIds.contains(entry.league.id),
                     onTap: () => onSelectLeague(entry),
@@ -714,8 +901,8 @@ class _ClubsStep extends StatelessWidget {
                 itemCount: leagues.length,
               ),
             ),
+            const SizedBox(height: 10),
           ],
-          SizedBox(height: isFormulaOne ? 14 : 10),
           Expanded(
             child: GridView.builder(
               key: const ValueKey('onboarding_team_grid'),
@@ -730,7 +917,6 @@ class _ClubsStep extends StatelessWidget {
                 final team = activeLeague.teams[index];
                 return _ClubTeamTile(
                   team: team,
-                  sport: activeLeague.sport,
                   competition: activeLeague.league.id,
                   selected: team.id == selectedTeamId,
                   enabled: followedIds.contains(activeLeague.league.id),
@@ -745,57 +931,10 @@ class _ClubsStep extends StatelessWidget {
   }
 }
 
-class _ClubSportPill extends StatelessWidget {
-  const _ClubSportPill({
-    required this.module,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final SportModule module;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = module.accent.withValues(alpha: selected ? 1 : 0.62);
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: module.label,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          width: 56,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: AppTheme.onboardingPanelFill.withValues(
-              alpha: selected ? 1 : 0.78,
-            ),
-            border: Border.all(
-              color: color.withValues(alpha: selected ? 0.95 : 0.48),
-              width: selected ? 2 : 1,
-            ),
-            boxShadow: selected
-                ? Cyber.glow(module.accent, alpha: 0.14, blur: 12, spread: -3)
-                : null,
-          ),
-          child: AnimatedScale(
-            duration: const Duration(milliseconds: 150),
-            scale: selected ? 1.1 : 1,
-            child: Icon(module.icon, color: color, size: 22),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _ClubLeaguePill extends StatelessWidget {
   const _ClubLeaguePill({
     required this.entry,
+    required this.accent,
     required this.active,
     required this.selected,
     required this.onTap,
@@ -803,6 +942,10 @@ class _ClubLeaguePill extends StatelessWidget {
   });
 
   final FollowableLeague entry;
+
+  /// The sport's own accent, so each club page reads distinct as the player
+  /// walks the sequence. A followed league still seals in lime.
+  final Color accent;
   final bool active;
   final bool selected;
   final VoidCallback onTap;
@@ -810,7 +953,7 @@ class _ClubLeaguePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = selected ? Cyber.lime : Cyber.cyan;
+    final pillAccent = selected ? Cyber.lime : accent;
     return Semantics(
       button: true,
       selected: selected,
@@ -818,53 +961,58 @@ class _ClubLeaguePill extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: Container(
+        child: SizedBox(
           width: 106,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: active
-                ? AppTheme.onboardingPanelFill
-                : AppTheme.onboardingPanelFill.withValues(alpha: 0.64),
-            border: Border.all(
-              color: active ? accent : AppTheme.onboardingPanelBorder,
-              width: active ? 1.5 : 1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+          child: CyberSelectableCard(
+            selected: active,
+            accent: pillAccent,
+            fillColor: AppTheme.onboardingPanelFill,
+            borderColor: AppTheme.onboardingPanelBorder,
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Expanded(
-                    child: Text(
-                      entry.league.shortCode,
-                      style: Cyber.display(
-                        13,
-                        color: active ? accent : Cyber.muted,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          entry.league.shortCode,
+                          textAlign: TextAlign.center,
+                          style: Cyber.display(
+                            13,
+                            color: active ? pillAccent : Cyber.muted,
+                          ),
+                        ),
                       ),
-                    ),
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: onToggle,
+                        child: Icon(
+                          selected
+                              ? Icons.check_box
+                              : Icons.check_box_outline_blank,
+                          color: pillAccent,
+                          size: 18,
+                        ),
+                      ),
+                    ],
                   ),
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: onToggle,
-                    child: Icon(
-                      selected
-                          ? Icons.check_box
-                          : Icons.check_box_outline_blank,
-                      color: accent,
-                      size: 18,
+                  const Spacer(),
+                  Text(
+                    entry.league.name.toUpperCase(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Cyber.label(
+                      8,
+                      color: Cyber.muted,
+                      letterSpacing: 0.4,
                     ),
                   ),
                 ],
               ),
-              const Spacer(),
-              Text(
-                entry.league.name.toUpperCase(),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.4),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -875,7 +1023,6 @@ class _ClubLeaguePill extends StatelessWidget {
 class _ClubTeamTile extends StatelessWidget {
   const _ClubTeamTile({
     required this.team,
-    required this.sport,
     required this.competition,
     required this.selected,
     required this.enabled,
@@ -883,7 +1030,6 @@ class _ClubTeamTile extends StatelessWidget {
   });
 
   final SportTeam team;
-  final Sport sport;
   final String competition;
   final bool selected;
   final bool enabled;
@@ -891,12 +1037,6 @@ class _ClubTeamTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = selected ? Cyber.lime : AppTheme.onboardingPanelBorder;
-    final teamColor = paletteForTeam(
-      team,
-      sport: sport,
-      competition: competition,
-    ).secondaryTextColor;
     return Semantics(
       button: true,
       selected: selected,
@@ -904,44 +1044,50 @@ class _ClubTeamTile extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-          decoration: BoxDecoration(
-            color: enabled
-                ? AppTheme.onboardingPanelFill
-                : AppTheme.onboardingPanelFill.withValues(alpha: 0.58),
-            border: Border.all(color: borderColor, width: selected ? 2 : 1),
-            boxShadow: selected
-                ? Cyber.glow(Cyber.lime, alpha: 0.16, blur: 12, spread: -3)
-                : null,
-          ),
+        child: CyberSelectableCard(
+          selected: selected,
+          accent: Cyber.lime,
+          fillColor: AppTheme.onboardingPanelFill,
+          borderColor: AppTheme.onboardingPanelBorder,
+          enabled: enabled,
           child: Stack(
+            fit: StackFit.expand,
             children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TeamLogo(
-                    team: team,
-                    competition: competition,
-                    width: 40,
-                    height: 44,
-                  ),
-                  const SizedBox(height: 7),
-                  Text(
-                    team.name.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: Cyber.label(
-                      8,
-                      color: selected ? Colors.white : teamColor,
-                      letterSpacing: 0.3,
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 10,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    TeamLogo(
+                      team: team,
+                      competition: competition,
+                      width: 40,
+                      height: 44,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      team.name.toUpperCase(),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Cyber.label(
+                        8,
+                        color: AppTheme.whiteColor,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              if (selected) const SelectedCheckCorner(size: 20),
+              if (selected)
+                const SelectedCheckCorner(
+                  size: 20,
+                  alignment: Alignment.topRight,
+                ),
             ],
           ),
         ),
@@ -1064,7 +1210,8 @@ class _LaunchSequenceState extends State<_LaunchSequence>
                     const SizedBox(height: 22),
                     Text(
                       'ENTERING STATOZ…',
-                      style: Cyber.body(
+                      style: Cyber.bodyFor(
+                        context,
                         12,
                         color: Cyber.cyan.withValues(alpha: 0.7),
                         weight: FontWeight.w700,

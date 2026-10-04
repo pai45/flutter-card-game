@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../config/theme.dart';
 import '../data/team_palettes.dart';
 import '../models/sport_match.dart';
 import '../utils/tennis_country_map.dart';
@@ -155,7 +156,11 @@ class TeamLogo extends StatelessWidget {
         width: _resolvedWidth,
         height: height,
         child: CustomPaint(
-          painter: TeamLogoPainter(label: label, palette: palette),
+          painter: TeamLogoPainter(
+            label: label,
+            palette: palette,
+            fontFamily: Cyber.bodyFontFor(context),
+          ),
         ),
       ),
     );
@@ -198,6 +203,7 @@ class _TennisFlagBadge extends StatelessWidget {
                 painter: TeamLogoPainter(
                   label: fallbackLabel,
                   palette: palette,
+                  fontFamily: Cyber.bodyFontFor(context),
                 ),
               ),
             ),
@@ -218,10 +224,15 @@ class _TennisFlagBadge extends StatelessWidget {
 
 @visibleForTesting
 class TeamLogoPainter extends CustomPainter {
-  const TeamLogoPainter({required this.label, required this.palette});
+  const TeamLogoPainter({
+    required this.label,
+    required this.palette,
+    this.fontFamily = Cyber.bodyFont,
+  });
 
   final String label;
   final TeamPalette palette;
+  final String fontFamily;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -258,7 +269,7 @@ class TeamLogoPainter extends CustomPainter {
         text: label,
         style: TextStyle(
           color: palette.text,
-          fontFamily: 'Onest',
+          fontFamily: fontFamily,
           fontSize: size.width * _fontScale(label),
           fontWeight: FontWeight.w700,
           height: 1,
@@ -289,6 +300,7 @@ class TeamLogoPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant TeamLogoPainter oldDelegate) =>
       oldDelegate.label != label ||
+      oldDelegate.fontFamily != fontFamily ||
       oldDelegate.palette.primary != palette.primary ||
       oldDelegate.palette.text != palette.text ||
       oldDelegate.palette.secondary != palette.secondary;

@@ -112,7 +112,14 @@ class _OzCoinHistoryScreenState extends State<OzCoinHistoryScreen> {
                               separatorBuilder: (context, index) =>
                                   const SizedBox(height: 10),
                               itemBuilder: (context, index) =>
-                                  _CoinHistoryTile(entry: filtered[index]),
+                                  GameTypographyScope(
+                                    enabled: _isGameCoinSource(
+                                      filtered[index].source,
+                                    ),
+                                    child: _CoinHistoryTile(
+                                      entry: filtered[index],
+                                    ),
+                                  ),
                             ),
                     ),
                   ],
@@ -246,7 +253,7 @@ class _CoinHistoryTile extends StatelessWidget {
                   ].join(' - '),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.body(11, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, 11, color: Cyber.muted),
                 ),
               ],
             ),
@@ -288,12 +295,31 @@ class _EmptyCoinHistory extends StatelessWidget {
         child: Text(
           hasAny ? 'No coin moves match this filter.' : 'No coin history yet.',
           textAlign: TextAlign.center,
-          style: Cyber.body(13, color: Cyber.muted),
+          style: Cyber.bodyFor(context, 13, color: Cyber.muted),
         ),
       ),
     );
   }
 }
+
+bool _isGameCoinSource(OzCoinTransactionSource source) => switch (source) {
+  OzCoinTransactionSource.matchReward ||
+  OzCoinTransactionSource.shootoutReward ||
+  OzCoinTransactionSource.packPurchase ||
+  OzCoinTransactionSource.duplicateRefund ||
+  OzCoinTransactionSource.directCardPurchase ||
+  OzCoinTransactionSource.shopTopUp ||
+  OzCoinTransactionSource.quizEntry ||
+  OzCoinTransactionSource.quizContestPayout ||
+  OzCoinTransactionSource.footballBingoLifeline ||
+  OzCoinTransactionSource.guessPlayerHint ||
+  OzCoinTransactionSource.guessPlayerExtraAttempt ||
+  OzCoinTransactionSource.guessDriverHint ||
+  OzCoinTransactionSource.tennisReward ||
+  OzCoinTransactionSource.sportUnlock ||
+  OzCoinTransactionSource.beginnerQuestReward => true,
+  _ => false,
+};
 
 int _earned(List<OzCoinLedgerEntry> ledger) => ledger
     .where((entry) => entry.delta > 0)
@@ -328,6 +354,8 @@ IconData _sourceIcon(OzCoinTransactionSource source) {
     OzCoinTransactionSource.shopTopUp => Icons.storefront,
     OzCoinTransactionSource.openingBalance => Icons.account_balance_wallet,
     OzCoinTransactionSource.manual => Icons.toll,
+    OzCoinTransactionSource.sportUnlock => Icons.lock_open_rounded,
+    OzCoinTransactionSource.beginnerQuestReward => Icons.flag_rounded,
   };
 }
 

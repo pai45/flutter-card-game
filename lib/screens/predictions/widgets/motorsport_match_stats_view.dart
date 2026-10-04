@@ -241,7 +241,7 @@ class _CircuitHero extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 circuit.fullName,
-                style: Cyber.body(12, color: Cyber.muted),
+                style: Cyber.bodyFor(context, 12, color: Cyber.muted),
               ),
               const SizedBox(height: 12),
               _TrackMap(circuit: circuit, package: package),
@@ -431,11 +431,7 @@ class _ExpandMapButton extends StatelessWidget {
               color: Cyber.panel.withValues(alpha: 0.9),
               border: Border.all(color: Cyber.line),
             ),
-            child: const Icon(
-              Icons.open_in_full,
-              size: 14,
-              color: Cyber.cyan,
-            ),
+            child: const Icon(Icons.open_in_full, size: 14, color: Cyber.cyan),
           ),
         ),
       ),
@@ -459,11 +455,7 @@ enum _TrackFocus { lap, startFinish }
 /// no stat key in the package is sector-scoped), so a sector readout could only
 /// have been invented.
 class F1TrackMapScreen extends StatefulWidget {
-  const F1TrackMapScreen({
-    required this.package,
-    required this.svg,
-    super.key,
-  });
+  const F1TrackMapScreen({required this.package, required this.svg, super.key});
 
   final F1RacePackage package;
   final Uint8List svg;
@@ -485,13 +477,14 @@ class _F1TrackMapScreenState extends State<F1TrackMapScreen>
   @override
   void initState() {
     super.initState();
-    _zoom = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 260),
-    )..addListener(() {
-      final tween = _zoomTween;
-      if (tween != null) _view.value = tween.value;
-    });
+    _zoom =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 260),
+        )..addListener(() {
+          final tween = _zoomTween;
+          if (tween != null) _view.value = tween.value;
+        });
   }
 
   @override
@@ -530,9 +523,10 @@ class _F1TrackMapScreenState extends State<F1TrackMapScreen>
               1,
             )
             ..translateByDouble(-point.dx, -point.dy, 0, 1));
-    _zoomTween = Matrix4Tween(begin: _view.value, end: target).animate(
-      CurvedAnimation(parent: _zoom, curve: Curves.easeOutCubic),
-    );
+    _zoomTween = Matrix4Tween(
+      begin: _view.value,
+      end: target,
+    ).animate(CurvedAnimation(parent: _zoom, curve: Curves.easeOutCubic));
     _zoom.forward(from: 0);
   }
 
@@ -789,11 +783,8 @@ class _StartFinishReadout extends StatelessWidget {
     final entries = package.race?.classification ?? const [];
     final winner = package.winner;
     final pole = entries.where((e) => e.grid == 1).firstOrNull;
-    final movers =
-        entries.where((e) => e.grid != null).toList(growable: false)
-          ..sort(
-            (a, b) => (b.grid! - b.position).compareTo(a.grid! - a.position),
-          );
+    final movers = entries.where((e) => e.grid != null).toList(growable: false)
+      ..sort((a, b) => (b.grid! - b.position).compareTo(a.grid! - a.position));
     final climber = movers.firstOrNull;
     final livery = _Livery.of(package);
 
@@ -863,10 +854,7 @@ class _MapReadoutShell extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        for (final child in children) ...[
-          child,
-          const SizedBox(height: 6),
-        ],
+        for (final child in children) ...[child, const SizedBox(height: 6)],
         Text(
           caption,
           style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.1),
@@ -911,15 +899,12 @@ class _MapFactRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.end,
-                style: Cyber.body(11, color: Cyber.muted),
+                style: Cyber.bodyFor(context, 11, color: Cyber.muted),
               ),
             ),
             const SizedBox(width: 8),
           ],
-          Text(
-            value,
-            style: Cyber.display(12, color: accent ?? Colors.white),
-          ),
+          Text(value, style: Cyber.display(12, color: accent ?? Colors.white)),
         ],
       ),
     );
@@ -969,7 +954,7 @@ class _RecordLine extends StatelessWidget {
                 ].whereType<String>().join(' · '),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.body(11, color: Cyber.muted),
+                style: Cyber.bodyFor(context, 11, color: Cyber.muted),
               ),
             ),
             const SizedBox(width: 10),
@@ -1023,7 +1008,7 @@ class _WinnerPlate extends StatelessWidget {
                   driver.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.body(15, weight: FontWeight.w800),
+                  style: Cyber.bodyFor(context, 15, weight: FontWeight.w800),
                 ),
                 if (entry.constructorName != null) ...[
                   const SizedBox(height: 3),
@@ -1107,8 +1092,7 @@ class _RaceGapChart extends StatelessWidget {
         gridDivisions: 4,
         yAxisFormatter: (value) => '+${value.toStringAsFixed(0)}s',
         xAxisLabels: [codes.first, codes[codes.length ~/ 2], codes.last],
-        contextLabelAt: (index) =>
-            index < codes.length ? codes[index] : '—',
+        contextLabelAt: (index) => index < codes.length ? codes[index] : '—',
         markerSound: false,
         series: [
           ChartSeries(
@@ -1200,7 +1184,8 @@ class _ClassificationRow extends StatelessWidget {
                   driver?.displayName ?? entry.driverId,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.body(
+                  style: Cyber.bodyFor(
+                    context,
                     13,
                     weight: podium ? FontWeight.w800 : FontWeight.w600,
                   ),
@@ -1289,7 +1274,7 @@ class _WeekendSection extends StatelessWidget {
             'Position at each stage of the weekend. ESPN publishes no '
             'lap-by-lap data for F1, so this tracks the sessions themselves — '
             'no lap positions are inferred.',
-            style: Cyber.body(11, color: Cyber.muted),
+            style: Cyber.bodyFor(context, 11, color: Cyber.muted),
           ),
         ],
         const SizedBox(height: 18),
@@ -1399,7 +1384,8 @@ class _PositionTrackChart extends StatelessWidget {
     _WeekendTrackRow? climber;
     var bestClimb = 0.0;
     for (final row in track.rows) {
-      final climb = row.positions[row.positions.length - 2] - row.positions.last;
+      final climb =
+          row.positions[row.positions.length - 2] - row.positions.last;
       if (climb > bestClimb) {
         bestClimb = climb;
         climber = row;
@@ -1554,8 +1540,7 @@ class _QualifyingSection extends StatelessWidget {
           const CyberNoDataState(
             icon: Icons.timer_outlined,
             title: 'Qualifying pending',
-            message:
-                'Q1, Q2 and Q3 lap times drop here once the session runs.',
+            message: 'Q1, Q2 and Q3 lap times drop here once the session runs.',
             accent: Cyber.gold,
             spark: Icons.electric_bolt,
           )
@@ -1565,7 +1550,7 @@ class _QualifyingSection extends StatelessWidget {
           Text(
             'A line stops at the segment its driver was knocked out in — the '
             'feed records no time beyond the cut, so none is drawn.',
-            style: Cyber.body(11, color: Cyber.muted),
+            style: Cyber.bodyFor(context, 11, color: Cyber.muted),
           ),
         ],
         const SizedBox(height: 18),
@@ -1591,8 +1576,12 @@ class _QualifyingChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final entries = qualifying.classification;
-    final reachedQ2 = entries.where((e) => e.value('qual2TimeMS') != null).length;
-    final reachedQ3 = entries.where((e) => e.value('qual3TimeMS') != null).length;
+    final reachedQ2 = entries
+        .where((e) => e.value('qual2TimeMS') != null)
+        .length;
+    final reachedQ3 = entries
+        .where((e) => e.value('qual3TimeMS') != null)
+        .length;
 
     final livery = _Livery.of(package);
     final series = <ChartSeries>[];
@@ -1689,9 +1678,7 @@ class _GridDeltaBoard extends StatelessWidget {
     }
 
     final ranked = [...entries]
-      ..sort(
-        (a, b) => b.positionsGained!.compareTo(a.positionsGained!),
-      );
+      ..sort((a, b) => b.positionsGained!.compareTo(a.positionsGained!));
     final extent = ranked
         .map((e) => e.positionsGained!.abs())
         .fold<int>(1, math.max);
@@ -2028,7 +2015,7 @@ class _SessionResultsPanel extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Text(
                   'Not yet run.',
-                  style: Cyber.body(12, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, 12, color: Cyber.muted),
                 ),
               )
             else
@@ -2037,7 +2024,7 @@ class _SessionResultsPanel extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 3),
                   child: Text(
                     result,
-                    style: Cyber.body(13, color: Colors.white),
+                    style: Cyber.bodyFor(context, 13, color: Colors.white),
                   ),
                 ),
           ],
@@ -2081,7 +2068,9 @@ class _DriverStandingsPanel extends StatelessWidget {
                               14,
                               color: i < 3 ? Cyber.gold : Cyber.muted,
                             ).copyWith(
-                              fontFeatures: const [FontFeature.tabularFigures()],
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
                             ),
                       ),
                     ),
@@ -2090,7 +2079,8 @@ class _DriverStandingsPanel extends StatelessWidget {
                         standings[i],
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.body(
+                        style: Cyber.bodyFor(
+                          context,
                           14,
                           weight: i < 3 ? FontWeight.w800 : FontWeight.w600,
                         ),
@@ -2185,7 +2175,7 @@ class _F1QualifyingGridPanel extends StatelessWidget {
                   ),
                   child: Text(
                     'Not yet run.',
-                    style: Cyber.body(13, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, 13, color: Cyber.muted),
                   ),
                 )
               else
@@ -2261,7 +2251,7 @@ class _F1GridRow extends StatelessWidget {
                   parsed.driver,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.body(14, weight: nameWeight),
+                  style: Cyber.bodyFor(context, 14, weight: nameWeight),
                 ),
                 if (parsed.constructor != null) ...[
                   const SizedBox(height: 2),

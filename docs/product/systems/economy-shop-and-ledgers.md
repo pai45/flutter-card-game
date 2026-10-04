@@ -74,6 +74,16 @@ later GameBloc wallet mutation. Claims and other GameBloc events share one
 queue. A failed recovery stops the attempted action with retry feedback.
 This is local crash recovery, not cross-device or server-authoritative settlement.
 
+### Sport unlocks and Beginner's Quest rewards — BUILT
+
+Unlocking a sport beyond the home sport spends **50 Oz**
+(`OzCoinTransactionSource.sportUnlock`, title `SPORT UNLOCK`). The purchase is
+rejected, without charging, when the balance is short or the sport is already
+open. Clearing a sport's whole Beginner's Quest pays **+50 Oz** once
+(`beginnerQuestReward`). Each quest step pays XP through
+`XpTransactionSource.beginnerQuest`. See
+[Sport and Game Unlocks](sport-and-game-unlocks.md).
+
 XP routes to a mode track and contributes to aggregate level. Coins do not set
 level; they support entry, hints, lifelines, acquisition, and customization.
 Settlement events must identify a reward so replaying a screen cannot double-pay.

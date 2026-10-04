@@ -10,6 +10,7 @@ import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../config/tutorial_steps.dart';
 import '../../models/match.dart';
+import '../../models/pitch_duel_mastery.dart';
 import '../../models/sport_match.dart';
 import '../../screens/leaderboard/widgets/game_leaderboard_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
@@ -64,10 +65,10 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
           body: CyberArenaBackground(
-            assetPath: 'assets/backgrounds/home_stadium.png',
+            assetPath: 'assets/pitch_duel/lobby_stadium.png',
             accent: Cyber.cyan,
-            secondaryAccent: Cyber.lime,
-            additiveBeams: true,
+            secondaryAccent: Cyber.cyan,
+            additiveBeams: false,
             // Keep the arena art full-bleed behind the bars; inset the content
             // (incl. the bottom-pinned daily drop) above the gesture bar.
             child: SafeArea(
@@ -203,7 +204,7 @@ class HomeScreen extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 24),
-                            // PLAY MATCH — hero CTA, unchanged.
+                            // Keep the main play action above squad and goal details on phones.
                             CyberSlideUpFadeIn(
                               delay: const Duration(milliseconds: 390),
                               offset: 22,
@@ -217,16 +218,51 @@ class HomeScreen extends StatelessWidget {
                                         onNavigate(AppSection.match);
                                       },
                                     )
-                                  : Opacity(
-                                      opacity: 0.45,
-                                      child: IgnorePointer(
-                                        child: HudCtaButton(
-                                          label: 'PLAY MATCH',
-                                          onTap: () {},
-                                        ),
-                                      ),
+                                  : HudCtaButton(
+                                      label: 'FIX YOUR DECK',
+                                      onTap: () => onNavigate(AppSection.deck),
                                     ),
                             ),
+                            const SizedBox(height: 20),
+                            const SectionLabel(label: 'YOUR EQUIPPED SQUAD'),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              height: 96,
+                              child: LayoutBuilder(
+                                builder: (context, box) => FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      for (final card in [
+                                        ...state.deckAttackers,
+                                        ...state.deckDefenders,
+                                        if (state.deckKeeper != null)
+                                          state.deckKeeper!,
+                                      ])
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 3,
+                                          ),
+                                          child: CyberPlayerCardTile(
+                                            card: card,
+                                            selected: false,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            PitchMasteryPanel(
+                              goal: pitchMasteryGoal(state.matchHistory),
+                              bestLinks: pitchBestLinkedPlays(
+                                state.matchHistory,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
                             const SizedBox(height: 14),
                             Row(
                               children: [

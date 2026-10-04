@@ -1,5 +1,6 @@
 import '../config/enums.dart';
 import 'cards.dart';
+import 'pitch_duel_rules.dart';
 import 'sport_match.dart';
 
 class MatchHistoryRound {
@@ -8,18 +9,25 @@ class MatchHistoryRound {
     required this.scenarioTitle,
     required this.outcomeLabel,
     required this.playerAttacking,
+    this.playerBreakdown,
+    this.opponentBreakdown,
   });
 
   final int round;
   final String scenarioTitle;
   final String outcomeLabel;
   final bool playerAttacking;
+  final PowerBreakdown? playerBreakdown;
+  final PowerBreakdown? opponentBreakdown;
 
   Map<String, dynamic> toJson() => {
     'round': round,
     'scenarioTitle': scenarioTitle,
     'outcomeLabel': outcomeLabel,
     'playerAttacking': playerAttacking,
+    if (playerBreakdown != null) 'playerBreakdown': playerBreakdown!.toJson(),
+    if (opponentBreakdown != null)
+      'opponentBreakdown': opponentBreakdown!.toJson(),
   };
 
   static MatchHistoryRound fromJson(Map<String, dynamic> json) =>
@@ -28,6 +36,16 @@ class MatchHistoryRound {
         scenarioTitle: json['scenarioTitle'] as String,
         outcomeLabel: json['outcomeLabel'] as String,
         playerAttacking: json['playerAttacking'] as bool,
+        playerBreakdown: json['playerBreakdown'] is Map
+            ? PowerBreakdown.fromJson(
+                Map<String, dynamic>.from(json['playerBreakdown'] as Map),
+              )
+            : null,
+        opponentBreakdown: json['opponentBreakdown'] is Map
+            ? PowerBreakdown.fromJson(
+                Map<String, dynamic>.from(json['opponentBreakdown'] as Map),
+              )
+            : null,
       );
 }
 
@@ -46,10 +64,12 @@ class MatchHistoryEntry {
     this.penaltyPlayerScore,
     this.penaltyOpponentScore,
     this.xpEarned,
+    this.pitchMasteryIndex,
   });
 
   final String id;
-  final String mode; // match, shootout, grandprix, basketball, tennis, finalover.
+  final String
+  mode; // match, shootout, grandprix, basketball, tennis, finalover.
   final String deckName;
   final String timestampIso;
   final String resultLabel;
@@ -59,6 +79,7 @@ class MatchHistoryEntry {
   final int? penaltyOpponentScore;
   final List<MatchHistoryRound> rounds;
   final int? xpEarned;
+  final int? pitchMasteryIndex;
 
   /// A seeded demo log (see `data/demo_match_history.dart`) rather than a game
   /// the player actually finished. Demos are shown and counted like any other
@@ -75,13 +96,13 @@ class MatchHistoryEntry {
 
   /// Maps archived game modes onto the hub sport tabs.
   Sport get sport => switch (mode) {
-        'finalover' => Sport.cricket,
-        'basketball' => Sport.basketball,
-        'tennis' => Sport.tennis,
-        'grandprix' => Sport.motorsport,
-        // Pitch Duel + shootout (and any legacy default).
-        _ => Sport.football,
-      };
+    'finalover' => Sport.cricket,
+    'basketball' => Sport.basketball,
+    'tennis' => Sport.tennis,
+    'grandprix' => Sport.motorsport,
+    // Pitch Duel + shootout (and any legacy default).
+    _ => Sport.football,
+  };
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -95,6 +116,7 @@ class MatchHistoryEntry {
     'penaltyOpponentScore': penaltyOpponentScore,
     'rounds': rounds.map((round) => round.toJson()).toList(),
     'xpEarned': xpEarned,
+    if (pitchMasteryIndex != null) 'pitchMasteryIndex': pitchMasteryIndex,
   };
 
   static MatchHistoryEntry fromJson(Map<String, dynamic> json) =>
@@ -115,6 +137,7 @@ class MatchHistoryEntry {
             )
             .toList(),
         xpEarned: json['xpEarned'] as int?,
+        pitchMasteryIndex: (json['pitchMasteryIndex'] as num?)?.toInt(),
       );
 }
 
@@ -130,6 +153,9 @@ class RoundResult {
     required this.outcome,
     required this.attackPower,
     required this.defensePower,
+    this.attackBreakdown,
+    this.defenseBreakdown,
+    this.shotTiming,
   });
 
   final int round;
@@ -142,6 +168,9 @@ class RoundResult {
   final RoundOutcome outcome;
   final double attackPower;
   final double defensePower;
+  final PowerBreakdown? attackBreakdown;
+  final PowerBreakdown? defenseBreakdown;
+  final ShotTimingResult? shotTiming;
 }
 
 class PenaltyKick {

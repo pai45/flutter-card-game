@@ -332,7 +332,12 @@ class _RewardHeader extends StatelessWidget {
             Text(
               'Your Predict and Picks results are in',
               textAlign: TextAlign.center,
-              style: Cyber.body(13, color: Cyber.muted, letterSpacing: 0.3),
+              style: Cyber.bodyFor(
+                context,
+                13,
+                color: Cyber.muted,
+                letterSpacing: 0.3,
+              ),
             ),
             const SizedBox(height: 18),
             Row(
@@ -560,19 +565,29 @@ class _PredictOutcomeCard extends StatelessWidget {
             outcome.fixture,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.body(15, weight: FontWeight.w700, height: 1.15),
+            style: Cyber.bodyFor(
+              context,
+              15,
+              weight: FontWeight.w700,
+              height: 1.15,
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             outcome.summary,
-            style: Cyber.body(12, color: const Color(0xff9fb0c2)),
+            style: Cyber.bodyFor(context, 12, color: const Color(0xff9fb0c2)),
           ),
           const SizedBox(height: 10),
           Text(
             outcome.details.join('   '),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.body(11, color: Cyber.muted, weight: FontWeight.w600),
+            style: Cyber.bodyFor(
+              context,
+              11,
+              color: Cyber.muted,
+              weight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -585,7 +600,8 @@ class _PredictOutcomeCard extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               '+${outcome.xpWon} XP',
-              style: Cyber.body(
+              style: Cyber.bodyFor(
+                context,
                 12.5,
                 color: Cyber.cyan,
                 weight: FontWeight.w700,
@@ -627,7 +643,12 @@ class _PickOutcomeCard extends StatelessWidget {
             outcome.market,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.body(15, weight: FontWeight.w700, height: 1.15),
+            style: Cyber.bodyFor(
+              context,
+              15,
+              weight: FontWeight.w700,
+              height: 1.15,
+            ),
           ),
           const SizedBox(height: 12),
           Row(
@@ -653,7 +674,11 @@ class _PickOutcomeCard extends StatelessWidget {
                       outcome.selection,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.body(13, weight: FontWeight.w800),
+                      style: Cyber.bodyFor(
+                        context,
+                        13,
+                        weight: FontWeight.w800,
+                      ),
                     ),
                   ],
                 ),
@@ -679,7 +704,11 @@ class _PickOutcomeCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         '${outcome.stake} -> ${outcome.payout}',
-                        style: Cyber.body(12.5, weight: FontWeight.w700),
+                        style: Cyber.bodyFor(
+                          context,
+                          12.5,
+                          weight: FontWeight.w700,
+                        ),
                       ),
                     ],
                   ),
@@ -741,7 +770,8 @@ class _PickSettlementStrip extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               '+${outcome.profit} OZ PROFIT',
-              style: Cyber.body(
+              style: Cyber.bodyFor(
+                context,
                 12,
                 color: Cyber.success,
                 weight: FontWeight.w800,
@@ -754,7 +784,8 @@ class _PickSettlementStrip extends StatelessWidget {
         topBorder: Cyber.red.withValues(alpha: 0.18),
         child: Text(
           '-${outcome.stake} OZ',
-          style: Cyber.body(
+          style: Cyber.bodyFor(
+            context,
             12,
             color: Cyber.red.withValues(alpha: 0.9),
             weight: FontWeight.w800,

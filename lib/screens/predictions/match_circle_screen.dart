@@ -216,7 +216,7 @@ class _MatchCircleScreenState extends State<MatchCircleScreen> {
                 ..hideCurrentSnackBar()
                 ..showSnackBar(
                   SnackBar(
-                    content: Text(message, style: Cyber.body(13)),
+                    content: Text(message, style: Cyber.bodyFor(context, 13)),
                     backgroundColor: const Color(0xff311922),
                   ),
                 );
@@ -309,7 +309,7 @@ class _MatchCircleTopBar extends StatelessWidget {
               'BACK TO MATCHES',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.body(14, weight: FontWeight.w800),
+              style: Cyber.bodyFor(context, 14, weight: FontWeight.w800),
             ),
           ),
           const SizedBox(
@@ -581,7 +581,8 @@ class _PostTile extends StatelessWidget {
                             : post.author.displayName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.body(
+                        style: Cyber.bodyFor(
+                          context,
                           compact ? 12 : 13,
                           color: post.isDeleted ? Cyber.muted : Colors.white,
                           weight: FontWeight.w800,
@@ -590,7 +591,7 @@ class _PostTile extends StatelessWidget {
                     ),
                     Text(
                       _relativeTime(post.createdAt),
-                      style: Cyber.body(10, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, 10, color: Cyber.muted),
                     ),
                     if (!post.isDeleted && owned) ...[
                       const SizedBox(width: 2),
@@ -607,7 +608,8 @@ class _PostTile extends StatelessWidget {
                 Text(
                   post.isDeleted ? 'This comment was deleted.' : post.text,
                   style:
-                      Cyber.body(
+                      Cyber.bodyFor(
+                        context,
                         compact ? 12 : 13,
                         color: post.isDeleted ? Cyber.muted : Colors.white,
                         weight: post.isDeleted
@@ -938,7 +940,11 @@ class _MatchCircleComposer extends StatelessWidget {
                       Expanded(
                         child: Text(
                           error,
-                          style: Cyber.body(11, color: Cyber.danger),
+                          style: Cyber.bodyFor(
+                            context,
+                            11,
+                            color: Cyber.danger,
+                          ),
                         ),
                       ),
                     ],
@@ -965,7 +971,7 @@ class _MatchCircleComposer extends StatelessWidget {
                           keyboardType: TextInputType.multiline,
                           textInputAction: TextInputAction.newline,
                           onChanged: onChanged,
-                          style: Cyber.body(13, height: 1.35),
+                          style: Cyber.bodyFor(context, 13, height: 1.35),
                           cursorColor: Cyber.cyan,
                           buildCounter:
                               (
@@ -980,7 +986,11 @@ class _MatchCircleComposer extends StatelessWidget {
                                 : replyingTo != null
                                 ? 'Write a reply'
                                 : 'Join the Match Circle',
-                            hintStyle: Cyber.body(13, color: Cyber.muted),
+                            hintStyle: Cyber.bodyFor(
+                              context,
+                              13,
+                              color: Cyber.muted,
+                            ),
                             filled: true,
                             fillColor: Cyber.bg2.withValues(alpha: 0.92),
                             contentPadding: const EdgeInsets.fromLTRB(
@@ -1013,7 +1023,8 @@ class _MatchCircleComposer extends StatelessWidget {
                             alignment: Alignment.centerRight,
                             child: Text(
                               '${controller.text.length}/$matchCirclePostMaxLength',
-                              style: Cyber.body(
+                              style: Cyber.bodyFor(
+                                context,
                                 9,
                                 color: controller.text.length >= 450
                                     ? Cyber.gold

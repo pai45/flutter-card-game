@@ -1,3 +1,4 @@
+import '../../../config/game_ladder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -15,6 +16,7 @@ import '../../../widgets/cyber/cyber_widgets.dart';
 /// MVP → goal timeline — over a fixed PLAY AGAIN / EXIT dock.
 class FootballChessResult extends StatefulWidget {
   const FootballChessResult({
+    this.questMatchId,
     required this.match,
     required this.awardedXp,
     required this.onExit,
@@ -22,6 +24,7 @@ class FootballChessResult extends StatefulWidget {
     super.key,
   });
 
+  final String? questMatchId;
   final ChessMatch match;
   final int awardedXp;
   final VoidCallback onExit;
@@ -66,11 +69,14 @@ class _FootballChessResultState extends State<FootballChessResult>
   PlayerCard? _mvp() {
     final counts = <String, int>{};
     for (final g in widget.match.goals) {
-      if (g.byPlayer) counts[g.scorerShortName] = (counts[g.scorerShortName] ?? 0) + 1;
+      if (g.byPlayer) {
+        counts[g.scorerShortName] = (counts[g.scorerShortName] ?? 0) + 1;
+      }
     }
     if (counts.isEmpty) return null;
-    final topName =
-        counts.entries.reduce((a, b) => b.value > a.value ? b : a).key;
+    final topName = counts.entries
+        .reduce((a, b) => b.value > a.value ? b : a)
+        .key;
     for (final c in widget.match.playerSquad) {
       if (c.shortName == topName) return c;
     }
@@ -107,7 +113,8 @@ class _FootballChessResultState extends State<FootballChessResult>
                   builder: (context, _) {
                     final xpT = ((_seq.value - 0.38) / 0.40).clamp(0.0, 1.0);
                     final shownXp = (widget.awardedXp * xpT).round();
-                    final barFill = (prog.xpToNextLevel == 0
+                    final barFill =
+                        (prog.xpToNextLevel == 0
                             ? 0.0
                             : prog.xpIntoLevel / prog.xpToNextLevel) *
                         xpT;
@@ -149,17 +156,29 @@ class _FootballChessResultState extends State<FootballChessResult>
                               ),
                             ),
                           ),
+                          if (_seq.value >= 0.62)
+                            QuestResultReceipt(
+                              game: ArcadeGame.footballChess,
+                              sourceId: widget.questMatchId,
+                            ),
                           if (mvp != null) ...[
                             const SizedBox(height: 18),
                             Text(
                               'MVP',
-                              style: Cyber.label(12, color: Cyber.gold, letterSpacing: 2),
+                              style: Cyber.label(
+                                12,
+                                color: Cyber.gold,
+                                letterSpacing: 2,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             CyberPlayerCardTile(card: mvp, selected: true),
                           ],
                           const SizedBox(height: 18),
-                          _GoalTimeline(goals: m.goals, opponentName: m.opponentName),
+                          _GoalTimeline(
+                            goals: m.goals,
+                            opponentName: m.opponentName,
+                          ),
                         ],
                       ),
                     );
@@ -210,7 +229,10 @@ class _OutcomeBanner extends StatelessWidget {
             size: 34,
           ),
           const SizedBox(height: 6),
-          Text(verdict, style: Cyber.display(34, color: accent, letterSpacing: 3)),
+          Text(
+            verdict,
+            style: Cyber.display(34, color: accent, letterSpacing: 3),
+          ),
         ],
       ),
     );
@@ -336,7 +358,11 @@ class _GoalTimeline extends StatelessWidget {
                   child: child,
                 ),
               ),
-              child: _GoalRow(goal: goals[i], opponentName: opponentName, time: _time(goals[i].atClock)),
+              child: _GoalRow(
+                goal: goals[i],
+                opponentName: opponentName,
+                time: _time(goals[i].atClock),
+              ),
             ),
       ],
     );
@@ -379,8 +405,10 @@ class _GoalRow extends StatelessWidget {
           ),
           Text(
             time,
-            style: Cyber.display(13, color: color)
-                .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            style: Cyber.display(
+              13,
+              color: color,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
         ],
       ),

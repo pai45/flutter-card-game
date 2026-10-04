@@ -7,6 +7,7 @@ import '../../blocs/football_chess/football_chess_cubit.dart';
 import '../../blocs/football_chess/football_chess_state.dart';
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
+import '../../config/game_ladder.dart';
 import '../../config/theme.dart';
 import '../../games/football_chess/football_chess_board.dart';
 import '../../games/football_chess/football_chess_game.dart';
@@ -42,9 +43,11 @@ class FootballChessMatchScreen extends StatefulWidget {
 class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
   late final FootballChessCubit _cubit;
   late final FootballChessGame _game;
+  final String _questMatchId = 'quest-${DateTime.now().microsecondsSinceEpoch}';
   bool _xpDispatched = false;
   int _awardedXp = 0;
   bool _walkthroughShown = false;
+  VoidCallback? _cancelWalkthrough;
 
   final _boardKey = GlobalKey();
   final _timerKey = GlobalKey();
@@ -64,6 +67,7 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
 
   @override
   void dispose() {
+    _cancelWalkthrough?.call();
     AudioController.instance.leaveScene(AudioScene.footballChess);
     if (_cubit.state.match?.phase != ChessMatchPhase.fullTime) {
       _cubit.abandonMatch();
@@ -152,12 +156,15 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
         details: '$verdict ${m.playerScore}-${m.opponentScore}',
       ),
     );
+    context.read<GameBloc>().add(
+      ArcadeGamePlayed(ArcadeGame.footballChess, sourceId: _questMatchId),
+    );
   }
 
   void _showWalkthrough() {
     _cubit.setPaused(true);
     AudioController.instance.setSceneMusicEnabled(false);
-    showSpotlightWalkthrough(
+    _cancelWalkthrough = showSpotlightWalkthrough(
       context,
       keyName: 'football-chess-first',
       steps: [
@@ -203,6 +210,8 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
         ),
       ],
       onComplete: () {
+        _cancelWalkthrough = null;
+        if (!mounted) return;
         _cubit.setPaused(false);
         AudioController.instance.setSceneMusicEnabled(true);
         context.read<GameBloc>().add(
@@ -265,6 +274,7 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
                 ),
               ),
               _ResultLayer(
+                questMatchId: _questMatchId,
                 awardedXp: () => _awardedXp,
                 onExit: widget.onExit,
                 onPlayAgain: widget.onPlayAgain,
@@ -283,11 +293,13 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
 
 class _ResultLayer extends StatelessWidget {
   const _ResultLayer({
+    required this.questMatchId,
     required this.awardedXp,
     required this.onExit,
     required this.onPlayAgain,
   });
 
+  final String questMatchId;
   final int Function() awardedXp;
   final VoidCallback onExit;
   final VoidCallback onPlayAgain;
@@ -304,6 +316,7 @@ class _ResultLayer extends StatelessWidget {
           return const SizedBox.shrink();
         }
         return FootballChessResult(
+          questMatchId: questMatchId,
           match: m,
           awardedXp: awardedXp(),
           onExit: onExit,

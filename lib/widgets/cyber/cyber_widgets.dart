@@ -4,17 +4,55 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../models/avatar_frame_option.dart';
 import '../../models/cards.dart';
+import '../../models/pitch_duel_rules.dart';
+import '../../models/pitch_duel_mastery.dart';
 import '../../utils/label_helpers.dart';
 import '../../utils/sound_effects.dart';
 import '../avatar_frame_ring.dart';
 import '../racing/racing_driver_portrait.dart';
 import '../team_logo.dart' show OctagonBorderPainter, OctagonClipper;
 import 'sport_signal_painters.dart';
+
+export 'quest_result_receipt.dart';
+export 'cyber_kit.dart';
+export 'daily_case_lobby.dart';
+export 'cyber_game_launch_card.dart';
+
+/// Applies the arcade body face to a game surface without changing Orbitron
+/// display styles or the app-wide Matches/Pick typography.
+class GameTypographyScope extends StatelessWidget {
+  const GameTypographyScope({
+    required this.child,
+    this.enabled = true,
+    super.key,
+  });
+
+  final Widget child;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) return child;
+    return Theme(
+      data: Cyber.gameTypographyTheme(Theme.of(context)),
+      child: DefaultTextStyle.merge(
+        style: const TextStyle(fontFamily: Cyber.gameBodyFont),
+        child: child,
+      ),
+    );
+  }
+}
+
+MaterialPageRoute<T> gamePageRoute<T>({required WidgetBuilder builder}) =>
+    MaterialPageRoute<T>(
+      builder: (context) => GameTypographyScope(child: builder(context)),
+    );
 
 /// Lifecycle of a [CyberObjectiveCard]: in progress, completed and waiting to
 /// be claimed, or already paid out.
@@ -69,7 +107,9 @@ class CyberObjectiveCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolved =
         state ??
-        (progress >= 1 ? CyberObjectiveState.ready : CyberObjectiveState.active);
+        (progress >= 1
+            ? CyberObjectiveState.ready
+            : CyberObjectiveState.active);
     final ready = resolved == CyberObjectiveState.ready;
     final claimed = resolved == CyberObjectiveState.claimed;
     final meterAccent = claimed
@@ -119,25 +159,34 @@ class CyberObjectiveCard extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text(
                               description,
-                              style: Cyber.body(12.5, color: Cyber.muted),
+                              style: Cyber.bodyFor(
+                                context,
+                                12.5,
+                                color: Cyber.muted,
+                              ),
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(width: 8),
                       // Rewards sit top-right so the card reads title → payout.
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          _ObjectiveRewardPill(label: reward, color: Cyber.gold),
-                          if (rewardDetail != null) ...[
-                            const SizedBox(height: 6),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
                             _ObjectiveRewardPill(
-                              label: rewardDetail!,
-                              color: Cyber.cyan,
+                              label: reward,
+                              color: Cyber.gold,
                             ),
+                            if (rewardDetail != null) ...[
+                              const SizedBox(height: 6),
+                              _ObjectiveRewardPill(
+                                label: rewardDetail!,
+                                color: Cyber.cyan,
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ],
                   ),
@@ -162,7 +211,10 @@ class CyberObjectiveCard extends StatelessWidget {
                       _ObjectiveStamp(status: status, state: resolved),
                     ],
                   ),
-                  if (actions != null) ...[const SizedBox(height: 10), actions!],
+                  if (actions != null) ...[
+                    const SizedBox(height: 10),
+                    actions!,
+                  ],
                 ],
               ),
             ),
@@ -407,7 +459,9 @@ class CyberObjectiveAction extends StatelessWidget {
                 children: [
                   Icon(icon, size: 14, color: color),
                   const SizedBox(width: 6),
-                  Text(label, style: Cyber.label(10.5, color: color)),
+                  Flexible(
+                    child: Text(label, style: Cyber.label(10.5, color: color)),
+                  ),
                 ],
               ),
             ),
@@ -490,9 +544,9 @@ class CyberConfirmDialog extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       message,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Color(0xff9aa8bb),
-                        fontFamily: 'Onest',
+                        fontFamily: Cyber.bodyFontFor(context),
                         fontSize: 12,
                         height: 1.45,
                       ),
@@ -1136,7 +1190,8 @@ class CyberMiniMetric extends StatelessWidget {
               value,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.body(
+              style: Cyber.bodyFor(
+                context,
                 11,
                 color: accent ?? Colors.white,
                 weight: FontWeight.w700,
@@ -1284,7 +1339,7 @@ class CyberSearchField extends StatelessWidget {
               onSubmitted: onSubmitted,
               textInputAction: TextInputAction.search,
               cursorColor: accent,
-              style: Cyber.body(14),
+              style: Cyber.bodyFor(context, 14),
               decoration: InputDecoration(
                 isDense: true,
                 filled: false,
@@ -1296,7 +1351,7 @@ class CyberSearchField extends StatelessWidget {
                 errorBorder: InputBorder.none,
                 focusedErrorBorder: InputBorder.none,
                 hintText: hintText,
-                hintStyle: Cyber.body(14, color: Cyber.muted),
+                hintStyle: Cyber.bodyFor(context, 14, color: Cyber.muted),
                 contentPadding: const EdgeInsets.symmetric(vertical: 18),
               ),
             ),
@@ -1405,7 +1460,8 @@ class CyberNoDataState extends StatelessWidget {
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: Cyber.body(
+                style: Cyber.bodyFor(
+                  context,
                   13,
                   color: Cyber.muted,
                   weight: FontWeight.w600,
@@ -1829,12 +1885,68 @@ class CyberCtaButton extends StatelessWidget {
   }
 }
 
+/// Shared calm selection card for setup grids and cosmetic pickers.
+///
+/// The surface keeps the standard top-left / bottom-right chamfer and only
+/// earns an accent tint, scale lift, and restrained glow while selected.
+class CyberSelectableCard extends StatelessWidget {
+  const CyberSelectableCard({
+    required this.selected,
+    required this.child,
+    this.accent = Cyber.lime,
+    this.fillColor = Cyber.panel,
+    this.borderColor = Cyber.line,
+    this.enabled = true,
+    this.cut = 10,
+    super.key,
+  });
+
+  final bool selected;
+  final Widget child;
+  final Color accent;
+  final Color fillColor;
+  final Color borderColor;
+  final bool enabled;
+  final double cut;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: selected ? 1 : 0),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      builder: (context, selection, child) {
+        final surface = enabled ? fillColor : fillColor.withValues(alpha: 0.58);
+        return Transform.scale(
+          scale: 1 + (selection * 0.012),
+          child: ChamferedActionSurface(
+            clipper: HudChamferClipper(bigCut: cut, smallCut: 0),
+            borderColor: Color.lerp(borderColor, accent, selection)!,
+            borderWidth: 1 + selection,
+            glowColor: accent,
+            glow: selection * 0.72,
+            child: ColoredBox(
+              color: Color.alphaBlend(
+                accent.withValues(alpha: 0.045 * selection),
+                surface,
+              ),
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: child,
+    );
+  }
+}
+
 class CyberPanel extends StatelessWidget {
   const CyberPanel({
     required this.child,
     this.accent = Cyber.cyan,
     this.padding = const EdgeInsets.all(16),
     this.glow = false,
+    this.cornerCuts = false,
     super.key,
   });
 
@@ -1847,13 +1959,21 @@ class CyberPanel extends StatelessWidget {
   /// Reserve [glow] for the panel the user should look at first on a screen.
   final bool glow;
 
+  /// Pitch Duel uses the shared opposing top-left / bottom-right cuts.
+  final bool cornerCuts;
+
   @override
   Widget build(BuildContext context) {
     final borderColor = accent.withValues(alpha: 0.5);
     return CustomPaint(
-      foregroundPainter: _CyberPanelBorderPainter(color: borderColor),
+      foregroundPainter: _CyberPanelBorderPainter(
+        color: borderColor,
+        cornerCuts: cornerCuts,
+      ),
       child: ClipPath(
-        clipper: CyberClipper(),
+        clipper: cornerCuts
+            ? const HudChamferClipper(bigCut: 12, smallCut: 0)
+            : CyberClipper(),
         child: DecoratedBox(
           decoration: BoxDecoration(
             color: Cyber.panel,
@@ -2262,14 +2382,20 @@ class CyberHudStat extends StatelessWidget {
 }
 
 class _CyberPanelBorderPainter extends CustomPainter {
-  const _CyberPanelBorderPainter({required this.color});
+  const _CyberPanelBorderPainter({
+    required this.color,
+    this.cornerCuts = false,
+  });
 
   final Color color;
+  final bool cornerCuts;
 
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawPath(
-      CyberClipper.buildPath(size),
+      cornerCuts
+          ? const HudChamferClipper(bigCut: 12, smallCut: 0).getClip(size)
+          : CyberClipper.buildPath(size),
       Paint()
         ..color = color
         ..style = PaintingStyle.stroke
@@ -2279,7 +2405,7 @@ class _CyberPanelBorderPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_CyberPanelBorderPainter oldDelegate) =>
-      oldDelegate.color != color;
+      oldDelegate.color != color || oldDelegate.cornerCuts != cornerCuts;
 }
 
 class RectangleClipper extends CustomClipper<Path> {
@@ -2433,6 +2559,629 @@ class ChamferedActionBorderPainter extends CustomPainter {
 
 enum VisualCardSize { sm, md, lg }
 
+/// Original vector tactic art; missing assets retain a readable game glyph.
+class PitchVectorArt extends StatelessWidget {
+  const PitchVectorArt({
+    required this.asset,
+    this.width = 64,
+    this.height = 40,
+    this.color = Cyber.cyan,
+    super.key,
+  });
+  final String asset;
+  final double width;
+  final double height;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => SvgPicture.asset(
+    asset,
+    width: width,
+    height: height,
+    fit: BoxFit.contain,
+    colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+    errorBuilder: (_, _, _) => SizedBox(
+      width: width,
+      height: height,
+      child: Icon(Icons.sports_soccer, color: color, size: min(width, height)),
+    ),
+  );
+}
+
+/// Football playing-card face: corner indices, a portrait/tactic window, and
+/// an etched frame. Decorative paint is static and stays away from the subject.
+class _PitchCardFace extends StatelessWidget {
+  const _PitchCardFace({
+    this.player,
+    this.action,
+    required this.selected,
+    required this.disabled,
+    required this.disabledLabel,
+    required this.size,
+    required this.accent,
+    this.comboBonus = 0,
+    this.onTap,
+  });
+  final PlayerCard? player;
+  final ActionCard? action;
+  final bool selected;
+  final bool disabled;
+  final String disabledLabel;
+  final VisualCardSize size;
+  final Color accent;
+  final int comboBonus;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final large = size == VisualCardSize.lg;
+    final small = size == VisualCardSize.sm;
+    final isPlayer = player != null;
+    final width = isPlayer
+        ? (small
+              ? 96.0
+              : large
+              ? 144.0
+              : 128.0)
+        : large
+        ? 116.0
+        : 96.0;
+    final height = isPlayer
+        ? (small
+              ? 144.0
+              : large
+              ? 216.0
+              : 192.0)
+        : large
+        ? 162.0
+        : 128.0;
+    final tier = player?.tier ?? action!.tier;
+    final rarity = tierColor(tier);
+    final affinity = isPlayer ? pitchAffinityFor(player!) : null;
+    final role = player?.position ?? actionCode(action!.category);
+    final value = isPlayer ? '${player!.rating}' : '+${action!.power}';
+    final title = player?.shortName ?? action!.title;
+    final ability = isPlayer
+        ? pitchPlayerAbility(player!)
+        : pitchActionAbility(action!);
+    const clipper = HudChamferClipper(bigCut: 9, smallCut: 0);
+    final footerHeight =
+        (isPlayer ? (small ? 43.0 : 51.0) : (large ? 46.0 : 39.0)) +
+        (MediaQuery.textScalerOf(context).scale(10.5) - 10.5).clamp(0, 12) * 2;
+    final live = selected || comboBonus > 0;
+    final ink = live ? accent : Cyber.cyan.withValues(alpha: 0.65);
+    return RepaintBoundary(
+      child: Semantics(
+        label:
+            '$title, $role, $value. $ability. '
+            '${comboBonus > 0 ? 'Matching bonus +$comboBonus. ' : ''}'
+            '${disabled
+                ? disabledLabel
+                : selected
+                ? 'Selected'
+                : 'Ready'}',
+        button: onTap != null,
+        selected: selected,
+        enabled: !disabled,
+        child: GestureDetector(
+          onLongPress: () =>
+              showPitchCardAbility(context, player: player, action: action),
+          child: PremiumCardShell(
+            width: width,
+            height: height,
+            selected: selected,
+            disabled: disabled,
+            disabledLabel: disabledLabel,
+            calmDisabled: true,
+            showSelectionMarker: false,
+            accent: accent,
+            selectedAccent: accent,
+            clipper: clipper,
+            onTap: onTap,
+            builder: (_) => ChamferedActionSurface(
+              clipper: clipper,
+              borderColor: selected
+                  ? accent
+                  : Cyber.muted.withValues(alpha: 0.6),
+              borderWidth: selected ? 2 : 1,
+              child: CustomPaint(
+                foregroundPainter: _PitchCardEtching(
+                  accent: selected ? accent : Cyber.cyan,
+                  rarity: rarity,
+                  tier: tier.index,
+                  footerHeight: footerHeight,
+                  selected: selected,
+                ),
+                child: ColoredBox(
+                  color: Cyber.panel,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            const ColoredBox(color: Cyber.bg2),
+                            if (isPlayer)
+                              Image.asset(
+                                player!.resolvedPortraitAsset ?? '',
+                                fit: BoxFit.cover,
+                                alignment: const Alignment(0, -0.55),
+                                cacheWidth:
+                                    (width *
+                                            MediaQuery.devicePixelRatioOf(
+                                              context,
+                                            ))
+                                        .round()
+                                        .clamp(144, 600),
+                                errorBuilder: (_, _, _) => Center(
+                                  child: Icon(
+                                    player!.icon,
+                                    size: 46,
+                                    color: Cyber.muted,
+                                  ),
+                                ),
+                              )
+                            else ...[
+                              CustomPaint(painter: _PitchTacticField(ink: ink)),
+                              Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(top: 18),
+                                  child: PitchVectorArt(
+                                    asset: pitchActionAsset(action!),
+                                    width: width - 22,
+                                    height: large ? 66 : 46,
+                                    color: ink,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            if (isPlayer)
+                              const DecoratedBox(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Cyber.bg,
+                                      Colors.transparent,
+                                      Colors.transparent,
+                                      Cyber.panel,
+                                    ],
+                                    stops: [0, 0.32, 0.78, 1],
+                                  ),
+                                ),
+                              ),
+                            Positioned(
+                              left: 9,
+                              top: 7,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: isPlayer ? width * 0.36 : width - 50,
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        value,
+                                        style:
+                                            Cyber.display(
+                                              isPlayer
+                                                  ? (large
+                                                        ? 27
+                                                        : small
+                                                        ? 23
+                                                        : 26)
+                                                  : (large ? 24 : 22),
+                                              color: AppTheme.whiteColor,
+                                              letterSpacing: -1,
+                                            ).copyWith(
+                                              height: 1,
+                                              fontFeatures: const [
+                                                FontFeature.tabularFigures(),
+                                              ],
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  if (affinity != null)
+                                    PitchVectorArt(
+                                      asset: affinity.asset,
+                                      width: 12,
+                                      height: 12,
+                                      color: ink,
+                                    )
+                                  else
+                                    Icon(
+                                      isPlayer
+                                          ? Icons.shield_outlined
+                                          : action!.icon,
+                                      size: 11,
+                                      color: ink,
+                                    ),
+                                ],
+                              ),
+                            ),
+                            Positioned(
+                              right: 9,
+                              top: 9,
+                              child: Text(
+                                role.toUpperCase(),
+                                style: Cyber.label(
+                                  7,
+                                  color: AppTheme.whiteColor,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(
+                        height: footerHeight,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(9, 5, 9, 5),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                title.toUpperCase(),
+                                maxLines: isPlayer ? 1 : 2,
+                                overflow: TextOverflow.ellipsis,
+                                style:
+                                    Cyber.bodyFor(
+                                      context,
+                                      large
+                                          ? 13
+                                          : small
+                                          ? 10.5
+                                          : 12,
+                                      color: AppTheme.whiteColor,
+                                    ).copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      height: 1.08,
+                                    ),
+                              ),
+                              if (isPlayer) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        affinity?.label ?? 'KEEPER',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Cyber.label(
+                                          small ? 6.5 : 7.5,
+                                          color: selected
+                                              ? accent
+                                              : Cyber.muted,
+                                          letterSpacing: 0.4,
+                                        ),
+                                      ),
+                                    ),
+                                    RotatedBox(
+                                      quarterTurns: 2,
+                                      child: Text(
+                                        value,
+                                        style: Cyber.label(
+                                          9,
+                                          color: Cyber.muted,
+                                          letterSpacing: 0,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Fine metal rails and asymmetric signal cuts; no animated foil or face grid.
+class _PitchCardEtching extends CustomPainter {
+  const _PitchCardEtching({
+    required this.accent,
+    required this.rarity,
+    required this.tier,
+    required this.footerHeight,
+    required this.selected,
+  });
+  final Color accent, rarity;
+  final int tier;
+  final double footerHeight;
+  final bool selected;
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rail = Paint()
+      ..color = Cyber.muted.withValues(alpha: 0.32)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.6;
+    const inset = 3.5, cut = 7.0;
+    final inner = Path()
+      ..moveTo(inset + cut, inset)
+      ..lineTo(size.width - inset, inset)
+      ..lineTo(size.width - inset, size.height - inset - cut)
+      ..lineTo(size.width - inset - cut, size.height - inset)
+      ..lineTo(inset, size.height - inset)
+      ..lineTo(inset, inset + cut)
+      ..close();
+    canvas.drawPath(inner, rail);
+    final signal = Paint()
+      ..color = accent.withValues(alpha: selected ? 0.95 : 0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    canvas.drawPath(
+      Path()
+        ..moveTo(0, 24)
+        ..lineTo(0, 9)
+        ..lineTo(9, 0)
+        ..lineTo(27, 0),
+      signal,
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(size.width, size.height - 24)
+        ..lineTo(size.width, size.height - 9)
+        ..lineTo(size.width - 9, size.height)
+        ..lineTo(size.width - 27, size.height),
+      signal,
+    );
+    final seam = size.height - footerHeight;
+    canvas.drawPath(
+      Path()
+        ..moveTo(4, seam + 3)
+        ..lineTo(18, seam + 3)
+        ..lineTo(22, seam)
+        ..lineTo(size.width - 4, seam),
+      rail,
+    );
+    // Rarity is a quiet physical inlay, with one to four etched segments.
+    for (var i = 0; i <= tier; i++) {
+      canvas.drawLine(
+        Offset(9 + i * 7, size.height - 2),
+        Offset(13 + i * 7, size.height - 2),
+        Paint()
+          ..color = rarity.withValues(alpha: 0.75)
+          ..strokeWidth = 1.5,
+      );
+    }
+    for (var i = 0; i < 3; i++) {
+      canvas.drawLine(
+        Offset(size.width - 2, 26 + i * 4),
+        Offset(size.width - 2, 28 + i * 4),
+        rail,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PitchCardEtching old) =>
+      old.accent != accent ||
+      old.rarity != rarity ||
+      old.tier != tier ||
+      old.footerHeight != footerHeight ||
+      old.selected != selected;
+}
+
+/// Restrained tactical print gives the action art its own card identity.
+class _PitchTacticField extends CustomPainter {
+  const _PitchTacticField({required this.ink});
+  final Color ink;
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = ink.withValues(alpha: 0.13)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.7;
+    final center = Offset(size.width / 2, size.height * 0.63);
+    final radius = min(size.width * 0.34, size.height * 0.35);
+    canvas.drawCircle(center, radius, paint);
+    canvas.drawCircle(center, radius + 6, paint);
+    canvas.drawLine(
+      Offset(6, center.dy),
+      Offset(size.width - 6, center.dy),
+      paint,
+    );
+    for (var y = 12.0; y < size.height; y += 12) {
+      for (var x = 12.0; x < size.width; x += 12) {
+        canvas.drawCircle(
+          Offset(x, y),
+          0.6,
+          Paint()..color = ink.withValues(alpha: 0.14),
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PitchTacticField old) => old.ink != ink;
+}
+
+Future<void> showPitchCardAbility(
+  BuildContext context, {
+  PlayerCard? player,
+  ActionCard? action,
+}) => showDialog<void>(
+  context: context,
+  builder: (context) => Dialog(
+    backgroundColor: Cyber.bg,
+    child: Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            (player?.shortName ?? action!.title).toUpperCase(),
+            style: Cyber.display(18, color: AppTheme.whiteColor),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            player != null
+                ? pitchPlayerAbility(player)
+                : pitchActionAbility(action!),
+            style: Cyber.bodyFor(context, 14, color: AppTheme.whiteColor),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'One affinity +4. One scenario match +6. Up to +10 combination power.',
+            style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+          ),
+          const SizedBox(height: 20),
+          CyberCtaButton(
+            label: 'BACK TO CARDS',
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    ),
+  ),
+);
+
+/// Reused by the live board and final-time recap; animation reveals settled data.
+class PitchMasteryPanel extends StatelessWidget {
+  const PitchMasteryPanel({
+    required this.goal,
+    this.progress,
+    this.bestLinks,
+    this.nextGoal,
+    super.key,
+  });
+  final PitchMasteryGoal goal;
+  final int? progress;
+  final int? bestLinks;
+  final PitchMasteryGoal? nextGoal;
+  @override
+  Widget build(BuildContext context) {
+    final done = progress != null && progress! >= goal.target;
+    return CyberPanel(
+      cornerCuts: true,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              Text(
+                progress == null
+                    ? 'NEXT MATCH'
+                    : done
+                    ? 'GOAL MASTERED'
+                    : 'MATCH GOAL',
+                style: Cyber.label(
+                  8,
+                  color: done ? Cyber.success : Cyber.muted,
+                  letterSpacing: 0.8,
+                ),
+              ),
+              if (progress != null)
+                Text(
+                  '$progress/${goal.target}',
+                  style: Cyber.label(
+                    10,
+                    color: done ? Cyber.success : Cyber.cyan,
+                  ),
+                ),
+              if (bestLinks != null)
+                Text(
+                  'BEST: $bestLinks/4 LINKS',
+                  style: Cyber.label(8, color: Cyber.muted),
+                ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            goal.title,
+            style: Cyber.label(
+              12,
+              color: done ? Cyber.success : AppTheme.whiteColor,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            nextGoal == null ? goal.description : 'UP NEXT: ${nextGoal!.title}',
+            style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PitchContributionStrip extends StatelessWidget {
+  const PitchContributionStrip({
+    required this.power,
+    this.progress = 1,
+    super.key,
+  });
+  final PowerBreakdown power;
+  final double progress;
+  @override
+  Widget build(BuildContext context) {
+    final entries = [
+      ('PLAYER', power.player),
+      ('ACTION', power.action),
+      ('SCENE', power.scenario),
+      ('COMBO', power.combo),
+      ('TIMING', power.timing),
+    ];
+    return Wrap(
+      spacing: 8,
+      runSpacing: 6,
+      children: [
+        for (var i = 0; i < entries.length; i++)
+          AnimatedOpacity(
+            duration: Duration(
+              milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 100,
+            ),
+            opacity: progress >= (i + 1) / entries.length ? 1 : 0.2,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  entries[i].$1,
+                  style: Cyber.label(7, color: Cyber.muted, letterSpacing: 0.5),
+                ),
+                Text(
+                  '${i == 0 ? '' : '+'}${entries[i].$2}',
+                  style:
+                      Cyber.display(
+                        12,
+                        color: i == 3 && power.combo > 0
+                            ? Cyber.cyan
+                            : AppTheme.whiteColor,
+                        letterSpacing: 0,
+                      ).copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 // Full-luminance grayscale matrix for disabled/suspended cards.
 const List<double> _grayscaleMatrix = <double>[
   0.33, 0.59, 0.11, 0, 0, //
@@ -2456,6 +3205,8 @@ class PremiumCardShell extends StatefulWidget {
     this.onTap,
     this.disabledLabel = 'IN DECK',
     this.clipper,
+    this.calmDisabled = false,
+    this.showSelectionMarker = true,
     this.tapSound = SoundEffect.cardSelect,
     super.key,
   });
@@ -2469,6 +3220,8 @@ class PremiumCardShell extends StatefulWidget {
   final Widget Function(bool hovered) builder;
   final VoidCallback? onTap;
   final String disabledLabel;
+  final bool calmDisabled;
+  final bool showSelectionMarker;
 
   /// Sound played on a valid tap. Action tiles override it per category
   /// (attack/defense/special); the default is the generic card-select tick.
@@ -2547,7 +3300,39 @@ class _PremiumCardShellState extends State<PremiumCardShell>
                   Positioned.fill(
                     child: ClipPath(
                       clipper: widget.clipper ?? CyberClipper(),
-                      child: _SuspendedBanner(widget.disabledLabel),
+                      child: widget.calmDisabled
+                          ? Stack(
+                              children: [
+                                Positioned.fill(
+                                  child: ColoredBox(
+                                    color: Cyber.bg.withValues(alpha: 0.45),
+                                  ),
+                                ),
+                                Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: ColoredBox(
+                                    color: Cyber.bg,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 8,
+                                      ),
+                                      child: Text(
+                                        widget.disabledLabel,
+                                        style: Cyber.label(
+                                          9,
+                                          color:
+                                              widget.disabledLabel == 'RESERVED'
+                                              ? Cyber.amber
+                                              : Cyber.muted,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            )
+                          : _SuspendedBanner(widget.disabledLabel),
                     ),
                   ),
                 ],
@@ -2586,11 +3371,12 @@ class _PremiumCardShellState extends State<PremiumCardShell>
                       child: inner,
                     ),
                   ),
-                  Positioned(
-                    right: 7,
-                    bottom: 7,
-                    child: _SelectionSquare(color: widget.selectedAccent),
-                  ),
+                  if (widget.showSelectionMarker)
+                    Positioned(
+                      right: 7,
+                      bottom: 7,
+                      child: _SelectionSquare(color: widget.selectedAccent),
+                    ),
                 ],
               );
             }
@@ -2721,6 +3507,7 @@ class CyberPlayerCardTile extends StatefulWidget {
     this.size = VisualCardSize.sm,
     this.selectedAccent = Cyber.cyan,
     this.tiltOnSelect = true,
+    this.pitchDuelStyle = true,
     this.onTap,
     super.key,
   });
@@ -2732,6 +3519,7 @@ class CyberPlayerCardTile extends StatefulWidget {
   final VisualCardSize size;
   final Color selectedAccent;
   final bool tiltOnSelect;
+  final bool pitchDuelStyle;
   final VoidCallback? onTap;
 
   @override
@@ -2748,14 +3536,19 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
   @override
   void initState() {
     super.initState();
-    if (widget.selected) {
-      _tapController.value = 1;
-    }
+    // Initialize before disposal even when the football face bypasses the old painter.
+    _tapController.value = widget.selected ? 1 : 0;
   }
 
   @override
   void didUpdateWidget(CyberPlayerCardTile oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.pitchDuelStyle &&
+        (widget.card.role == PlayerRole.attacker ||
+            widget.card.role == PlayerRole.defender ||
+            widget.card.role == PlayerRole.goalkeeper)) {
+      return;
+    }
     if (widget.selected && !oldWidget.selected) {
       _tapController.forward(from: 0);
     } else if (!widget.selected && oldWidget.selected) {
@@ -2772,6 +3565,20 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
   @override
   Widget build(BuildContext context) {
     final card = widget.card;
+    if (widget.pitchDuelStyle &&
+        (card.role == PlayerRole.attacker ||
+            card.role == PlayerRole.defender ||
+            card.role == PlayerRole.goalkeeper)) {
+      return _PitchCardFace(
+        player: card,
+        selected: widget.selected,
+        disabled: widget.disabled,
+        disabledLabel: widget.disabledLabel,
+        size: widget.size,
+        accent: widget.selectedAccent,
+        onTap: widget.onTap,
+      );
+    }
     final selected = widget.selected;
     final disabled = widget.disabled;
     final size = widget.size;
@@ -3259,6 +4066,8 @@ class CyberActionCardTile extends StatefulWidget {
     this.size = VisualCardSize.sm,
     this.selectedAccent = Cyber.cyan,
     this.tiltOnSelect = true,
+    this.pitchDuelStyle = true,
+    this.comboBonus = 0,
     this.onTap,
     super.key,
   });
@@ -3270,6 +4079,8 @@ class CyberActionCardTile extends StatefulWidget {
   final VisualCardSize size;
   final Color selectedAccent;
   final bool tiltOnSelect;
+  final bool pitchDuelStyle;
+  final int comboBonus;
   final VoidCallback? onTap;
 
   @override
@@ -3295,6 +4106,7 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
   @override
   void didUpdateWidget(CyberActionCardTile oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.pitchDuelStyle) return;
     if (widget.selected && !oldWidget.selected) {
       _tapController.forward(from: 0);
     } else if (!widget.selected && oldWidget.selected) {
@@ -3310,6 +4122,18 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
 
   @override
   Widget build(BuildContext context) {
+    if (widget.pitchDuelStyle) {
+      return _PitchCardFace(
+        action: widget.card,
+        comboBonus: widget.comboBonus,
+        selected: widget.selected,
+        disabled: widget.disabled,
+        disabledLabel: widget.disabledLabel,
+        size: widget.size,
+        accent: widget.selectedAccent,
+        onTap: widget.onTap,
+      );
+    }
     final color = actionColor(widget.card.category);
     final catAccent = switch (widget.card.category) {
       ActionCategory.attack => Cyber.danger,
@@ -3601,7 +4425,7 @@ class CyberChip extends StatelessWidget {
         label.toUpperCase(),
         style: TextStyle(
           color: color,
-          fontFamily: 'Onest',
+          fontFamily: Cyber.bodyFontFor(context),
           fontSize: 10,
           fontWeight: FontWeight.w700,
           fontFeatures: const [FontFeature.tabularFigures()],
@@ -3760,6 +4584,15 @@ class _CyberSlideUpFadeInState extends State<CyberSlideUpFadeIn>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _kickoff?.cancel();
+      _controller.value = 1;
+    }
+  }
+
+  @override
   void dispose() {
     _kickoff?.cancel();
     _controller.dispose();
@@ -3879,6 +4712,15 @@ class _CyberDealtCardState extends State<CyberDealtCard>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _kickoff?.cancel();
+      _controller.value = 1;
+    }
+  }
+
+  @override
   void dispose() {
     _kickoff?.cancel();
     _controller.dispose();
@@ -3917,7 +4759,11 @@ class _CyberDealtCardState extends State<CyberDealtCard>
 /// stripe along the top edge. Used by order-ticket and filter sheets. Pass
 /// [accent] to key the frame to a single signal colour (e.g. an alert sheet).
 class HudSheetFramePainter extends CustomPainter {
-  const HudSheetFramePainter({this.bigCut = 18, this.smallCut = 4, this.accent});
+  const HudSheetFramePainter({
+    this.bigCut = 18,
+    this.smallCut = 4,
+    this.accent,
+  });
 
   final double bigCut;
   final double smallCut;
@@ -4023,7 +4869,8 @@ class HudPagerButton extends StatelessWidget {
                   ],
                   Text(
                     label,
-                    style: Cyber.body(
+                    style: Cyber.bodyFor(
+                      context,
                       16,
                       color: content,
                       weight: FontWeight.w800,
@@ -4238,7 +5085,8 @@ class CountdownBlock extends StatelessWidget {
         Text(
           caption,
           textAlign: TextAlign.center,
-          style: Cyber.body(
+          style: Cyber.bodyFor(
+            context,
             12,
             color: accent.withValues(alpha: 0.7),
             weight: FontWeight.w700,
@@ -4698,7 +5546,7 @@ class _GlidingActiveTabPainter extends CustomPainter {
 enum CardBackSilhouette { player, action }
 
 /// A face-down card with the matching player or action-card silhouette: flat
-/// [Cyber.panel] fill, diagonal-line weave and a dim centre emblem. Used
+/// [Cyber.panel] fill, mirrored circuit print and a dim centre emblem. Used
 /// wherever a card exists but its value is hidden (Duel Board opponent deck
 /// rows and placed-but-unrevealed arena slots). Size it from the outside.
 class CardBackFace extends StatelessWidget {
@@ -4717,16 +5565,16 @@ class CardBackFace extends StatelessWidget {
   /// Matches the hidden card's outline to its visible card family.
   final CardBackSilhouette silhouette;
 
-  static const _playerClipper = HudChamferClipper(bigCut: 9, smallCut: 4.5);
+  static const _playerClipper = HudChamferClipper(bigCut: 9, smallCut: 0);
 
   @override
   Widget build(BuildContext context) {
     final tone = dimmed ? Cyber.muted : accent;
-    final weave = tone.withValues(alpha: dimmed ? 0.14 : 0.28);
+    final weave = tone.withValues(alpha: dimmed ? 0.10 : 0.22);
     final edge = tone.withValues(alpha: dimmed ? 0.30 : 0.55);
     final clipper = switch (silhouette) {
       CardBackSilhouette.player => _playerClipper,
-      CardBackSilhouette.action => RectangleClipper(),
+      CardBackSilhouette.action => _playerClipper,
     };
     return CustomPaint(
       foregroundPainter: _CardBackEdgePainter(
@@ -4740,15 +5588,20 @@ class CardBackFace extends StatelessWidget {
           children: [
             const DecoratedBox(decoration: BoxDecoration(color: Cyber.panel)),
             CustomPaint(painter: _CardBackWeavePainter(lineColor: weave)),
-            Center(
-              child: Image.asset(
-                'assets/icons/app_logo.png',
-                width: 22,
-                height: 22,
-                color: edge,
-                errorBuilder: (_, _, _) =>
-                    Icon(Icons.bolt, size: 20, color: edge),
-              ),
+            LayoutBuilder(
+              builder: (context, box) {
+                final emblemSize = (box.maxWidth * 0.28).clamp(8.0, 32.0);
+                return Center(
+                  child: Image.asset(
+                    'assets/icons/app_logo.png',
+                    width: emblemSize,
+                    height: emblemSize,
+                    color: edge,
+                    errorBuilder: (_, _, _) =>
+                        Icon(Icons.bolt, size: emblemSize, color: edge),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -4757,8 +5610,7 @@ class CardBackFace extends StatelessWidget {
   }
 }
 
-/// Diagonal-line weave confined to the card bounds (same pattern language as
-/// the pack-reveal card back).
+/// Symmetric circuit print gives a hidden play a physical playing-card back.
 class _CardBackWeavePainter extends CustomPainter {
   const _CardBackWeavePainter({required this.lineColor});
 
@@ -4770,14 +5622,34 @@ class _CardBackWeavePainter extends CustomPainter {
     final paint = Paint()
       ..color = lineColor
       ..strokeWidth = 1;
-    const spacing = 10.0;
-    final diag = size.width + size.height;
-    for (double d = -diag; d < diag; d += spacing) {
-      canvas.drawLine(
-        Offset(d, 0),
-        Offset(d + size.height, size.height),
+    final center = size.center(Offset.zero);
+    for (final scale in [0.28, 0.44, 0.64]) {
+      final w = size.width * scale;
+      final h = size.height * scale;
+      canvas.drawPath(
+        Path()
+          ..moveTo(center.dx, center.dy - h / 2)
+          ..lineTo(center.dx + w / 2, center.dy)
+          ..lineTo(center.dx, center.dy + h / 2)
+          ..lineTo(center.dx - w / 2, center.dy)
+          ..close(),
         paint,
       );
+    }
+    for (var i = 0; i < 3; i++) {
+      final x = size.width * (0.12 + i * 0.07);
+      final y = size.height * (0.14 + i * 0.045);
+      final path = Path()
+        ..moveTo(x, size.height * 0.4)
+        ..lineTo(x, y + 4)
+        ..lineTo(x + 4, y)
+        ..lineTo(size.width * 0.62, y);
+      canvas.drawPath(path, paint);
+      canvas.save();
+      canvas.translate(size.width, size.height);
+      canvas.rotate(pi);
+      canvas.drawPath(path, paint);
+      canvas.restore();
     }
   }
 
@@ -4795,7 +5667,7 @@ class _CardBackEdgePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final path = switch (silhouette) {
       CardBackSilhouette.player => CardBackFace._playerClipper.buildPath(size),
-      CardBackSilhouette.action => RectangleClipper().getClip(size),
+      CardBackSilhouette.action => CardBackFace._playerClipper.buildPath(size),
     };
     canvas.drawPath(
       path,
@@ -4804,6 +5676,19 @@ class _CardBackEdgePainter extends CustomPainter {
         ..strokeWidth = 1.2
         ..color = color,
     );
+    canvas.save();
+    canvas.translate(3, 3);
+    canvas.drawPath(
+      const HudChamferClipper(
+        bigCut: 7,
+        smallCut: 0,
+      ).buildPath(Size(max(0, size.width - 6), max(0, size.height - 6))),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.6
+        ..color = color.withValues(alpha: 0.45),
+    );
+    canvas.restore();
   }
 
   @override
@@ -4887,8 +5772,11 @@ class CyberTelemetryFooter extends StatelessWidget {
 }
 
 class CyberBentoTile {
-  const CyberBentoTile({required this.span, required this.child, this.rowHeight})
-    : assert(rowHeight == null || rowHeight > 0);
+  const CyberBentoTile({
+    required this.span,
+    required this.child,
+    this.rowHeight,
+  }) : assert(rowHeight == null || rowHeight > 0);
 
   final CyberBentoSpan span;
   final Widget child;

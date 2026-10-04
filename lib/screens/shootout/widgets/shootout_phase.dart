@@ -310,7 +310,7 @@ class _TurnRoleBanner extends StatelessWidget {
                       shooting
                           ? 'Tap where you want to shoot.'
                           : 'Choose where your keeper dives.',
-                      style: Cyber.body(11, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, 11, color: Cyber.muted),
                     ),
                   ],
                 ),
@@ -574,7 +574,8 @@ class _KickTableCell extends StatelessWidget {
                 '${playerName?.toUpperCase() ?? 'PLAYER'} · $action $direction',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.body(
+                style: Cyber.bodyFor(
+                  context,
                   10,
                   color: Colors.white70,
                   weight: FontWeight.w700,

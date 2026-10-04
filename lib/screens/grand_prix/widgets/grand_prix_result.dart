@@ -1,3 +1,4 @@
+import '../../../config/game_ladder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -16,6 +17,7 @@ import '../../../widgets/level_up_celebration.dart';
 /// the shared celebration after the sequence.
 class GrandPrixResultOverlay extends StatefulWidget {
   const GrandPrixResultOverlay({
+    this.questMatchId,
     required this.result,
     required this.circuitName,
     required this.onExit,
@@ -23,6 +25,7 @@ class GrandPrixResultOverlay extends StatefulWidget {
     super.key,
   });
 
+  final String? questMatchId;
   final GrandPrixResult result;
   final String circuitName;
   final VoidCallback onExit;
@@ -57,22 +60,26 @@ class _GrandPrixResultState extends State<GrandPrixResultOverlay>
   );
 
   bool _showLevelUp = false;
+  bool _revealStarted = false;
 
   @override
   void initState() {
     super.initState();
-    if (WidgetsBinding
-        .instance
-        .platformDispatcher
-        .accessibilityFeatures
-        .disableAnimations) {
+    _seq.addStatusListener((status) {
+      if (status == AnimationStatus.completed) _maybeLevelUp();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_revealStarted) return;
+    _revealStarted = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
       _seq.value = 1;
       _maybeLevelUp();
     } else {
       _seq.forward();
-      _seq.addStatusListener((status) {
-        if (status == AnimationStatus.completed) _maybeLevelUp();
-      });
     }
   }
 
@@ -96,11 +103,17 @@ class _GrandPrixResultState extends State<GrandPrixResultOverlay>
         ? ('RETIRED', Cyber.danger, Icons.warning_amber_rounded)
         : switch (result.verdict) {
             GrandPrixVerdict.win => ('WIN', Cyber.gold, Icons.emoji_events),
-            GrandPrixVerdict.podium =>
-              ('PODIUM', Cyber.f1Red, Icons.military_tech),
+            GrandPrixVerdict.podium => (
+              'PODIUM',
+              Cyber.f1Red,
+              Icons.military_tech,
+            ),
             GrandPrixVerdict.points => ('POINTS', Cyber.cyan, Icons.flag),
-            GrandPrixVerdict.finished =>
-              ('FINISHED', Cyber.amber, Icons.sports_score),
+            GrandPrixVerdict.finished => (
+              'FINISHED',
+              Cyber.amber,
+              Icons.sports_score,
+            ),
           };
     final game = context.watch<GameBloc>().state;
     final prog = game.progression;
@@ -117,10 +130,13 @@ class _GrandPrixResultState extends State<GrandPrixResultOverlay>
                     child: AnimatedBuilder(
                       animation: _seq,
                       builder: (context, _) {
-                        final xpT =
-                            ((_seq.value - 0.48) / 0.42).clamp(0.0, 1.0);
+                        final xpT = ((_seq.value - 0.48) / 0.42).clamp(
+                          0.0,
+                          1.0,
+                        );
                         final shownXp = (result.xp * xpT).round();
-                        final barFill = (prog.xpToNextLevel == 0
+                        final barFill =
+                            (prog.xpToNextLevel == 0
                                 ? 0.0
                                 : prog.xpIntoLevel / prog.xpToNextLevel) *
                             xpT;
@@ -136,7 +152,7 @@ class _GrandPrixResultState extends State<GrandPrixResultOverlay>
                                   icon: icon,
                                   circuitName: result.laps > 1
                                       ? '${widget.circuitName} · '
-                                          '${result.laps} LAPS'
+                                            '${result.laps} LAPS'
                                       : widget.circuitName,
                                 ),
                               ),
@@ -148,10 +164,41 @@ class _GrandPrixResultState extends State<GrandPrixResultOverlay>
                               const SizedBox(height: 18),
                               FadeTransition(
                                 opacity: _statRows,
-                                child: _RaceStats(
-                                  result: result,
-                                ),
+                                child: _RaceStats(result: result),
                               ),
+                              if (result.newMastery.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                FadeTransition(
+                                  opacity: _xpPanel,
+                                  child: CyberPanel(
+                                    accent: Cyber.gold,
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          'CIRCUIT MASTERY EARNED',
+                                          style: Cyber.label(
+                                            10,
+                                            color: Cyber.gold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          children: [
+                                            for (final stamp
+                                                in result.newMastery)
+                                              CyberChip(
+                                                label: stamp.label,
+                                                color: Cyber.gold,
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: 16),
                               FadeTransition(
                                 opacity: _xpPanel,
@@ -169,16 +216,18 @@ class _GrandPrixResultState extends State<GrandPrixResultOverlay>
                                   ),
                                 ),
                               ),
+                              if (_seq.value >= 0.62)
+                                QuestResultReceipt(
+                                  game: ArcadeGame.grandPrixDash,
+                                  sourceId: widget.questMatchId,
+                                ),
                             ],
                           ),
                         );
                       },
                     ),
                   ),
-                  _Dock(
-                    onExit: widget.onExit,
-                    onRaceAgain: widget.onRaceAgain,
-                  ),
+                  _Dock(onExit: widget.onExit, onRaceAgain: widget.onRaceAgain),
                 ],
               ),
               if (_showLevelUp)
@@ -224,7 +273,10 @@ class _VerdictBanner extends StatelessWidget {
         children: [
           Icon(icon, color: accent, size: 34),
           const SizedBox(height: 6),
-          Text(verdict, style: Cyber.display(34, color: accent, letterSpacing: 3)),
+          Text(
+            verdict,
+            style: Cyber.display(34, color: accent, letterSpacing: 3),
+          ),
           const SizedBox(height: 4),
           Text(
             circuitName,
@@ -248,9 +300,10 @@ class _PositionReadout extends StatelessWidget {
         children: [
           Text(
             'DNF',
-            style: Cyber.display(64, color: Cyber.danger).copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+            style: Cyber.display(
+              64,
+              color: Cyber.danger,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
           const SizedBox(height: 4),
           Text(
@@ -264,28 +317,34 @@ class _PositionReadout extends StatelessWidget {
     final (deltaText, deltaColor) = gained > 0
         ? ('▲ $gained PLACES GAINED', Cyber.success)
         : gained < 0
-            ? ('▼ ${-gained} PLACES LOST', Cyber.danger)
-            : ('HELD POSITION', Cyber.muted);
+        ? ('▼ ${-gained} PLACES LOST', Cyber.danger)
+        : ('HELD POSITION', Cyber.muted);
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(
-              'P${result.position}',
-              style: Cyber.display(64, color: Cyber.cyan).copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                'P${result.position}',
+                style: Cyber.display(
+                  64,
+                  color: Cyber.cyan,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
-            ),
-            Text(
-              '/${result.fieldSize}',
-              style: Cyber.display(28, color: Cyber.muted).copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
+              Text(
+                '/${result.fieldSize}',
+                style: Cyber.display(
+                  28,
+                  color: Cyber.muted,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -326,15 +385,50 @@ class _RaceStats extends StatelessWidget {
               children: [
                 Text(
                   formatLapTime(result.lapTimeMs),
-                  style: Cyber.display(13, color: Colors.white).copyWith(
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+                  style: Cyber.display(13, color: AppTheme.textPrimary)
+                      .copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                 ),
                 if (result.personalBest) ...[
                   const SizedBox(width: 8),
                   const CyberChip(label: 'PB', color: Cyber.gold),
                 ],
               ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (result.bestLapTimeMs != null) ...[
+            _StatRow(
+              label: 'BEST SPLIT',
+              valueWidget: Text(
+                formatLapTime(result.bestLapTimeMs),
+                style: Cyber.display(12, color: Cyber.cyan),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+          _StatRow(
+            label: 'CLEAN PASSES',
+            valueWidget: Text(
+              '${result.cleanOvertakes}',
+              style: Cyber.display(12, color: Cyber.cyan),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _StatRow(
+            label: 'RACECRAFT',
+            valueWidget: CyberChip(
+              label: result.retired
+                  ? 'DNF'
+                  : result.recoveries > 0
+                  ? '${result.recoveries} RECOVERIES'
+                  : result.cleanRace
+                  ? 'CLEAN FINISH'
+                  : 'CONTACT',
+              color: result.cleanRace && !result.retired
+                  ? Cyber.success
+                  : Cyber.muted,
             ),
           ),
           const SizedBox(height: 10),
@@ -372,8 +466,14 @@ class _StatRow extends StatelessWidget {
           label,
           style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.6),
         ),
-        const Spacer(),
-        valueWidget,
+        const SizedBox(width: 12),
+        Expanded(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: valueWidget,
+          ),
+        ),
       ],
     );
   }
@@ -407,13 +507,9 @@ class _XpPanel extends StatelessWidget {
         children: [
           Text(
             '+$shownXp XP',
-            style: const TextStyle(
-              fontFamily: Cyber.displayFont,
-              fontSize: 26,
+            style: Cyber.display(26, color: Cyber.f1Red).copyWith(
               fontWeight: FontWeight.w900,
-              letterSpacing: 1,
-              color: Cyber.f1Red,
-              fontFeatures: [FontFeature.tabularFigures()],
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
           const SizedBox(height: 12),
@@ -449,6 +545,7 @@ class _Dock extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
+            flex: 2,
             child: CyberCtaButton(
               label: 'EXIT',
               onPressed: () {
@@ -459,6 +556,7 @@ class _Dock extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
+            flex: 3,
             child: CyberCtaButton(
               label: 'RACE AGAIN',
               primary: true,

@@ -280,7 +280,7 @@ class _RewardHero extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       'Invite a friend into StatOz and get paid when they join.',
-                      style: Cyber.body(13, color: Colors.white),
+                      style: Cyber.bodyFor(context, 13, color: Colors.white),
                     ),
                   ],
                 ),
@@ -464,7 +464,7 @@ class _ReferralLinkCard extends StatelessWidget {
                     link,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.body(12, color: Colors.white),
+                    style: Cyber.bodyFor(context, 12, color: Colors.white),
                   ),
                 ),
                 const SizedBox(width: 3),
@@ -503,7 +503,7 @@ class _ReferralLinkCard extends StatelessWidget {
                     copied
                         ? 'Link copied. Send it anywhere your squad chats.'
                         : 'Share or copy this invite to bring a friend in.',
-                    style: Cyber.body(11, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, 11, color: Cyber.muted),
                   ),
                 ),
               ],
@@ -619,7 +619,7 @@ class _RecentReferrals extends StatelessWidget {
               child: Text(
                 'No referrals yet. Share your link to invite your first friend.',
                 textAlign: TextAlign.center,
-                style: Cyber.body(12, color: Cyber.muted),
+                style: Cyber.bodyFor(context, 12, color: Cyber.muted),
               ),
             )
           else
@@ -672,7 +672,7 @@ class _ReferralRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(entry.friendName, style: Cyber.body(13)),
+              Text(entry.friendName, style: Cyber.bodyFor(context, 13)),
               const SizedBox(height: 4),
               Text(
                 _dateLabel(entry.createdAt),

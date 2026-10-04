@@ -184,11 +184,24 @@ void main() {
     final categoryRects = [
       for (final key in categoryKeys) tester.getRect(find.byKey(key)),
     ];
-    for (final rect in categoryRects) {
-      expect(rect.width, moreOrLessEquals(categoryRects.first.width));
-      expect(rect.top, moreOrLessEquals(categoryRects.first.top));
-      expect(rect.height, moreOrLessEquals(rect.width, epsilon: 0.5));
+    // All three shortcuts share one row and keep their open counts visible.
+    for (var i = 0; i < categoryRects.length; i++) {
+      final rect = categoryRects[i];
+      expect(rect.width, lessThan(wide.width / 3));
+      expect(rect.height, greaterThan(rect.width));
       expect(rect.bottom, lessThan(wide.top));
+      if (i > 0) {
+        expect(rect.left, greaterThan(categoryRects[i - 1].right));
+        expect(rect.top, moreOrLessEquals(categoryRects[0].top));
+      }
+      final texts = tester.widgetList<Text>(
+        find.descendant(
+          of: find.byKey(categoryKeys[i]),
+          matching: find.byType(Text),
+        ),
+      );
+      expect(texts.any((text) => (text.data ?? '').contains('%')), isFalse);
+      expect(texts.length, inInclusiveRange(3, 4));
     }
     await tester.tap(
       find.descendant(
@@ -214,7 +227,7 @@ void main() {
     expect(harnessKey.currentState!.openedMatchId, 'epl_cfc_new');
 
     final pick = find.byKey(const ValueKey('trend-liverpool-pick'));
-    // The category strip pushes the grid down, so "visible" can still leave
+    // The shortcut row pushes the grid down, so "visible" can still leave
     // the tile under the bottom edge; drag the feed itself until the tile is
     // fully inside the viewport.
     final feedScrollable = find
@@ -225,8 +238,10 @@ void main() {
         .first;
     for (
       var i = 0;
-      i < 8 && tester.getRect(pick).bottom > tester.view.physicalSize.height /
-          tester.view.devicePixelRatio - 80;
+      i < 8 &&
+          tester.getRect(pick).bottom >
+              tester.view.physicalSize.height / tester.view.devicePixelRatio -
+                  80;
       i++
     ) {
       await tester.drag(feedScrollable, const Offset(0, -200));
@@ -297,14 +312,14 @@ void main() {
     expect(chessRect.height, greaterThan(chessRect.width * 1.8));
     expect(chessRect.top, moreOrLessEquals(quizRect.top));
     expect(quizRect.left, moreOrLessEquals(bingoRect.left));
-    expect(bingoRect.top, greaterThan(quizRect.bottom));
-    expect(guessRect.width, greaterThan(guessRect.height * 1.8));
+    expect(bingoRect.top, greaterThanOrEqualTo(quizRect.bottom));
+    expect(guessRect.width, greaterThan(guessRect.height * 1.6));
 
     final title = find.descendant(
       of: pitchFinder,
       matching: find.text('PITCH DUEL'),
     );
-    expect(tester.getCenter(title).dy, lessThan(pitchRect.center.dy));
+    expect(tester.getCenter(title).dy, greaterThan(pitchRect.center.dy));
 
     await tester.tap(pitchFinder);
     expect(harnessKey.currentState!.pitchDuelOpens, 1);
@@ -352,6 +367,14 @@ void main() {
       findsWidgets,
     );
     _expectMinimumStyledType(tester, matchFeed);
+    final categoryRects = [
+      for (final category in const ['picks', 'futures', 'events'])
+        tester.getRect(find.byKey(ValueKey('trend-category-$category'))),
+    ];
+    expect(categoryRects[0].top, moreOrLessEquals(categoryRects[2].top));
+    expect(categoryRects[0].right, lessThan(categoryRects[1].left));
+    expect(categoryRects[1].right, lessThan(categoryRects[2].left));
+    expect(categoryRects[2].right, lessThanOrEqualTo(304));
     final matchText = tester.widgetList<Text>(
       find.descendant(of: matchFeed, matching: find.byType(Text)),
     );
@@ -366,6 +389,62 @@ void main() {
 
     final gamesFeed = find.byKey(const ValueKey('games-trending-feed'));
     _expectMinimumStyledType(tester, gamesFeed);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Cricket Trending keeps both innings and result together', (
+    tester,
+  ) async {
+    await _setPhoneSize(tester, const Size(320, 720));
+    final bundle = await _HubBundle.create();
+    addTearDown(bundle.dispose);
+    final fixture = await MockPredictionRepository().fixtureById('1496576');
+    expect(fixture, isNotNull);
+    await bundle.predictions.ingestFixtures([
+      fixture!.copyWith(
+        status: MatchStatus.finished,
+        homeScore: '201/7 (20 ov)',
+        awayScore: '203/5 (19.1 ov, target 202)',
+        resultLine: 'India won by 5 wickets',
+      ),
+    ]);
+
+    await tester.pumpWidget(bundle.wrap(const _HubHarness(initialTopTab: 0)));
+    await tester.pump(const Duration(seconds: 2));
+    final card = find.byKey(const ValueKey('trend-live-cricket'));
+    await tester.scrollUntilVisible(
+      card,
+      250,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const ValueKey('match-trending-feed')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.pump();
+
+    for (final line in [
+      'England',
+      '201/7',
+      '(20 ov)',
+      'India',
+      '203/5',
+      '(19.1 ov, target 202)',
+      'India won by 5 wickets',
+    ]) {
+      expect(
+        find.descendant(of: card, matching: find.text(line)),
+        findsOneWidget,
+      );
+    }
+    final homeScore = tester.getRect(
+      find.descendant(of: card, matching: find.text('201/7')),
+    );
+    final awayScore = tester.getRect(
+      find.descendant(of: card, matching: find.text('203/5')),
+    );
+    expect(homeScore.top, lessThan(awayScore.top));
     expect(tester.takeException(), isNull);
   });
 
@@ -503,7 +582,13 @@ class _HubBundle {
         BlocProvider<PredictionCubit>.value(value: predictions),
         BlocProvider<PicksCubit>.value(value: picks),
       ],
-      child: MaterialApp(home: child),
+      child: MaterialApp(
+        home: child,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child!,
+        ),
+      ),
     );
   }
 

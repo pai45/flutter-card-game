@@ -20,7 +20,10 @@ class _CricketLineupViewState extends State<CricketLineupView> {
 
     if (homeLineup == null || awayLineup == null) {
       return const Center(
-        child: Text('Lineup data not available', style: TextStyle(color: Cyber.muted)),
+        child: Text(
+          'Lineup data not available',
+          style: TextStyle(color: Cyber.muted),
+        ),
       );
     }
 
@@ -46,13 +49,20 @@ class _CricketLineupViewState extends State<CricketLineupView> {
                     onTap: () => setState(() => _showHome = true),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: _showHome ? Cyber.cyan.withValues(alpha: 0.2) : Colors.transparent,
+                        color: _showHome
+                            ? Cyber.cyan.withValues(alpha: 0.2)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         widget.match.home.name,
-                        style: Cyber.body(13, weight: _showHome ? FontWeight.w800 : FontWeight.w600, color: _showHome ? Cyber.cyan : Cyber.muted),
+                        style: Cyber.bodyFor(
+                          context,
+                          13,
+                          weight: _showHome ? FontWeight.w800 : FontWeight.w600,
+                          color: _showHome ? Cyber.cyan : Cyber.muted,
+                        ),
                       ),
                     ),
                   ),
@@ -62,13 +72,22 @@ class _CricketLineupViewState extends State<CricketLineupView> {
                     onTap: () => setState(() => _showHome = false),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: !_showHome ? Cyber.gold.withValues(alpha: 0.2) : Colors.transparent,
+                        color: !_showHome
+                            ? Cyber.gold.withValues(alpha: 0.2)
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         widget.match.away.name,
-                        style: Cyber.body(13, weight: !_showHome ? FontWeight.w800 : FontWeight.w600, color: !_showHome ? Cyber.gold : Cyber.muted),
+                        style: Cyber.bodyFor(
+                          context,
+                          13,
+                          weight: !_showHome
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                          color: !_showHome ? Cyber.gold : Cyber.muted,
+                        ),
                       ),
                     ),
                   ),
@@ -83,11 +102,15 @@ class _CricketLineupViewState extends State<CricketLineupView> {
             padding: const EdgeInsets.all(16),
             children: [
               _buildSectionHeader('Playing XI', accentColor),
-              ...activeLineup.startingXI.map((p) => _buildPlayerRow(p, accentColor)),
+              ...activeLineup.startingXI.map(
+                (p) => _buildPlayerRow(p, accentColor),
+              ),
               const SizedBox(height: 24),
               if (activeLineup.substitutes.isNotEmpty) ...[
                 _buildSectionHeader('Bench', Cyber.muted),
-                ...activeLineup.substitutes.map((p) => _buildPlayerRow(p, Cyber.muted)),
+                ...activeLineup.substitutes.map(
+                  (p) => _buildPlayerRow(p, Cyber.muted),
+                ),
               ],
             ],
           ),
@@ -104,14 +127,15 @@ class _CricketLineupViewState extends State<CricketLineupView> {
         children: [
           Text(
             title.toUpperCase(),
-            style: Cyber.body(14, weight: FontWeight.w700, color: color),
+            style: Cyber.bodyFor(
+              context,
+              14,
+              weight: FontWeight.w700,
+              color: color,
+            ),
           ),
           const SizedBox(height: 4),
-          Container(
-            height: 1,
-            width: double.infinity,
-            color: Cyber.line,
-          ),
+          Container(height: 1, width: double.infinity, color: Cyber.line),
         ],
       ),
     );
@@ -136,9 +160,7 @@ class _CricketLineupViewState extends State<CricketLineupView> {
               shape: BoxShape.circle,
               border: Border.all(color: accent.withValues(alpha: 0.3)),
             ),
-            child: Center(
-              child: Icon(Icons.person, size: 20, color: accent),
-            ),
+            child: Center(child: Icon(Icons.person, size: 20, color: accent)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -147,14 +169,14 @@ class _CricketLineupViewState extends State<CricketLineupView> {
               children: [
                 Text(
                   player.name,
-                  style: Cyber.body(14, weight: FontWeight.w600),
+                  style: Cyber.bodyFor(context, 14, weight: FontWeight.w600),
                 ),
                 if (player.role != null && player.role!.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
                       player.role!,
-                      style: Cyber.body(12, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, 12, color: Cyber.muted),
                     ),
                   ),
               ],
@@ -169,7 +191,12 @@ class _CricketLineupViewState extends State<CricketLineupView> {
               ),
               child: Text(
                 'C',
-                style: Cyber.body(10, weight: FontWeight.w800, color: Cyber.gold),
+                style: Cyber.bodyFor(
+                  context,
+                  10,
+                  weight: FontWeight.w800,
+                  color: Cyber.gold,
+                ),
               ),
             ),
         ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'blocs/achievement/achievement_celebration_controller.dart';
@@ -17,6 +18,7 @@ import 'blocs/quiz/quiz_cubit.dart';
 import 'blocs/tennis/tennis_cubit.dart';
 import 'blocs/tennis/tennis_state.dart';
 import 'config/enums.dart';
+import 'config/game_ladder.dart';
 import 'config/sport_modules.dart';
 import 'config/theme.dart';
 import 'models/league.dart';
@@ -33,12 +35,14 @@ import 'screens/shootout/shootout_hub.dart';
 import 'screens/tennis/tennis_hub.dart';
 import 'screens/home/widgets/starter_pack_onboarding.dart';
 import 'screens/onboarding/widgets/onboarding_coin_reward_animation.dart';
+import 'screens/onboarding/player_profile_selector_screen.dart';
 import 'screens/onboarding/profile_setup_screen.dart';
 import 'screens/predictions/league_detail_screen.dart';
 import 'screens/predictions/match_detail_screen.dart';
 import 'screens/predictions/market_detail_screen.dart';
 import 'screens/predictions/prediction_home_screen.dart';
 import 'screens/predictions/streak_calendar_screen.dart';
+import 'screens/predictions/widgets/unlock_sheets.dart';
 import 'screens/quiz/quiz_hub.dart';
 import 'screens/guess_player/guess_player_hub.dart';
 import 'screens/guess_driver/guess_driver_hub.dart';
@@ -58,17 +62,37 @@ import 'services/prediction_repository.dart';
 import 'services/rolling_window_service.dart';
 import 'services/secure_storage_service.dart';
 import 'widgets/achievement_celebration_host.dart';
+import 'widgets/cyber/cyber_widgets.dart' show GameTypographyScope;
 import 'widgets/streak_celebration_host.dart';
 import 'widgets/streak_reminder_popup.dart';
+import 'widgets/unlock_celebration_host.dart';
+
+/// Lets the shell know when a pushed route covers the home hub, so unlock
+/// moments wait until the player is back on it.
+final RouteObserver<ModalRoute<void>> _appRouteObserver =
+    RouteObserver<ModalRoute<void>>();
 
 enum _PendingGameLaunchKind { football, cricket, basketball, tennis, grandPrix }
 
-class PitchDuelApp extends StatelessWidget {
+class PitchDuelApp extends StatefulWidget {
   const PitchDuelApp({super.key});
+
+  @override
+  State<PitchDuelApp> createState() => _PitchDuelAppState();
+}
+
+class _PitchDuelAppState extends State<PitchDuelApp> {
+  int _profileSession = 0;
+
+  void _restartProfileSession(LocalProfileSlot _) {
+    if (!mounted) return;
+    setState(() => _profileSession++);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
+      key: ValueKey('profile_session_$_profileSession'),
       providers: [
         BlocProvider(
           create: (_) => GameBloc(SecureGameStorage())..add(GameLoaded()),
@@ -107,6 +131,7 @@ class PitchDuelApp extends StatelessWidget {
         title: 'StatOz',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
+        navigatorObservers: [_appRouteObserver],
         // Watch the three source blocs and float the achievement-unlock reveal
         // above every route. The reveal itself lives in [AchievementCelebrationHost].
         builder: (context, child) {
@@ -130,11 +155,14 @@ class PitchDuelApp extends StatelessWidget {
                 Positioned.fill(child: child ?? const SizedBox.shrink()),
                 const Positioned.fill(child: AchievementCelebrationHost()),
                 const Positioned.fill(child: StreakCelebrationHost()),
+                const Positioned.fill(
+                  child: GameTypographyScope(child: UnlockCelebrationHost()),
+                ),
               ],
             ),
           );
         },
-        home: const AppShell(),
+        home: AppShell(onProfileActivated: _restartProfileSession),
       ),
     );
   }
@@ -154,13 +182,16 @@ void _syncAchievements(BuildContext context) {
 }
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+  const AppShell({required this.onProfileActivated, super.key});
+
+  final ValueChanged<LocalProfileSlot> onProfileActivated;
 
   @override
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
+class _AppShellState extends State<AppShell>
+    with WidgetsBindingObserver, RouteAware {
   // Default landing is Matches; both hub strips start on Trending.
   AppSection section = AppSection.predictions;
   int _predictionTab = 0;
@@ -179,13 +210,61 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   OnboardingRewardStatus? _onboardingRewardStatus;
   bool _onboardingRewardDismissing = false;
   String? _selectedAvatarId;
+  bool _profileSelectorOpen = false;
+  PlayerProfileChoice _activeProfileChoice = PlayerProfileChoice.firstTime;
+  bool _firstTimeProfileReady = false;
+  bool _returningProfileReady = false;
+  LocalProfileSummary? _firstTimeProfileSummary;
+  LocalProfileSummary? _returningProfileSummary;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    UnlockRevealGate.instance
+      ..playGame = _openArcadeGame
+      ..chooseGame = _chooseQuestGame
+      ..openSport = _enterSport
+      ..openQuestHub = _openStreakHub
+      ..chooseSport = _chooseNextSport
+      ..backToGames = _backToQuestGames
+      ..continueQuest = _continueQuest;
+    // Drop any hub-visible flag left over from the previous profile session.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncRevealGate());
     _loadOnboardingState();
     _runRollingWindowIfDue();
+  }
+
+  bool _hubOnTop = true;
+  bool _homeTabsSeeded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) _appRouteObserver.subscribe(this, route);
+  }
+
+  @override
+  void didPushNext() => _setHubOnTop(false);
+
+  @override
+  void didPopNext() => _setHubOnTop(true);
+
+  void _setHubOnTop(bool onTop) {
+    _hubOnTop = onTop;
+    _syncRevealGate();
+  }
+
+  /// Unlock reveals may only play on the bare, fully onboarded hub.
+  void _syncRevealGate() {
+    UnlockRevealGate.instance.hubVisible.value =
+        mounted &&
+        _hubOnTop &&
+        !_profileSelectorOpen &&
+        !_onboardingLoading &&
+        _onboardingComplete &&
+        _onboardingRewardStatus != OnboardingRewardStatus.pending;
   }
 
   @override
@@ -204,6 +283,22 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _appRouteObserver.unsubscribe(this);
+    // A profile switch mounts the next session's shell before this one is
+    // torn down, and that shell has already claimed the gate. Releasing it
+    // here would null the new session's callbacks and notify its live reveal
+    // host while the tree is locked — so only release a gate we still own.
+    final gate = UnlockRevealGate.instance;
+    if (gate.playGame == _openArcadeGame) {
+      gate.hubVisible.value = false;
+      gate.playGame = null;
+      gate.chooseGame = null;
+      gate.openSport = null;
+      gate.openQuestHub = null;
+      gate.chooseSport = null;
+      gate.backToGames = null;
+      gate.continueQuest = null;
+    }
     super.dispose();
   }
 
@@ -230,7 +325,12 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     // seen without granting coins so rollout only rewards new onboarding runs.
     if (complete && rewardStatus == null) {
       rewardStatus = OnboardingRewardStatus.seen;
-      await _storage.saveOnboardingRewardStatus(rewardStatus);
+      try {
+        await _storage.saveOnboardingRewardStatus(rewardStatus);
+      } catch (_) {
+        // The marker is cosmetic; a storage write failure must not hold the
+        // onboarding gate on its loading frame.
+      }
     }
     if (!mounted) return;
     setState(() {
@@ -259,17 +359,20 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
 
   /// One streak-hub entry for every surface (top-bar flame on each tab, the
   /// home quest tile, profile streak badges) so quest CTAs route identically.
-  void _openStreakHub() =>
-      showStreakCalendar(context, onQuestNavigate: _routeQuest);
+  void _openStreakHub() => showStreakCalendar(
+    context,
+    onQuestNavigate: _routeQuest,
+    onBeginnerNavigate: _openArcadeGame,
+  );
 
   void _routeQuest(QuestDestination destination) {
     switch (destination) {
       case QuestDestination.pitchDuel:
-        _openGame();
+        _openQuestGame(ArcadeGame.pitchDuel);
       case QuestDestination.penaltyShootout:
-        _openShootout();
+        _openQuestGame(ArcadeGame.penaltyShootout);
       case QuestDestination.guessPlayer:
-        _openGuessPlayer();
+        _openQuestGame(ArcadeGame.footballGuessPlayer);
       case QuestDestination.prediction:
         setState(() {
           section = AppSection.predictions;
@@ -307,11 +410,13 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     if (game.loading ||
         _onboardingLoading ||
         !_onboardingComplete ||
+        game.unlocks.initialQuestActive ||
         _onboardingRewardStatus == OnboardingRewardStatus.pending ||
         game.pendingPackReveal != null ||
         !onTop ||
         game.streak.celebrationQueue.isNotEmpty ||
         game.questRewardCoins > 0 ||
+        game.unlocks.pendingReveals.isNotEmpty ||
         achievements.holding ||
         achievements.queue.isNotEmpty) {
       return;
@@ -378,6 +483,9 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     await _storage.saveSelectedAvatarId(result.avatarId);
     await _storage.saveSelectedProfileBannerId(result.bannerId);
     await _storage.savePrimarySportName(result.primarySport.name);
+    await _storage.saveFollowedSportNames([
+      for (final sport in result.sports) sport.name,
+    ]);
     await _storage.saveFollowedLeagueIds(result.followedLeagueIds);
     await _storage.saveFavoriteTeams(result.favoriteTeams);
     final rewardPending =
@@ -387,9 +495,13 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     }
     await _storage.saveOnboardingComplete(true);
     if (!mounted) return;
+    // Opens the home sport; its Games quest card offers the first-game choice.
+    context.read<GameBloc>().add(HomeSportChosen(result.primarySport));
     setState(() {
       _selectedAvatarId = result.avatarId;
       _onboardingComplete = true;
+      _predictionMatchSportTab = hubIndexForSport(result.primarySport);
+      _predictionGamesSportTab = hubIndexForSport(result.primarySport);
       if (rewardPending) {
         _onboardingRewardStatus = OnboardingRewardStatus.pending;
       }
@@ -416,20 +528,154 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   }
 
   Future<void> _logoutFromProfile() async {
-    await _storage.resetProfileSetup();
+    final active = await _storage.loadActiveLocalProfile();
+    final summaries = await Future.wait([
+      _storage.loadLocalProfileSummary(LocalProfileSlot.firstTime),
+      _storage.loadLocalProfileSummary(LocalProfileSlot.returning),
+    ]);
     if (!mounted) return;
     setState(() {
-      section = AppSection.predictions;
-      _predictionTab = 0;
-      _predictionMatchSportTab = 0;
-      _predictionGamesSportTab = 0;
       _pendingGameLaunch = null;
       _pendingGameLaunchKind = null;
-      _selectedAvatarId = null;
-      _onboardingComplete = false;
-      _onboardingRewardDismissing = false;
+      _activeProfileChoice = _choiceForSlot(active);
+      _firstTimeProfileSummary = summaries[0];
+      _returningProfileSummary = summaries[1];
+      _firstTimeProfileReady = summaries[0].ready;
+      _returningProfileReady = summaries[1].ready;
+      _profileSelectorOpen = true;
+    });
+    _syncRevealGate();
+  }
+
+  Future<void> _selectPlayerProfile(PlayerProfileChoice choice) async {
+    final slot = _slotForChoice(choice);
+    final active = await _storage.loadActiveLocalProfile();
+    if (!mounted) return;
+    // Picking the slot you are already in is "stay", not a switch: close the
+    // switchboard in place. Restarting the session here would look like a
+    // logout that silently logged you back into the same career.
+    if (slot == active) {
+      setState(() => _profileSelectorOpen = false);
+      _syncRevealGate();
+      return;
+    }
+    await _storage.switchLocalProfile(slot);
+    if (!mounted) return;
+    HapticFeedback.mediumImpact();
+    widget.onProfileActivated(slot);
+  }
+
+  static LocalProfileSlot _slotForChoice(PlayerProfileChoice choice) =>
+      choice == PlayerProfileChoice.firstTime
+      ? LocalProfileSlot.firstTime
+      : LocalProfileSlot.returning;
+
+  static PlayerProfileChoice _choiceForSlot(LocalProfileSlot slot) =>
+      slot == LocalProfileSlot.firstTime
+      ? PlayerProfileChoice.firstTime
+      : PlayerProfileChoice.returning;
+
+  /// Daily-quest game CTAs name football modes; a player whose home sport is
+  /// something else (or who has not reached that mode yet) is sent to their
+  /// home sport's current Beginner's Quest game instead of a lock sheet.
+  void _openQuestGame(ArcadeGame preferred) {
+    final unlocks = context.read<GameBloc>().state.unlocks;
+    final home = unlocks.homeSport ?? Sport.football;
+    if (unlocks.needsSelection(home)) {
+      _chooseQuestGame(home);
+      return;
+    }
+    if (unlocks.isGameUnlocked(preferred)) {
+      _openArcadeGame(preferred);
+      return;
+    }
+    final step = unlocks.currentStep(home);
+    if (step != null) {
+      _openArcadeGame(step);
+    }
+  }
+
+  void _chooseQuestGame(Sport sport) {
+    _enterSport(sport);
+    final unlocks = context.read<GameBloc>().state.unlocks;
+    final step = unlocks.currentStep(sport);
+    if (unlocks.needsSelection(sport)) {
+      showQuestGamePicker(context, sport, onPlay: _openArcadeGame);
+    } else if (step != null) {
+      _openArcadeGame(step);
+    }
+  }
+
+  /// The single, guarded entry into every GAMES-tab mode. A locked game (or a
+  /// game of a locked sport) opens its unlock sheet instead of launching.
+  void _openArcadeGame(ArcadeGame game) {
+    final unlocks = context.read<GameBloc>().state.unlocks;
+    if (!unlocks.isGameUnlocked(game)) {
+      showLockedGameSheet(context, game, onPlay: _openArcadeGame);
+      return;
+    }
+    switch (game) {
+      case ArcadeGame.pitchDuel:
+        _openGame();
+      case ArcadeGame.penaltyShootout:
+        _openShootout();
+      case ArcadeGame.footballChess:
+        _openFootballChess();
+      case ArcadeGame.footballBingo:
+        _openFootballBingo();
+      case ArcadeGame.footballGuessPlayer:
+        _openGuessPlayer();
+      case ArcadeGame.cricketGuessPlayer:
+        _openCricketGuessPlayer();
+      case ArcadeGame.basketballGuessPlayer:
+        _openBasketballGuessPlayer();
+      case ArcadeGame.finalOver:
+        _openFinalOver();
+      case ArcadeGame.hoopDuel:
+        _openBasketball();
+      case ArcadeGame.grandPrixDash:
+        _openGrandPrix();
+      case ArcadeGame.guessDriver:
+        _openF1GuessDriver();
+      case ArcadeGame.tennisRally:
+        _openTennisRally();
+      case ArcadeGame.guessWinner:
+        _openTennisGuessWinner();
+      case ArcadeGame.footballQuiz ||
+          ArcadeGame.cricketQuiz ||
+          ArcadeGame.basketballQuiz ||
+          ArcadeGame.motorsportQuiz ||
+          ArcadeGame.tennisQuiz:
+        _openQuiz(game.sport);
+    }
+  }
+
+  /// SPORT UNLOCKED → land on that sport's GAMES tab, where its quest starts.
+  void _enterSport(Sport sport) {
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    _openSportGames(sport);
+  }
+
+  bool _questNavigating = false;
+
+  void _continueQuest() {
+    if (_questNavigating || !mounted) return;
+    _questNavigating = true;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _questNavigating = false;
+      if (!mounted) return;
+      if (context.read<GameBloc>().state.unlocks.pendingReveals.isEmpty) {
+        _openStreakHub();
+      }
     });
   }
+
+  void _chooseNextSport() => showNextSportPicker(context);
+
+  void _backToQuestGames() => _enterSport(
+    context.read<GameBloc>().state.unlocks.homeSport ?? Sport.football,
+  );
 
   /// Deck Locker → the sport's GAMES tab, where launching a game claims that
   /// sport's starter pack (see `_enterCricketGameFlow` and friends below) and
@@ -458,12 +704,15 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   /// `final_over` package; the lobby, pitch and HUD are ours.
   void _openFinalOver() => _enterCricketGameFlow(_pushFinalOver);
 
+  MaterialPageRoute<void> _gameRoute({required WidgetBuilder builder}) =>
+      MaterialPageRoute<void>(
+        builder: (context) => GameTypographyScope(child: builder(context)),
+      );
+
   void _pushFinalOver() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
-        builder: (_) => FinalOverHub(onExit: navigator.pop),
-      ),
+      _gameRoute(builder: (_) => FinalOverHub(onExit: navigator.pop)),
     );
   }
 
@@ -530,7 +779,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void _pushGame() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => GameTabContent(
           onNavigate: (next) {
             navigator.pop();
@@ -544,7 +793,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void _pushShootout() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => ShootoutTabContent(
           onNavigate: (next) {
             navigator.pop();
@@ -558,7 +807,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void _pushFootballChess() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => FootballChessTabContent(
           onNavigate: (next) {
             navigator.pop();
@@ -574,7 +823,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void _openQuiz(Sport sport) {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => QuizTabContent(
           sport: sport,
           onNavigate: (next) {
@@ -611,7 +860,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   }) {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => GuessPlayerTabContent(
           sport: sport,
           timelines: timelines,
@@ -628,7 +877,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void _openF1GuessDriver() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => GuessDriverTabContent(
           onNavigate: (next) {
             navigator.pop();
@@ -642,7 +891,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void _openTennisGuessWinner() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => GuessWinnerTabContent(
           onNavigate: (next) {
             navigator.pop();
@@ -656,7 +905,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void _openFootballBingo() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => FootballBingoTabContent(
           onNavigate: (next) {
             navigator.pop();
@@ -688,7 +937,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void _pushGrandPrix() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => GrandPrixTabContent(
           onNavigate: (next) {
             navigator.pop();
@@ -707,9 +956,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void _pushTennisRally() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
-        builder: (_) => TennisRallyHub(onExit: navigator.pop),
-      ),
+      _gameRoute(builder: (_) => TennisRallyHub(onExit: navigator.pop)),
     );
   }
 
@@ -717,7 +964,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void _pushBasketball() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => BasketballTabContent(
           onNavigate: (next) {
             navigator.pop();
@@ -781,9 +1028,27 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         listener: (context, state) {
           // Re-check the streak reminder once loading finishes and whenever a
           // queued moment clears (its guards decide whether it can show).
-          WidgetsBinding.instance.addPostFrameCallback(
-            (_) => _maybeShowStreakReminder(),
-          );
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _syncRevealGate();
+            _maybeShowStreakReminder();
+          });
+          // Hub tabs start on TRENDING; a gated player's first view after a
+          // relaunch is their home sport instead (TRENDING stays reachable
+          // once they own a second sport).
+          final home = state.unlocks.homeSport;
+          if (!_homeTabsSeeded && !state.loading && home != null) {
+            _homeTabsSeeded = true;
+            if (state.unlocks.gated) {
+              setState(() {
+                if (_predictionMatchSportTab == hubTrendingTabIndex) {
+                  _predictionMatchSportTab = hubIndexForSport(home);
+                }
+                if (_predictionGamesSportTab == hubTrendingTabIndex) {
+                  _predictionGamesSportTab = hubIndexForSport(home);
+                }
+              });
+            }
+          }
           final pending = _pendingGameLaunch;
           final ready = switch (_pendingGameLaunchKind) {
             _PendingGameLaunchKind.cricket => state.cricketStarterPackClaimed,
@@ -822,6 +1087,16 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               ),
             );
           }
+          if (_profileSelectorOpen) {
+            return PlayerProfileSelectorScreen(
+              activeProfile: _activeProfileChoice,
+              firstTimeProfileReady: _firstTimeProfileReady,
+              returningProfileReady: _returningProfileReady,
+              firstTimeSummary: _firstTimeProfileSummary,
+              returningSummary: _returningProfileSummary,
+              onSelect: _selectPlayerProfile,
+            );
+          }
           if (!_onboardingComplete) {
             return ProfileSetupScreen(
               initialAvatarId: _selectedAvatarId,
@@ -848,9 +1123,11 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           }
           final packReveal = state.pendingPackReveal;
           if (packReveal != null && packReveal.items.isNotEmpty) {
-            return PackOnboardingScreen(
-              key: const ValueKey('onboarding'),
-              reveal: packReveal,
+            return GameTypographyScope(
+              child: PackOnboardingScreen(
+                key: const ValueKey('onboarding'),
+                reveal: packReveal,
+              ),
             );
           }
           final content = switch (section) {
@@ -886,20 +1163,28 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               onOpenMarket: _openMarket,
               onOpenLeague: _openLeague,
               onOpenLeagueGames: _openLeagueGames,
-              onOpenGame: _openGame,
-              onOpenShootout: _openShootout,
-              onOpenQuiz: _openQuiz,
-              onOpenFootballBingo: _openFootballBingo,
-              onOpenFootballChess: _openFootballChess,
-              onOpenFinalOver: _openFinalOver,
-              onOpenGuessPlayer: _openGuessPlayer,
-              onOpenBasketballGuessPlayer: _openBasketballGuessPlayer,
-              onOpenCricketGuessPlayer: _openCricketGuessPlayer,
-              onOpenGrandPrix: _openGrandPrix,
-              onOpenF1GuessDriver: _openF1GuessDriver,
-              onOpenTennisGuessWinner: _openTennisGuessWinner,
-              onOpenBasketball: _openBasketball,
-              onOpenTennisRally: _openTennisRally,
+              onOpenArcadeGame: _openArcadeGame,
+              onOpenGame: () => _openArcadeGame(ArcadeGame.pitchDuel),
+              onOpenShootout: () => _openArcadeGame(ArcadeGame.penaltyShootout),
+              onOpenQuiz: (sport) => _openArcadeGame(quizGameFor(sport)),
+              onOpenFootballBingo: () =>
+                  _openArcadeGame(ArcadeGame.footballBingo),
+              onOpenFootballChess: () =>
+                  _openArcadeGame(ArcadeGame.footballChess),
+              onOpenFinalOver: () => _openArcadeGame(ArcadeGame.finalOver),
+              onOpenGuessPlayer: () =>
+                  _openArcadeGame(ArcadeGame.footballGuessPlayer),
+              onOpenBasketballGuessPlayer: () =>
+                  _openArcadeGame(ArcadeGame.basketballGuessPlayer),
+              onOpenCricketGuessPlayer: () =>
+                  _openArcadeGame(ArcadeGame.cricketGuessPlayer),
+              onOpenGrandPrix: () => _openArcadeGame(ArcadeGame.grandPrixDash),
+              onOpenF1GuessDriver: () =>
+                  _openArcadeGame(ArcadeGame.guessDriver),
+              onOpenTennisGuessWinner: () =>
+                  _openArcadeGame(ArcadeGame.guessWinner),
+              onOpenBasketball: () => _openArcadeGame(ArcadeGame.hoopDuel),
+              onOpenTennisRally: () => _openArcadeGame(ArcadeGame.tennisRally),
               onAddCoins: _openShopCoins,
               onOpenStreakHub: _openStreakHub,
             ),

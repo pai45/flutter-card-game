@@ -2,6 +2,7 @@ import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/game/game_state.dart';
 import 'package:card_game/config/enums.dart';
 import 'package:card_game/models/cards.dart';
+import 'package:card_game/models/pitch_duel_rules.dart';
 import 'package:card_game/screens/deck/all_cards_screen.dart';
 import 'package:card_game/services/card_share_service.dart';
 import 'package:card_game/services/secure_storage_service.dart';
@@ -18,19 +19,19 @@ void main() {
 
     expect(copy, contains(card.name));
     expect(copy, contains('${card.rating} OVR'));
-    expect(copy, contains(card.trait));
+    expect(copy, contains(pitchPlayerAbility(card)));
     expect(copy, contains('ATK'));
   });
 
-  test('action share copy includes power, effect, and risky status', () {
+  test('action share copy includes actual power and combination effects', () {
     final card = actionCards.firstWhere((card) => card.risky);
 
     final copy = actionCardShareText(card);
 
     expect(copy, contains(card.title));
     expect(copy, contains('${card.power > 0 ? '+' : ''}${card.power} PWR'));
-    expect(copy, contains(card.effect));
-    expect(copy, contains('High risk, high reward'));
+    expect(copy, contains(pitchActionAbility(card)));
+    expect(copy, isNot(contains('High risk, high reward')));
   });
 
   testWidgets('player card detail exposes share button and uses exporter', (

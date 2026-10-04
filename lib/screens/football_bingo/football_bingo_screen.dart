@@ -1,3 +1,4 @@
+import '../../config/game_ladder.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -139,9 +140,15 @@ class _FootballBingoScreenState extends State<FootballBingoScreen>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('ROUTE UNLOCKED', style: Cyber.label(10, color: Cyber.amber)),
+                Text(
+                  'ROUTE UNLOCKED',
+                  style: Cyber.label(10, color: Cyber.amber),
+                ),
                 const SizedBox(height: 6),
-                Text(career.name, style: Cyber.display(20, color: Colors.white)),
+                Text(
+                  career.name,
+                  style: Cyber.display(20, color: Colors.white),
+                ),
                 const SizedBox(height: 14),
                 Wrap(
                   spacing: 8,
@@ -150,14 +157,19 @@ class _FootballBingoScreenState extends State<FootballBingoScreen>
                     for (final spell in career.clubHistory)
                       CyberChip(
                         label: spell.label.toUpperCase(),
-                        color: spell.clubId == cell.rowId || spell.clubId == cell.columnId
+                        color:
+                            spell.clubId == cell.rowId ||
+                                spell.clubId == cell.columnId
                             ? Cyber.amber
                             : Cyber.muted,
                       ),
                   ],
                 ),
                 const SizedBox(height: 14),
-                Text('VERIFIED SENIOR CLUB ROUTE', style: Cyber.label(9, color: Cyber.muted)),
+                Text(
+                  'VERIFIED SENIOR CLUB ROUTE',
+                  style: Cyber.label(9, color: Cyber.muted),
+                ),
               ],
             ),
           ),
@@ -220,6 +232,12 @@ class _FootballBingoScreenState extends State<FootballBingoScreen>
 
   Future<void> _showCompletedAndReturn() async {
     if (!mounted) return;
+    context.read<GameBloc>().add(
+      ArcadeGamePlayed(
+        ArcadeGame.footballBingo,
+        sourceId: _cubit.state.activeDayKey,
+      ),
+    );
     setState(() => _showCompletion = true);
   }
 
@@ -312,7 +330,10 @@ class _FootballBingoScreenState extends State<FootballBingoScreen>
                 ),
                 if (_showCompletion)
                   Positioned.fill(
-                    child: _CompletionOverlay(onDone: widget.onCompleted),
+                    child: _CompletionOverlay(
+                      onDone: widget.onCompleted,
+                      dayKey: state.activeDayKey,
+                    ),
                   ),
                 if (_flight != null) _FlightLayer(flight: _flight!),
               ],
@@ -634,7 +655,11 @@ class _GridCell extends StatelessWidget {
     return GestureDetector(
       key: ValueKey('bingo-cell-${cell.id}'),
       behavior: HitTestBehavior.opaque,
-      onTap: solved ? () => onSolvedTap(cell) : disabled || revealAnswer ? null : () => onTap(cell.id),
+      onTap: solved
+          ? () => onSolvedTap(cell)
+          : disabled || revealAnswer
+          ? null
+          : () => onTap(cell.id),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         width: size,
@@ -791,7 +816,7 @@ class _PlayerPanel extends StatelessWidget {
               Text(
                 'Return to logs for more grids.',
                 textAlign: TextAlign.center,
-                style: Cyber.body(12, color: Cyber.muted),
+                style: Cyber.bodyFor(context, 12, color: Cyber.muted),
               ),
             ],
           ),
@@ -837,10 +862,7 @@ class _PlayerPanel extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            CyberChip(
-              label: 'POS ${player.position}',
-              color: Cyber.cyan,
-            ),
+            CyberChip(label: 'POS ${player.position}', color: Cyber.cyan),
             CyberChip(
               label: 'TAG ${player.trait.toUpperCase()}',
               color: Cyber.amber,
@@ -867,7 +889,7 @@ class _CompletePanel extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             'Tomorrow unlocks the next run.',
-            style: Cyber.body(12, color: Cyber.muted),
+            style: Cyber.bodyFor(context, 12, color: Cyber.muted),
           ),
         ],
       ),
@@ -953,7 +975,9 @@ class _LifelineDock extends StatelessWidget {
 }
 
 class _CompletionOverlay extends StatefulWidget {
-  const _CompletionOverlay({required this.onDone});
+  const _CompletionOverlay({required this.onDone, required this.dayKey});
+
+  final String dayKey;
 
   final VoidCallback onDone;
 
@@ -976,9 +1000,6 @@ class _CompletionOverlayState extends State<_CompletionOverlay> {
     await Future<void>.delayed(const Duration(milliseconds: 1400));
     if (!mounted || _summary) return;
     _showSummary();
-    await Future<void>.delayed(const Duration(milliseconds: 1200));
-    if (!mounted || _done) return;
-    _finish();
   }
 
   void _showSummary() {
@@ -1073,6 +1094,11 @@ class _CompletionOverlayState extends State<_CompletionOverlay> {
                           ],
                         ),
                         const SizedBox(height: 14),
+                        if (_summary)
+                          QuestResultReceipt(
+                            game: ArcadeGame.footballBingo,
+                            sourceId: widget.dayKey,
+                          ),
                         AnimatedSwitcher(
                           duration: const Duration(milliseconds: 220),
                           child: Text(

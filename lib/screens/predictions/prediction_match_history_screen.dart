@@ -530,7 +530,12 @@ class _TeamColumn extends StatelessWidget {
           team.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.body(15, color: color, weight: FontWeight.w700),
+          style: Cyber.bodyFor(
+            context,
+            15,
+            color: color,
+            weight: FontWeight.w700,
+          ),
         ),
       ],
     );
@@ -629,7 +634,8 @@ class _MatchHistoryStrip extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 '+${item.prediction.rewardEarned} XP',
-                style: Cyber.body(
+                style: Cyber.bodyFor(
+                  context,
                   12,
                   color: Cyber.success,
                   weight: FontWeight.w800,
