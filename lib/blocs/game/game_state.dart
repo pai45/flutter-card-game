@@ -7,6 +7,7 @@ import '../../models/grand_prix.dart';
 import '../../models/match.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/packs.dart';
+import '../../models/pitch_duel_rules.dart';
 import '../../models/progression.dart';
 import '../../models/streak.dart';
 import '../../models/daily_quest.dart';
@@ -277,6 +278,8 @@ class GameState {
     required this.opponentSelectedActionCard,
     required this.usedPlayerCards,
     required this.usedActionCards,
+    this.opponentUsedPlayerCards = const [],
+    this.opponentUsedActionCards = const [],
     required this.redCardedCards,
     required this.roundResults,
     required this.opponentAttackers,
@@ -452,6 +455,8 @@ class GameState {
   final ActionCard? opponentSelectedActionCard;
   final List<String> usedPlayerCards;
   final List<String> usedActionCards;
+  final List<String> opponentUsedPlayerCards;
+  final List<String> opponentUsedActionCards;
   final List<String> redCardedCards;
   final List<RoundResult> roundResults;
   final List<PlayerCard> opponentAttackers;
@@ -488,6 +493,10 @@ class GameState {
       deckAttackers.length == 2 &&
       deckDefenders.length == 2 &&
       deckActions.length == 6 &&
+      deckAttackers.map((c) => c.id).toSet().length == 2 &&
+      deckDefenders.map((c) => c.id).toSet().length == 2 &&
+      deckActions.map((c) => c.id).toSet().length == 6 &&
+      pitchCanComplete(deckActions, const [true, false, true, false]) &&
       deckKeeper != null &&
       deckAttackers.every((card) => ownedCardIds.contains(card.id)) &&
       deckDefenders.every((card) => ownedCardIds.contains(card.id)) &&
@@ -594,6 +603,8 @@ class GameState {
     Object? opponentSelectedActionCard = _sentinel,
     List<String>? usedPlayerCards,
     List<String>? usedActionCards,
+    List<String>? opponentUsedPlayerCards,
+    List<String>? opponentUsedActionCards,
     List<String>? redCardedCards,
     List<RoundResult>? roundResults,
     List<PlayerCard>? opponentAttackers,
@@ -706,6 +717,10 @@ class GameState {
         : opponentSelectedActionCard as ActionCard?,
     usedPlayerCards: usedPlayerCards ?? this.usedPlayerCards,
     usedActionCards: usedActionCards ?? this.usedActionCards,
+    opponentUsedPlayerCards:
+        opponentUsedPlayerCards ?? this.opponentUsedPlayerCards,
+    opponentUsedActionCards:
+        opponentUsedActionCards ?? this.opponentUsedActionCards,
     redCardedCards: redCardedCards ?? this.redCardedCards,
     roundResults: roundResults ?? this.roundResults,
     opponentAttackers: opponentAttackers ?? this.opponentAttackers,

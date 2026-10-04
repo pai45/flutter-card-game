@@ -4,7 +4,7 @@ import 'package:card_game/data/guess_player_data.dart';
 import 'package:card_game/models/cards.dart';
 import 'package:card_game/models/guess_player.dart';
 import 'package:card_game/models/sport_match.dart';
-import 'package:card_game/screens/guess_player/cricket_guess_player_lobby.dart';
+import 'package:card_game/screens/guess_player/guess_player_lobby.dart';
 import 'package:card_game/screens/guess_player/guess_player_home_screen.dart';
 import 'package:card_game/services/secure_storage_service.dart';
 import 'package:card_game/widgets/cyber/cyber_widgets.dart';
@@ -68,7 +68,8 @@ void main() {
               disableAnimations: true,
             ),
             child: Scaffold(
-              body: CricketGuessPlayerLobby(
+              body: GuessPlayerLobby(
+                sport: Sport.cricket,
                 state: _state(_record()),
                 resetLabel: '12:34:56',
                 ctaLabel: 'PLAY',
@@ -88,7 +89,7 @@ void main() {
       expect(find.text('0 SOLVED / 0 PLAYED'), findsOneWidget);
       tester
           .widget<CyberActionButton>(
-            find.byKey(const ValueKey('cricket-guess-player-today')),
+            find.byKey(const ValueKey('guess-player-today')),
           )
           .onPressed!();
       expect(played, 1);
@@ -96,7 +97,7 @@ void main() {
       await tester.pump();
       tester
           .widget<CyberActionButton>(
-            find.byKey(const ValueKey('cricket-guess-player-archive')),
+            find.byKey(const ValueKey('guess-player-archive')),
           )
           .onPressed!();
       expect(logs, 1);
@@ -124,7 +125,8 @@ void main() {
                 textScaler: TextScaler.linear(1.4),
               ),
               child: Scaffold(
-                body: CricketGuessPlayerLobby(
+                body: GuessPlayerLobby(
+                  sport: Sport.cricket,
                   state: _state(record),
                   resetLabel: '08:00:00',
                   ctaLabel: record.completed ? 'REVIEW' : 'RESUME',
@@ -153,16 +155,22 @@ void main() {
     },
   );
 
-  testWidgets('shared lobby selects the kit only for Cricket', (tester) async {
-    for (final sport in [Sport.cricket, Sport.football]) {
+  testWidgets('shared kit lobby renders every Guess the Player sport', (
+    tester,
+  ) async {
+    for (final sport in [Sport.cricket, Sport.football, Sport.basketball]) {
       final cubit = GuessPlayerCubit(
         sport: sport,
-        timelines: sport == Sport.cricket
-            ? cricketGuessTimelines
-            : footballGuessTimelines,
-        allPlayers: sport == Sport.cricket
-            ? cricketPlayerCards
-            : footballPlayerCards,
+        timelines: switch (sport) {
+          Sport.cricket => cricketGuessTimelines,
+          Sport.basketball => basketballGuessTimelines,
+          _ => footballGuessTimelines,
+        },
+        allPlayers: switch (sport) {
+          Sport.cricket => cricketPlayerCards,
+          Sport.basketball => basketballPlayerCards,
+          _ => footballPlayerCards,
+        },
         storage: SecureGameStorage(),
       );
       await tester.pumpWidget(
@@ -181,9 +189,10 @@ void main() {
         ),
       );
       await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(GuessPlayerLobby), findsOneWidget);
       expect(
-        find.byType(CricketGuessPlayerLobby),
-        sport == Sport.cricket ? findsOneWidget : findsNothing,
+        find.text('${sport.name.toUpperCase()} // DAILY INTEL'),
+        findsOneWidget,
       );
       await tester.pumpWidget(const SizedBox.shrink());
       await cubit.close();

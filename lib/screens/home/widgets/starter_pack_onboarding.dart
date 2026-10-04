@@ -5,6 +5,7 @@ import '../../../blocs/game/game_bloc.dart';
 import '../../../blocs/game/game_event.dart';
 import '../../../blocs/game/game_state.dart';
 import '../../../config/theme.dart';
+import '../../../models/pitch_duel_rules.dart';
 import '../../../utils/label_helpers.dart';
 import '../../../widgets/card_unpack_animation.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
@@ -26,6 +27,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
     with TickerProviderStateMixin {
   _Phase _phase = _Phase.intro;
   int _cardIndex = 0;
+  bool _motionChecked = false;
 
   // Intro
   late final AnimationController _bgPulse;
@@ -138,6 +140,23 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
     _summaryExit.forward().then((_) {
       if (mounted) context.read<GameBloc>().add(PackRevealSeen());
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_motionChecked && MediaQuery.disableAnimationsOf(context)) {
+      _bgPulse.stop();
+      _titleDrop.value = 1;
+      for (final c in _slotCtrl) {
+        c.value = 1;
+      }
+      for (final c in _summaryCtrl) {
+        c.value = 1;
+      }
+      _phase = _Phase.summary;
+    }
+    _motionChecked = true;
   }
 
   @override
@@ -443,6 +462,13 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
 
   Widget _buildSummary(BuildContext context) {
     final items = widget.reveal.items;
+    final matchingPairs = [
+      for (final p in items.where((i) => i.isPlayer))
+        for (final a in items.where((i) => !i.isPlayer))
+          if ((pitchAffinityActions[pitchAffinityFor(p.playerCard!)] ?? {})
+              .contains(pitchActionBaseId(a.actionCard!)))
+            '${p.playerCard!.name} + ${a.actionCard!.title}',
+    ];
     final playerIndices = [
       for (int i = 0; i < items.length; i++)
         if (items[i].isPlayer) i,
@@ -538,6 +564,41 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                             ),
                           ],
                           const SizedBox(height: 30),
+
+                          if (matchingPairs.isNotEmpty) ...[
+                            CyberPanel(
+                              cornerCuts: true,
+                              child: Column(
+                                children: [
+                                  Text(
+                                    'TRY THIS PAIR +4',
+                                    style: Cyber.label(12, color: Cyber.cyan),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    matchingPairs.first,
+                                    textAlign: TextAlign.center,
+                                    style: Cyber.bodyFor(
+                                      context,
+                                      14,
+                                      color: AppTheme.whiteColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Match the scenario for another +6. Long-press a card to see its ability.',
+                                    textAlign: TextAlign.center,
+                                    style: Cyber.bodyFor(
+                                      context,
+                                      12,
+                                      color: Cyber.muted,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
 
                           // Cards grouped under left-aligned section headers.
                           if (playerIndices.isNotEmpty)

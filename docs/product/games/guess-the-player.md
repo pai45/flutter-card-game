@@ -1,7 +1,7 @@
 # Guess the Player
 
 > **Status:** BUILT
-> **Last verified:** 2026-10-01
+> **Last verified:** 2026-10-03
 > **Scope:** Shared football, cricket, and basketball daily-player mystery variants
 
 ## Product Purpose
@@ -40,13 +40,14 @@ The clue language adapts by sport: football emphasizes nationality/club route,
 while cricket and basketball use their relevant team/role data. The underlying
 archive, result, hint, and settlement contracts remain shared.
 
-The Cricket lobby uses the StatOz Cyberpunk UI kit. A case dossier shows the
+All three sport lobbies use the StatOz Cyberpunk UI kit. A case dossier shows the
 current date, new/in-progress/completed status, potential or earned XP, the
 number of career signals, and the time until the next daily case. PLAY TODAY,
 RESUME CASE, and REVIEW RESULT route to the same puzzle flow as before. A
 second section shows the real solve streak, win rate, average tries, solved and
-played totals, plus the 30-day archive action. Only the main case action glows.
-Football and Basketball retain their existing lobby presentation.
+played totals, plus the 30-day archive action. Each sport uses its own emblem
+and heading while the layout and actions stay consistent. Only the main case
+action glows.
 
 ### Sport Variants
 
@@ -68,7 +69,7 @@ Losses award zero XP. The mode does not pay coins; hints/extra attempts spend th
 Wrong/correct/duplicate cues, haptics, clue decrypts, heart/attempt pressure,
 sport-specific audio, a staged debrief, score and XP count-ups, and archived
 performance make the short daily loop feel consequential.
-The Cricket lobby's primary action uses the kit's press, sound and haptic cues;
+Each lobby's primary action uses the kit's press, sound and haptic cues;
 the archive uses its quieter secondary action.
 
 ## Visible States
@@ -105,7 +106,7 @@ missing puzzle IDs still surface a data error.
 - [`lib/data/guess_player_data.dart`](../../../lib/data/guess_player_data.dart)
 - [`lib/blocs/guess_player/guess_player_cubit.dart`](../../../lib/blocs/guess_player/guess_player_cubit.dart)
 - [`lib/screens/guess_player/guess_player_hub.dart`](../../../lib/screens/guess_player/guess_player_hub.dart)
-- [`lib/screens/guess_player/cricket_guess_player_lobby.dart`](../../../lib/screens/guess_player/cricket_guess_player_lobby.dart)
+- [`lib/screens/guess_player/guess_player_lobby.dart`](../../../lib/screens/guess_player/guess_player_lobby.dart)
 - [`lib/screens/guess_player/guess_player_screen.dart`](../../../lib/screens/guess_player/guess_player_screen.dart)
 - [`lib/screens/guess_player/guess_player_logs_screen.dart`](../../../lib/screens/guess_player/guess_player_logs_screen.dart)
 - [`lib/blocs/game/game_bloc.dart`](../../../lib/blocs/game/game_bloc.dart)

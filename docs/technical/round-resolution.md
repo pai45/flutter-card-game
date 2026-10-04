@@ -1,227 +1,140 @@
-# Round Resolution & Match-Phase Settlement
+# Pitch Duel Round Resolution
 
-How a single round of Pitch Duel is settled: the inputs, the power formula, and
-the probability table that turns two cards into one of six outcomes
-(**goal / saved / blocked / missed / foul / red card**).
+> **Status:** BUILT
+> **Last verified:** 2026-10-04
+> **Scope:** Legal commitment, contextual power, timing, CPU selection, history and settlement
 
-> **Source of truth:** [`lib/blocs/game/game_bloc.dart`](../../lib/blocs/game/game_bloc.dart)
-> — specifically `GameBloc._onMovePlayed` (builds the round) and
-> `GameBloc._resolveRound` (decides the outcome). The honest goal odds are also
-> exported as `goalChanceForDiff` near the top of that file. The outcome enum,
-> labels and colours live in
-> [`lib/utils/label_helpers.dart`](../../lib/utils/label_helpers.dart) and the
-> `RoundOutcome` enum in [`lib/config/enums.dart`](../../lib/config/enums.dart).
->
-> Line numbers below are accurate at time of writing but may drift — search by
-> function name if they don't match.
+Code is authoritative: `lib/models/pitch_duel_rules.dart` owns pure calculations;
+`lib/blocs/game/game_bloc.dart` owns events, CPU choices and rewards.
 
----
+## Pipeline
 
-## 1. Match-phase pipeline
+`toss → roleReveal → scenario → play → roundResult`, repeated for four rounds,
+then `finalResult`. Roles alternate from `initialAttackingChoice`. The scenario
+is drawn without repeating previous scenarios while unused ones remain.
+`PlayStarted` chooses the hidden CPU pair once. `MovePlayed` resolves only in
+`play`, with an unused on-role player and a legal unused action. Resolution
+consumes both sides' player and action IDs and stores a `RoundResult` before
+presentation begins. Duplicate commitment after the phase change is ignored.
+`RoundAdvanced` likewise requires `roundResult`.
 
-A match is 4 rounds. Each round walks through these `MatchPhase`s, driven by
-`GameBloc` events:
+## Legal actions
 
-```
-matchStart
-  └─ toss            (TossResolved)        → coin toss decides first attack/defend choice
-roleReveal           (RoleChosen / RoleRevealAcknowledged)
-  └─ scenario        (ScenarioShown)       → a ScenarioCard is drawn, tilting the round
-play                 (PlayStarted)         → you pick a player card + action card
-  └─ MovePlayed  ───────────────────────►  ★ ROUND IS RESOLVED HERE ★
-roundResult          (the clash cinematic + verdict + score)
-  └─ RoundAdvanced
-        ├─ round < 4 → next roleReveal (roles flip — see §7)
-        └─ round = 4 → matchEnd
-```
+`pitchActionFitsRole` permits the current role category or a special action.
+`pitchRemainingRoles` lists the remaining alternating roles through round four.
+`pitchCanComplete` solves the small distinct-ID matching problem recursively.
+`pitchLegalActions` filters unused role-compatible actions whose removal still
+allows every future role to be filled. UI, CPU selection and commitment use
+this same function. A compatible excluded action is visibly RESERVED.
 
-The **settlement** (this document) is everything that happens inside the
-`MovePlayed` handler.
+Deck readiness requires unique owned 2 attackers, 2 defenders, 1 keeper and
+6 actions with four-round coverage. Saved decks use their existing schema;
+unsupported old decks remain editable rather than being silently replaced.
+CPU generation supplies two attack/two defense actions plus two extras.
 
----
+## One power calculation
 
-## 2. Inputs to a round
-
-When `MovePlayed` fires, the bloc has:
-
-| Input | Where it comes from |
-|---|---|
-| **Attacker / defender card** | Your selected player card + the CPU's player card, assigned to roles by who is attacking. |
-| **Attack / defense action** | Your selected action card + the CPU's chosen action card. |
-| **Scenario** | The `ScenarioCard` drawn this round, providing `attackBonus` / `defenseBonus`. |
-| **Player swing** | `event.playerSurge` from the **Shot Meter** (0–20). Falls back to `random × 20` if absent (e.g. reduced-motion). |
-| **CPU swing** | Always `random × 20`. |
-
-The CPU's action choice is mildly strategic: when the scenario favours the CPU's
-role it may (gated by a smartness roll tied to your level) pick its
-highest-power action instead of a random one — see `_onMovePlayed`
-([game_bloc.dart:649-662](../../lib/blocs/game/game_bloc.dart#L649-L662)).
-
-Roles are assigned so the *player's* swing always lands on the side the player is
-playing:
-
-```dart
-attackSwing  = playerAttacking ? playerSwing : oppSwing;
-defenseSwing = playerAttacking ? oppSwing    : playerSwing;
-```
-
----
-
-## 3. Power calculation
-
-[game_bloc.dart:675-684](../../lib/blocs/game/game_bloc.dart#L675-L684)
+`pitchPower(player, action, scenario, attacking, timing)` returns `PowerBreakdown`:
 
 ```
-attackPower  = attackerCard.rating + attackAction.power + scenario.attackBonus  + attackSwing
-defensePower = defenderCard.rating + defenseAction.power + scenario.defenseBonus + defenseSwing
+base  = player.rating + action.power + roleScenarioBonus + affinity + scenarioCombo
+total = base + timing
 ```
 
-Four additive contributions per side:
+`affinity` is +4 or zero; `scenarioCombo` is +6 or zero. Each is one set-membership
+check, independent of tier, so combination power cannot exceed +10. Metadata
+is scoped to football and keyed by stable player/scenario/action IDs. Tiered
+action IDs reduce to their base ID for matching and illustration lookup.
+All In (`act13`) is absent from both mappings. Disrupt Play keeps `act14`.
+Other sport players have no Pitch Duel affinity. Ratings/powers are not mutated.
 
-1. **Card rating** — the OVR of the player card in that role.
-2. **Action power** — the chosen action card's power.
-3. **Scenario bonus** — per-round tilt toward attack or defense.
-4. **Swing** — the 0–20 wildcard (Shot Meter for the player, random for the CPU).
+The live board previews this function's `base`. Final round totals use the same
+function with a timing bonus. `RoundResult` stores both optional role-oriented
+breakdowns and the player's typed `ShotTimingResult`. History stores optional
+player/opponent breakdowns; absent fields in older JSON decode as null.
 
-The only number that matters for the outcome table is the **gap**:
+## Timing
 
-```
-diff = attackPower − defensePower
-```
+`ShotTimingResult.at(position)` clamps position to [0,1] and measures distance
+from 0.5. Inclusive half widths are Perfect .045, Great .10 and Good .25;
+larger distances are Early/Late. Shared quality bonuses are 8,6,4,0. A 1e-9
+boundary tolerance accommodates floating-point representation. The painter
+reads those same widths, and labels read the same quality bonuses.
 
----
+Normal sweep duration is 900 ms per direction. Tutorial completion starts the
+sweep after preparation. Impact freezes the marker and returns the typed result
+after 600 ms. Reduced motion commits `ShotTimingResult.accessible` (+4), skipping
+reaction timing. CPU gets `nextInt(9)` (0–8 inclusive). Legacy `playerSurge`
+inputs are rounded/clamped 0–8; absent timing defaults to +4.
 
-## 4. Settlement algorithm
+## CPU strategy and privacy
 
-`GameBloc._resolveRound(attackPower, defensePower, attackAction, defenseAction)`
-([game_bloc.dart:901-938](../../lib/blocs/game/game_bloc.dart#L901-L938)).
+`_pickOpponentMove` enumerates remaining unused legal player/action pairs,
+scored with `pitchPower.base`. With probability `cpuSmartness(level)` it picks
+the strongest contextual pair, randomizing ties; otherwise any legal pair.
+Smartness remains `min(1, level / 12)` and level comes from the Pitch Duel track.
 
-It resolves in two stages — **risky-card overrides first**, then the **power
-table**. Each `_random.nextDouble()` is an independent draw.
+`pitchRivalRange` enumerates all remaining legal pairs independently of the
+stored CPU choice. It returns min base through max base +8. The UI wrapper
+`playerRivalRange` filters used/suspended cards. Switching a hidden commitment
+cannot change the preview. It is a scouting power range, not a probability.
 
-### Stage A — risky-card overrides (checked before power)
+## Verdict and full time
 
-```dart
-if (defenseAction.risky && random < 0.12) return RoundOutcome.redCard; // checked 1st
-if (attackAction.risky  && random < 0.12) return RoundOutcome.foul;    // checked 2nd
-```
+`resolveRoundDeterministic(attackPower - defensePower)` returns GOAL when positive,
+SAVED when negative, and GOAL/BLOCKED by a coin flip when exactly zero. Only
+GOAL increments the attacking score. Four-round level scores end in a draw;
+Penalty Shootout is separate. Foul/red/miss enum values and former probabilistic
+helpers remain **DEPRECATED** rollback/history compatibility code, unused by
+the live resolver.
 
-- A **risky defense** action carries a flat **12% red-card** self-risk.
-- A **risky attack** action carries a flat **12% foul** self-risk.
-- These are independent of power. Red card is tested before foul. If either
-  fires, the power table is skipped.
+## Presentation and settlement
 
-### Stage B — power table (when no risky override fired)
+The 1.4-second board timeline reveals player, action, scenario, combo and timing,
+then verdict and score. Tap-to-finish and reduced motion present the settled data;
+they do not invoke `MovePlayed`. NEXT ROUND is ready after the reveal, without
+a second countdown or automatic advance. Full time reuses existing wallet/XP/quest/streak
+contracts. GameBloc's cross-event queue serializes handlers, and the final phase
+guards repeat `MatchFinished`. History receives one match record.
 
-A single uniform `roll ∈ [0,1)` is bucketed by the `diff` band:
+## Match goals and history compatibility
 
-| Power gap `diff` | Goal | Saved | Other |
-|---|---|---|---|
-| **`> 15`** — attacker dominant | 80% | 15% | 5% blocked |
-| **`> 5`** — attacker favored | 65% | 25% | 10% missed |
-| **`-5 … 5`** — even | 45% | 35% | 20% (50-50 missed / blocked) |
-| **`-15 … -5`** — defender favored | 10% | 65% | 25% blocked |
-| **`≤ -15`** — defender dominant | 5% | 75% | 20% blocked |
+`pitch_duel_mastery.dart` derives three rotating combination goals from real
+non-demo `mode: match` records. `MatchFinished` writes the optional
+`pitchMasteryIndex` before prepending the new history entry. On the next match,
+the latest index advances modulo three, including when bounded history is full.
+Older records lack the field and use retained match count; round breakdowns remain
+optional. Live progress and result progress use the player's settled breakdown
+for each role. These goals do not add any settlement or reaction-time requirement.
 
-(Bands are evaluated as `diff > 15`, `diff > 5`, `diff > -5`, `diff > -15`, else.)
+## Verification
 
----
+- `test/pitch_duel_rules_test.dart`: both bonuses, all tiers/affinities, caps,
+  lower-rated contextual wins, zone boundaries, reservation continuations,
+  generated CPU decks, range bounds and old/new history JSON.
+- `test/pitch_duel_match_test.dart`: four-round completion from both initial
+  roles, preview parity, hidden-pick independence, CPU exhaustion, duplicate
+  commitment/advance/settlement and draws.
+- `test/pitch_duel_presentation_test.dart`: enlarged text, compact/tall phone
+  reachability, tutorial pause/marker freeze, skip/reduced motion and asset fallback.
+- Existing `shot_meter_odds_test.dart`, `scenario_briefing_transition_test.dart`,
+  `round_result_overflow_test.dart`, collection/deck and economy suites.
 
-## 5. Goal-odds reference (Shot Meter)
+On 2026-10-03, all 100 focused regressions passed and targeted Flutter analysis
+was clean. The release preview was reviewed at 360 × 740 and 412 × 915, including
+1.4× text, attack/defense choices, the meter, lobby, deck builder, full-time recap,
+and reduced-motion pack summary.
 
-The goal column above is mirrored by `goalChanceForDiff(diff)`
-([game_bloc.dart:25-31](../../lib/blocs/game/game_bloc.dart#L25-L31)), which the
-Shot Meter overlay uses to show **honest odds** before you shoot:
+`tool/pitch_duel_preview.dart` renders production widgets with isolated fixtures
+without loading a saved profile. Run `flutter run -d web-server -t
+tool/pitch_duel_preview.dart`; query parameters select `screen=board`, `defense`,
+`scenario`, `reveal`, `meter`, `lobby`, `deck`, `result`, or `pack`. Add `text=1.4`
+and/or `motion=reduced` for accessibility review.
 
-```dart
-double goalChanceForDiff(double diff) {
-  if (diff > 15)  return 0.80;
-  if (diff > 5)   return 0.65;
-  if (diff > -5)  return 0.45;
-  if (diff > -15) return 0.10;
-  return 0.05;
-}
-```
-
-> ⚠️ **Invariant:** if you ever change the goal probabilities in `_resolveRound`,
-> change `goalChanceForDiff` to match. They must stay in lockstep or the Shot
-> Meter will lie. (See `test/shot_meter_odds_test.dart`.)
-
----
-
-## 6. Applying the outcome to state
-
-[game_bloc.dart:692-728](../../lib/blocs/game/game_bloc.dart#L692-L728)
-
-- **Goal** → the **attacking side's score increments by 1**
-  (`playerScore` or `opponentScore`). This is the only outcome that changes the
-  scoreboard.
-- **Red card** → the **defender's card id** is added to the suspension list
-  (`opponentRedCarded` if the player was attacking, else `redCardedCards`),
-  removing that card for the rest of the match.
-- All outcomes append a `RoundResult` (cards, actions, powers, outcome) to
-  `roundResults` and transition the phase to `roundResult`, which the
-  round-result cinematic renders.
-
-### Outcome reference
-
-| Outcome | Meaning | Score | Side effect |
-|---|---|---|---|
-| **Goal** | Attacker beats the defense | Attacker **+1** | — |
-| **Saved** | Keeper stops the shot | none | — |
-| **Blocked** | Defender smothers the shot | none | — |
-| **Missed** | Shot off target | none | — |
-| **Foul** | Risky attack gives the ball away | none | — (dead round) |
-| **Red Card** | Risky defense → defender sent off | none | Defender card **suspended** rest of match |
-
-Everything except a goal shows as **HELD** on the score banner.
-
----
-
-## 7. Role alternation across the 4 rounds
-
-`_onRoundAdvanced` ([game_bloc.dart:731-745](../../lib/blocs/game/game_bloc.dart#L731-L745)):
-
-```dart
-playerAttacking: nextRound.isOdd ? initialAttack : !initialAttack
-```
-
-Odd rounds use your initial toss choice; even rounds flip it. So over a match you
-alternate attack/defend each round, and your Shot-Meter swing applies to whichever
-role you currently hold.
-
----
-
-## 8. Worked example
-
-You are **attacking** in round 1:
-
-| Side | rating | action.power | scenario bonus | swing | **power** |
-|---|---|---|---|---|---|
-| Attack (you) | 84 | 20 | +10 | 15 (good meter) | **129** |
-| Defense (CPU) | 80 | 18 | +6 | 8 (random) | **112** |
-
-`diff = 129 − 112 = 17` → band **`> 15`** → **80% goal / 15% saved / 5% blocked**.
-Neither action was risky, so no red-card/foul check applied. A `roll` of `0.31`
-→ **GOAL**, and `playerScore` ticks to 1.
-
----
-
-## 9. Design notes & extension points
-
-- **Nothing is certain.** Even total dominance leaves a 5% upset (5% blocked when
-  crushing, 5% goal when crushed) — variance is intentional.
-- **Attack is favored at parity.** The even band still gives 45% goal; the bias
-  only flips defensive once `diff < -5`. A clean chance tends to beat a level
-  defense.
-- **Risky cards are decoupled from power.** The 12% red-card / foul risks apply
-  regardless of how strong your hand is — a pure high-risk/high-reward gamble.
-- **Foul is currently inert** beyond "no goal this round" — it awards the defense
-  nothing and carries no card. A natural extension point if fouls should matter
-  (e.g. a next-round free-kick bonus, or accumulating toward a booking) is
-  Stage A of `_resolveRound`.
-- **Where to tune difficulty:** the `diff` thresholds and per-band probabilities
-  in `_resolveRound`, the scenario `attackBonus`/`defenseBonus`, the 0–20 swing
-  range, the 12% risky chances, and `cpuSmartness`. Remember to keep
-  `goalChanceForDiff` in sync with any goal-probability change.
-```
+On 2026-10-04 the board/card/walkthrough simplification adds focused mastery,
+spotlight and real-font visual regressions. The SDK platform-message callback
+locally contained a duplicate `completer.complete(reply)`; removing that one line
+restored runtime callbacks without discarding other SDK changes. Browser access
+was unavailable in this session; Flutter-rendered phone frames were inspected.
+Preview also supports `screen=cards` and interactive `screen=flow`, plus
+`tutorial=play` or `tutorial=shot-meter` for targeted walkthrough checks.

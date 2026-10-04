@@ -1,7 +1,7 @@
 # Collections, Decks, Cards, Packs, Starter Packs, and Daily Drops
 
 > **Status:** BUILT
-> **Last verified:** 2026-10-01
+> **Last verified:** 2026-10-04
 > **Scope:** Card ownership, sport decks, pack opening, starter entitlement, duplicate handling, and daily drops
 
 ## Product Purpose
@@ -95,6 +95,28 @@ Football player cards resolve portraits from their short labels. The supplied
 portraits for Ederson Moraes, Aurélien Tchouaméni, Bart Verbruggen, and Vinícius
 Júnior are mapped to their exact current card IDs. Their archive labels are
 unique; the first-occurrence policy therefore required no conflict resolution.
+
+### Pitch Duel cards and legal decks [BUILT]
+
+Football player/action tiles use the football presentation variant of the shared
+Cyber tiles; other sports retain their current cards. Existing football portraits,
+rarity, ratings, powers and IDs are retained. Six scoped affinity glyphs and sixteen
+action illustrations make matching pairs readable. Football fronts use portrait
+windows, corner indices and static etched rails; action cards use tactical
+blueprint art, and backs share a mirrored circuit print. Muted USED/RESERVED
+labels distinguish exhaustion without a red suspension banner. Long-press and All Cards
+explain actual +4 affinity / +6 scenario bonuses. Disrupt Play retains the old
+Tactical Foul ID and power.
+Card-share text uses the same actual abilities; action posters show one use per
+match instead of advertising inactive risk.
+
+Pitch Duel decks require distinct owned 2 attackers, 2 defenders, 1 keeper and
+6 actions with coverage for two attacking and two defensive plays. Flexible
+actions can cover either role once. The deck builder displays abilities/matching
+actions and blocks incomplete/unsupported play. Existing saved one-sided decks
+remain available for repair. Pack summary suggests a matching +4 pair when one
+is present; this does not add a reward or alter pack rolls. Reduced-motion pack
+opening uses the settled summary. See [Pitch Duel](../games/pitch-duel.md).
 
 ## Rewards and Progression
 

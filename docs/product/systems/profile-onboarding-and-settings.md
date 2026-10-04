@@ -1,7 +1,7 @@
 # Profile, Onboarding, Identity, and Settings
 
 > **Status:** BUILT
-> **Last verified:** 2026-10-03
+> **Last verified:** 2026-10-04
 > **Scope:** First-run identity, welcome reward, Profile hub, followed competitions/teams, cosmetics, and settings
 
 ## Product Purpose
@@ -125,11 +125,14 @@ new career. A blank slot is therefore never presented as an unavailable dead
 end; a solo player whose only career lives in the first-time slot can still log
 out into a second one.
 
-Choosing a slot snapshots the outgoing career, restores the chosen
-slot, and rebuilds the app state before gameplay resumes; no state leaks across
-the two careers. A switch is single-flight: the selector locks its CTAs while
-storage changes, and an interrupted browser-storage operation leaves the active
-career intact with a retry message rather than surfacing a debugger exception.
+Choosing a slot swaps the outgoing live career with the one inactive snapshot,
+then rebuilds the app state before gameplay resumes; no state leaks across the
+two careers. The active career is not duplicated inside the slot blob, avoiding
+the three-save quota spike that previously made **CONTINUE CAREER** fail on web.
+A switch is single-flight, and secure-store deletes/writes run serially so the
+web encryption backend never receives a racing mutation burst. If any clear,
+restore, slot, or activation-marker step fails, the outgoing live career and
+inactive snapshot are restored before the selector offers retry.
 The incoming session's shell owns the unlock-reveal routes (PLAY / open sport /
 quest hub) from its first frame; the outgoing shell releases them only if no
 successor has claimed them, so reveal CTAs keep working after a switch. Unlock
@@ -165,12 +168,13 @@ history/collection, and settings/logout states are represented.
 
 ## Persistence
 
-Each profile slot snapshots the game-owned `SecureGameStorage` keys and
-game-owned SharedPreferences entries (including the wallet). Avatar ID, banner
-ID, primary sport, followed league IDs, favorite team map, onboarding state,
-progression, streak, economy, game modes, and histories therefore persist per
-slot. The selector is device-local, not authentication or cloud account
-switching.
+The active profile occupies the normal game-owned `SecureGameStorage` keys and
+SharedPreferences entries (including the wallet); the slot blob stores only the
+inactive profile. Switching exchanges those two representations. Avatar ID,
+banner ID, primary sport, followed league IDs, favorite team map, onboarding
+state, progression, streak, economy, game modes, and histories therefore
+persist per profile without keeping a redundant third full save. The selector
+is device-local, not authentication or cloud account switching.
 
 Returning-preset installation is an awaited startup bootstrap. A version marker
 outside the profile-managed key namespace is written only after the returning

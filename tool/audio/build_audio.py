@@ -17,6 +17,7 @@ Run from the repository root:
 from __future__ import annotations
 
 import hashlib
+import argparse
 import math
 import subprocess
 from dataclasses import dataclass
@@ -317,6 +318,10 @@ CUES: dict[str, Cue] = {
     "tennis_court": _cue("tennis_ambience", 6.0, "ambient", None, "tennis court", True),
     "race_grid": _cue("race_ambience", 6.0, "ambient", None, "race grid", True),
     "gp_engine": _cue("engine", 3.0, "ambient", None, "speed-controlled race engine", True),
+    "gp_engine_low": _cue("engine_low", 3.0, "ambient", None, "race engine low RPM band", True),
+    "gp_engine_high": _cue("engine_high", 3.0, "ambient", None, "race engine high RPM band", True),
+    "gp_wind": _cue("wind_loop", 3.0, "ambient", None, "speed-driven racing wind", True),
+    "gp_tyre_loop": _cue("tyre_loop", 3.0, "ambient", None, "grip-driven continuous tyre scrub", True),
 }
 
 FINAL_OVER_USES = {
@@ -500,6 +505,21 @@ def _synth(name: str, cue: Cue) -> np.ndarray:
             + np.sin(2 * np.pi * round(f2 * duration) / duration * t) * .025
             + low_texture * texture
         )
+    elif kind in {"engine_low", "engine_high", "wind_loop", "tyre_loop"}:
+        # Integer-period harmonics and frequency-domain noise are periodic at
+        # the seam. Crossfaded RPM bands avoid platform pitch-rate differences.
+        frequencies = np.fft.rfftfreq(len(t), 1 / SAMPLE_RATE)
+        spectrum = np.fft.rfft(noise)
+        if kind in {"engine_low", "engine_high"}:
+            fundamental = 110 if kind == "engine_low" else 330
+            result = sum(np.sin(2 * np.pi * fundamental * h * t) / h
+                         for h in range(1, 9))
+            texture = np.fft.irfft(spectrum * ((frequencies > 150) & (frequencies < 1500)), len(t))
+            result = np.tanh(result * 1.3) * .6 + texture * .13
+        else:
+            low_hz, high_hz = (180, 1900) if kind == "wind_loop" else (1500, 5200)
+            result = np.fft.irfft(spectrum * ((frequencies > low_hz) & (frequencies < high_hz)), len(t))
+            result *= .65 + .1 * np.sin(2 * np.pi * 2 * t)
     elif kind == "engine":
         duration = cue.duration
         fundamental = round(92 * duration) / duration
@@ -601,12 +621,28 @@ def _build_final_over() -> int:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--only", nargs="+", choices=sorted(CUES),
+                        help="Generate only these cues; preserve all other assets and provenance")
+    args = parser.parse_args()
+    selected = set(args.only) if args.only else None
+    previous_entries = {}
+    manifest_path = DOCS / "audio_manifest.yaml"
+    if selected and manifest_path.exists():
+        for block in manifest_path.read_text(encoding="utf-8").split("  - path: ")[1:]:
+            lines = block.splitlines()
+            entry = []
+            for line in lines:
+                if entry and not line.startswith("    "):
+                    break
+                entry.append(line)
+            previous_entries[lines[0]] = "  - path: " + "\n".join(entry)
     OUTPUT.mkdir(parents=True, exist_ok=True)
     DOCS.mkdir(parents=True, exist_ok=True)
 
     expected = {f"{stem}.wav" for stem in CUES}
     for stale in OUTPUT.glob("*.wav"):
-        if stale.name not in expected:
+        if selected is None and stale.name not in expected:
             stale.unlink()
 
     manifest_rows: list[str] = [
@@ -629,16 +665,22 @@ def main() -> None:
     generator_hash = _sha256(Path(__file__))
 
     for stem, cue in sorted(CUES.items()):
-        samples = _master_audio(_synth(stem, cue), cue)
         output = OUTPUT / f"{stem}.wav"
-        sf.write(output, samples, SAMPLE_RATE, subtype="PCM_16")
+        preserve = selected is not None and stem not in selected and output.exists()
+        if not preserve:
+            samples = _master_audio(_synth(stem, cue), cue)
+            sf.write(output, samples, SAMPLE_RATE, subtype="PCM_16")
         provenance = (
             f"Kenney CC0 `{cue.master.name}` + original deterministic synthesis"
             if cue.master is not None
             else "original deterministic synthesis"
         )
-        duration = len(samples) / SAMPLE_RATE
-        manifest_rows.extend(
+        duration = sf.info(output).duration
+        previous = previous_entries.get(f"assets/audio/{output.name}")
+        if preserve and previous:
+            manifest_rows.append(previous)
+        else:
+            manifest_rows.extend(
             [
                 f"  - path: assets/audio/{output.name}",
                 f"    use: {cue.label or stem}",
@@ -692,7 +734,8 @@ def main() -> None:
         "\n".join(catalog_rows) + "\n", encoding="utf-8"
     )
 
-    final_over_total = _build_final_over()
+    final_over_total = (_build_final_over() if selected is None else
+                        sum(path.stat().st_size for path in (ROOT / "final_over" / "assets" / "audio").glob("*.wav")))
     host_total = sum(path.stat().st_size for path in OUTPUT.glob("*.wav"))
     total = host_total + final_over_total
     if total > 15 * 1024 * 1024:

@@ -1,49 +1,56 @@
 import 'package:flutter/material.dart';
 
-import '../../blocs/guess_player/guess_player_cubit.dart';
-import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
-import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
-import '../../widgets/cyber/cyber_widgets.dart';
+import 'cyber_widgets.dart';
 
-/// The Cricket lobby is the first full-screen use of the sport-access kit.
-/// All numbers come from the current daily record and the sport archive.
-class CricketGuessPlayerLobby extends StatelessWidget {
-  const CricketGuessPlayerLobby({
-    required this.state,
+/// Shared dossier layout for the daily mystery lobbies.
+class DailyCaseLobby extends StatelessWidget {
+  const DailyCaseLobby({
+    required this.dayKey,
+    required this.sportLabel,
+    required this.sportIcon,
+    required this.sportAccent,
+    required this.title,
+    required this.description,
+    required this.status,
+    required this.resourceLabel,
+    this.resourceTone = CyberStatusTone.reward,
     required this.resetLabel,
     required this.ctaLabel,
+    required this.metrics,
+    required this.solvedCount,
+    required this.playedCount,
     required this.onOpenToday,
     required this.onOpenLogs,
+    this.archiveLabel = 'CAREER ARCHIVE',
+    this.actionKey,
+    this.archiveKey,
     super.key,
   });
 
-  final GuessPlayerState state;
+  final String dayKey;
+  final String sportLabel;
+  final IconData sportIcon;
+  final Color sportAccent;
+  final String title;
+  final String description;
+  final String status;
+  final String resourceLabel;
+  final CyberStatusTone resourceTone;
   final String resetLabel;
   final String ctaLabel;
+  final List<DailyCaseMetric> metrics;
+  final int solvedCount;
+  final int playedCount;
   final VoidCallback onOpenToday;
   final VoidCallback onOpenLogs;
+  final String archiveLabel;
+  final Key? actionKey;
+  final Key? archiveKey;
 
   @override
   Widget build(BuildContext context) {
-    final archive = state.archive;
-    final record = archive.resultsByDay[state.currentDayKey];
-    final streak = archive.solveStreak(state.currentDayKey);
-    final winRate = (archive.winRate * 100).round();
-    final averageAttempts = archive.averageAttempts;
-    final completed = record?.completed ?? false;
-    final status = completed
-        ? record!.won
-              ? 'SOLVED TODAY'
-              : 'CASE CLOSED'
-        : (record?.startedAtEpochMs ?? 0) > 0
-        ? 'IN PROGRESS'
-        : 'NEW CASE';
-    final reward = completed ? record!.xpEarned : state.potentialXp;
-    final clueCount =
-        state.puzzle?.clues.length ?? GuessPlayerCubit.maxAttempts;
-
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
       children: [
@@ -53,10 +60,7 @@ class CricketGuessPlayerLobby extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                CyberKitSection(
-                  label: 'TODAY\'S CASE',
-                  count: state.currentDayKey,
-                ),
+                CyberKitSection(label: 'TODAY\'S CASE', count: dayKey),
                 const SizedBox(height: 16),
                 ChamferedActionSurface(
                   clipper: const HudChamferClipper(
@@ -77,8 +81,8 @@ class CricketGuessPlayerLobby extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               CyberSportEmblem(
-                                icon: sportModuleFor(Sport.cricket).icon,
-                                accent: sportModuleFor(Sport.cricket).accent,
+                                icon: sportIcon,
+                                accent: sportAccent,
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -86,7 +90,7 @@ class CricketGuessPlayerLobby extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'CRICKET // DAILY INTEL',
+                                      '$sportLabel // DAILY INTEL',
                                       style: Cyber.label(
                                         9,
                                         color: Cyber.cyan,
@@ -95,7 +99,7 @@ class CricketGuessPlayerLobby extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      'GUESS THE PLAYER',
+                                      title,
                                       style: Cyber.display(
                                         18,
                                         color: AppTheme.whiteColor,
@@ -108,8 +112,7 @@ class CricketGuessPlayerLobby extends StatelessWidget {
                           ),
                           const SizedBox(height: 20),
                           Text(
-                            'Follow $clueCount career signals to identify the player. '
-                            'Fewer guesses earn more XP.',
+                            description,
                             style: Cyber.bodyFor(
                               context,
                               14,
@@ -123,10 +126,8 @@ class CricketGuessPlayerLobby extends StatelessWidget {
                             children: [
                               CyberStatusBadge(label: status),
                               CyberStatusBadge(
-                                label: completed
-                                    ? '+$reward XP EARNED'
-                                    : 'UP TO +$reward XP',
-                                tone: CyberStatusTone.reward,
+                                label: resourceLabel,
+                                tone: resourceTone,
                               ),
                             ],
                           ),
@@ -169,12 +170,8 @@ class CricketGuessPlayerLobby extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 CyberActionButton(
-                  key: const ValueKey('cricket-guess-player-today'),
-                  label: switch (ctaLabel) {
-                    'RESUME' => 'RESUME CASE',
-                    'REVIEW' => 'REVIEW RESULT',
-                    _ => 'PLAY TODAY',
-                  },
+                  key: actionKey,
+                  label: ctaLabel,
                   icon: Icons.arrow_forward_rounded,
                   tapSound: SoundEffect.playMatch,
                   onPressed: onOpenToday,
@@ -198,44 +195,34 @@ class CricketGuessPlayerLobby extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: _Metric(
-                              label: 'SOLVE STREAK',
-                              value: '$streak',
+                          for (
+                            var index = 0;
+                            index < metrics.length;
+                            index++
+                          ) ...[
+                            if (index > 0) const _MetricDivider(),
+                            Expanded(
+                              child: _Metric(
+                                label: metrics[index].label,
+                                value: metrics[index].value,
+                              ),
                             ),
-                          ),
-                          const _MetricDivider(),
-                          Expanded(
-                            child: _Metric(
-                              label: 'WIN RATE',
-                              value: '$winRate%',
-                            ),
-                          ),
-                          const _MetricDivider(),
-                          Expanded(
-                            child: _Metric(
-                              label: 'AVG TRIES',
-                              value: averageAttempts == 0
-                                  ? '—'
-                                  : averageAttempts.toStringAsFixed(1),
-                            ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
-                const CyberKitSection(label: 'CAREER ARCHIVE'),
+                CyberKitSection(label: archiveLabel),
                 const SizedBox(height: 8),
                 Text(
-                  '${archive.solvedCount} SOLVED / '
-                  '${archive.completedCount} PLAYED',
+                  '$solvedCount SOLVED / $playedCount PLAYED',
                   style: Cyber.bodyFor(context, 12, color: Cyber.muted),
                 ),
                 const SizedBox(height: 12),
                 CyberActionButton(
-                  key: const ValueKey('cricket-guess-player-archive'),
+                  key: archiveKey,
                   label: 'OPEN 30-DAY ARCHIVE',
                   variant: CyberActionVariant.secondary,
                   icon: Icons.history_rounded,
@@ -248,6 +235,13 @@ class CricketGuessPlayerLobby extends StatelessWidget {
       ],
     );
   }
+}
+
+class DailyCaseMetric {
+  const DailyCaseMetric(this.label, this.value);
+
+  final String label;
+  final String value;
 }
 
 class _Metric extends StatelessWidget {

@@ -80,7 +80,7 @@ void main() {
     expect(tester.takeException(), isNull);
 
     // Step through the deal-in → flip → power tick → verdict → score
-    // timeline (4.2s) checking for overflow at every beat...
+    // timeline and settled hold, checking for overflow at every beat.
     for (var step = 0; step < 15; step++) {
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);

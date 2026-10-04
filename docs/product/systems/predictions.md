@@ -241,8 +241,15 @@ Full-width fixtures are scoreboard cards on a shorter strip row: the live minute
 (beside a blinking green dot) or lifecycle sits in a centered top notch, the
 white score or kickoff is the dominant figure between full team names and
 crests, and the bottom telemetry rail carries live/full-time/XP state plus Oz
-volume. FUTURE,
-PICK, and PREDICT cards use taller portrait proportions with the same separated
+volume.
+Cricket MATCH fixtures use a taller version of the same scoreboard shell. Each
+team has its own crest, full name, innings score, and available overs/target
+context on a separate row, so neither innings is mistaken for a shared score.
+The league sits above the innings; a distinct result strip shows the provider's
+win margin from the completed cricket competition status when available, or the current/final state. The existing telemetry
+rail still carries live/full-time/XP state and Oz volume. Missing innings remain
+visibly unscored rather than borrowing the other team's runs.
+FUTURE, PICK, and PREDICT cards use taller portrait proportions with the same separated
 telemetry rail, keeping the question or matchup readable above market status,
 XP, and volume. The rail changes to the darker footer surface without a divider
 line, so each tile reads as one uninterrupted card. Only LIVE badges and dots,

@@ -119,6 +119,10 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
+    - assets/pitch_duel/
+    - assets/pitch_duel/actions/
+    - assets/pitch_duel/scenarios/
+    - assets/pitch_duel/affinities/
     - assets/backgrounds/
     - assets/backgrounds/predictions/
     - assets/icons/

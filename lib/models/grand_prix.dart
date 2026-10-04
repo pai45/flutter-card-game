@@ -1,8 +1,26 @@
-/// Domain model for Grand Prix Dash — the one-lap top-down F1 arcade racer.
+/// Domain model for Grand Prix Dash — the top-down F1 arcade racer.
 ///
 /// Pure data: enums, track geometry, race result, and the persisted lifetime
 /// record. No Flutter/Flame imports so the race engine and tests stay pure.
 library;
+
+const grandPrixRulesetVersion = 2;
+
+enum GrandPrixMastery { cleanFinish, racecraft, podium }
+
+extension GrandPrixMasteryInfo on GrandPrixMastery {
+  String get label => switch (this) {
+    GrandPrixMastery.cleanFinish => 'CLEAN FINISH',
+    GrandPrixMastery.racecraft => 'RACECRAFT',
+    GrandPrixMastery.podium => 'PODIUM',
+  };
+
+  String get goal => switch (this) {
+    GrandPrixMastery.cleanFinish => 'Finish without car or wall contact',
+    GrandPrixMastery.racecraft => 'Complete three clean overtakes',
+    GrandPrixMastery.podium => 'Finish in the top three',
+  };
+}
 
 enum GrandPrixCircuitId {
   harbourStreet,
@@ -49,9 +67,8 @@ GrandPrixLivery grandPrixLiveryFromName(String? name) =>
       orElse: () => GrandPrixLivery.gridLine,
     );
 
-/// One stretch of track. The simulation is 1D (distance along the lap plus a
-/// lateral offset), so a corner only affects physics through [safeSpeed] and
-/// pixels through [bend] — the sideways shift of the drawn centerline.
+/// One stretch of the shared track-space geometry. Bend samples drive both
+/// steering-required curvature and rendering; safeSpeed sets the grip limit.
 class TrackSection {
   const TrackSection._({
     required this.type,
@@ -106,18 +123,17 @@ class TrackSection {
   /// Max clean entry speed (m/s); null for straights.
   final double? safeSpeed;
 
-  /// Overspeed (m/s above [safeSpeed]) beyond which entry means wall contact.
+  /// Legacy circuit metadata. Overspeed never causes an instant wall hit.
   final double wallThreshold;
 
   /// Magnitude of the centerline's sideways shift through the section (m).
-  /// Rendering only — see `centerlineX` in the engine.
+  /// Shared by the track sampler, physics, racing line and renderer.
   final double bend;
 
   bool get isStraight => type == TrackSectionType.straight;
 
   /// Signed bend: negative = left, positive = right (matches lateral axis).
-  double get signedBend =>
-      direction == CornerDirection.left ? -bend : bend;
+  double get signedBend => direction == CornerDirection.left ? -bend : bend;
 }
 
 class GrandPrixCircuit {
@@ -173,6 +189,12 @@ class GrandPrixResult {
     this.laps = 1,
     this.bestOvertakeName,
     this.retired = false,
+    this.rulesetVersion = grandPrixRulesetVersion,
+    this.lapTimesMs = const [],
+    this.cleanOvertakes = 0,
+    this.cleanRace = false,
+    this.recoveries = 0,
+    this.newMastery = const [],
   });
 
   final int position;
@@ -192,6 +214,15 @@ class GrandPrixResult {
 
   /// The player got stuck and timed out — a DNF, shown as GAME OVER.
   final bool retired;
+  final int rulesetVersion;
+  final List<int> lapTimesMs;
+  final int cleanOvertakes;
+  final bool cleanRace;
+  final int recoveries;
+  final List<GrandPrixMastery> newMastery;
+
+  int? get bestLapTimeMs =>
+      lapTimesMs.isEmpty ? null : lapTimesMs.reduce((a, b) => a < b ? a : b);
 
   GrandPrixVerdict get verdict => grandPrixVerdict(position);
   int get placesGained => startPosition - position;
@@ -222,6 +253,11 @@ class GrandPrixStats {
     this.lastCircuit = GrandPrixCircuitId.emeraldPark,
     this.lastLivery = GrandPrixLivery.gridLine,
     this.lastLaps = 1,
+    this.masteryByCircuit = const {},
+    this.classicControls = false,
+    this.hapticsEnabled = true,
+    this.reducedEffects = false,
+    this.coachSeen = false,
   });
 
   factory GrandPrixStats.fromJson(Map<String, dynamic> json) {
@@ -234,6 +270,18 @@ class GrandPrixStats {
       }
     }
     final lastLaps = json['lastLaps'] as int? ?? 1;
+    final mastery = <String, List<String>>{};
+    final rawMastery = json['masteryByCircuit'];
+    if (rawMastery is Map) {
+      for (final entry in rawMastery.entries) {
+        if (entry.value is! List) continue;
+        mastery['${entry.key}'] = (entry.value as List)
+            .whereType<String>()
+            .where((name) => GrandPrixMastery.values.any((m) => m.name == name))
+            .toSet()
+            .toList();
+      }
+    }
     return GrandPrixStats(
       races: json['races'] as int? ?? 0,
       wins: json['wins'] as int? ?? 0,
@@ -245,6 +293,11 @@ class GrandPrixStats {
       lastCircuit: grandPrixCircuitFromName(json['lastCircuit'] as String?),
       lastLivery: grandPrixLiveryFromName(json['lastLivery'] as String?),
       lastLaps: lastLaps >= 1 && lastLaps <= 9 ? lastLaps : 1,
+      masteryByCircuit: mastery,
+      classicControls: json['classicControls'] == true,
+      hapticsEnabled: json['hapticsEnabled'] != false,
+      reducedEffects: json['reducedEffects'] == true,
+      coachSeen: json['coachSeen'] == true,
     );
   }
 
@@ -257,26 +310,47 @@ class GrandPrixStats {
   final int currentStreak;
   final int bestStreak;
 
-  /// Personal-best race time per circuit+distance. Single-lap bests are keyed
-  /// by [GrandPrixCircuitId.name] (the legacy key); multi-lap bests append the
-  /// lap count (`emeraldPark@3L`) so distances never race each other.
+  /// Personal-best race time per ruleset+circuit+distance. Current keys use
+  /// `v2:emeraldPark` / `v2:emeraldPark@3L`. Unprefixed legacy keys are retained.
   final Map<String, int> bestLapMsByCircuit;
   final GrandPrixCircuitId lastCircuit;
   final GrandPrixLivery lastLivery;
 
   /// Last-used race distance in laps (persisted like circuit/livery).
   final int lastLaps;
+  final Map<String, List<String>> masteryByCircuit;
+  final bool classicControls;
+  final bool hapticsEnabled;
+  final bool reducedEffects;
+  final bool coachSeen;
 
-  static String _bestKey(GrandPrixCircuitId circuit, int laps) =>
-      laps <= 1 ? circuit.name : '${circuit.name}@${laps}L';
+  Set<GrandPrixMastery> masteryFor(GrandPrixCircuitId circuit) => {
+    for (final name in masteryByCircuit[circuit.name] ?? const <String>[])
+      for (final stamp in GrandPrixMastery.values)
+        if (stamp.name == name) stamp,
+  };
 
-  int? bestLapMs(GrandPrixCircuitId circuit, {int laps = 1}) =>
-      bestLapMsByCircuit[_bestKey(circuit, laps)];
+  static String _bestKey(GrandPrixCircuitId circuit, int laps, int ruleset) {
+    final distance = laps <= 1 ? circuit.name : '${circuit.name}@${laps}L';
+    return ruleset <= 1 ? distance : 'v$ruleset:$distance';
+  }
+
+  int? bestLapMs(
+    GrandPrixCircuitId circuit, {
+    int laps = 1,
+    int rulesetVersion = grandPrixRulesetVersion,
+  }) => bestLapMsByCircuit[_bestKey(circuit, laps, rulesetVersion)];
 
   /// True when [lapTimeMs] beats (or sets) the stored best for this
   /// circuit+distance.
-  bool isPersonalBest(GrandPrixCircuitId circuit, int lapTimeMs, {int laps = 1}) {
-    final best = bestLapMs(circuit, laps: laps);
+  bool isPersonalBest(
+    GrandPrixCircuitId circuit,
+    int lapTimeMs, {
+    int laps = 1,
+    int rulesetVersion = grandPrixRulesetVersion,
+  }) {
+    if (lapTimeMs <= 0) return false;
+    final best = bestLapMs(circuit, laps: laps, rulesetVersion: rulesetVersion);
     return best == null || lapTimeMs < best;
   }
 
@@ -284,6 +358,10 @@ class GrandPrixStats {
     GrandPrixCircuitId? lastCircuit,
     GrandPrixLivery? lastLivery,
     int? lastLaps,
+    bool? classicControls,
+    bool? hapticsEnabled,
+    bool? reducedEffects,
+    bool? coachSeen,
   }) => GrandPrixStats(
     races: races,
     wins: wins,
@@ -295,6 +373,11 @@ class GrandPrixStats {
     lastCircuit: lastCircuit ?? this.lastCircuit,
     lastLivery: lastLivery ?? this.lastLivery,
     lastLaps: lastLaps ?? this.lastLaps,
+    masteryByCircuit: masteryByCircuit,
+    classicControls: classicControls ?? this.classicControls,
+    hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
+    reducedEffects: reducedEffects ?? this.reducedEffects,
+    coachSeen: coachSeen ?? this.coachSeen,
   );
 
   GrandPrixStats recordResult({
@@ -302,12 +385,27 @@ class GrandPrixStats {
     required int lapTimeMs,
     required GrandPrixCircuitId circuit,
     int laps = 1,
+    int rulesetVersion = grandPrixRulesetVersion,
+    Iterable<GrandPrixMastery> mastery = const [],
   }) {
     final won = position == 1;
     final nextStreak = won ? currentStreak + 1 : 0;
     final bests = Map<String, int>.from(bestLapMsByCircuit);
-    if (lapTimeMs > 0 && isPersonalBest(circuit, lapTimeMs, laps: laps)) {
-      bests[_bestKey(circuit, laps)] = lapTimeMs;
+    if (lapTimeMs > 0 &&
+        isPersonalBest(
+          circuit,
+          lapTimeMs,
+          laps: laps,
+          rulesetVersion: rulesetVersion,
+        )) {
+      bests[_bestKey(circuit, laps, rulesetVersion)] = lapTimeMs;
+    }
+    final stamps = Map<String, List<String>>.from(masteryByCircuit);
+    if (lapTimeMs > 0) {
+      stamps[circuit.name] = {
+        ...stamps[circuit.name] ?? const <String>[],
+        ...mastery.map((stamp) => stamp.name),
+      }.toList();
     }
     return GrandPrixStats(
       races: races + 1,
@@ -322,6 +420,11 @@ class GrandPrixStats {
       lastCircuit: circuit,
       lastLivery: lastLivery,
       lastLaps: laps,
+      masteryByCircuit: stamps,
+      classicControls: classicControls,
+      hapticsEnabled: hapticsEnabled,
+      reducedEffects: reducedEffects,
+      coachSeen: coachSeen,
     );
   }
 
@@ -336,5 +439,11 @@ class GrandPrixStats {
     'lastCircuit': lastCircuit.name,
     'lastLivery': lastLivery.name,
     'lastLaps': lastLaps,
+    'rulesetVersion': grandPrixRulesetVersion,
+    'masteryByCircuit': masteryByCircuit,
+    'classicControls': classicControls,
+    'hapticsEnabled': hapticsEnabled,
+    'reducedEffects': reducedEffects,
+    'coachSeen': coachSeen,
   };
 }

@@ -159,7 +159,7 @@ void main() {
     },
   );
 
-  testWidgets('F1 landing keeps the pit-wall identity and primary CTA', (
+  testWidgets('F1 case dossier keeps the race identity and primary CTA', (
     tester,
   ) async {
     final cubit = GuessDriverCubit(
@@ -184,15 +184,76 @@ void main() {
       reducedMotion: true,
     );
 
-    expect(find.text('PIT WALL // SIGNAL LIVE'), findsOneWidget);
-    expect(find.text('CLASSIFIED DRIVER'), findsOneWidget);
+    expect(find.text('MOTORSPORT // DAILY INTEL'), findsOneWidget);
+    expect(find.text('GUESS THE DRIVER'), findsWidgets);
+    expect(find.text('NEW CASE'), findsOneWidget);
+    expect(find.text('10 HEARTS TO SOLVE'), findsOneWidget);
+    expect(find.text('BEST HEARTS'), findsOneWidget);
     expect(find.text('PLAY TODAY\'S RACE'), findsOneWidget);
     expect(find.text('OPEN 30-DAY ARCHIVE'), findsOneWidget);
+    expect(find.byKey(const ValueKey('guess-driver-today')), findsOneWidget);
     expect(tester.takeException(), isNull);
     await expectLater(
       find.byKey(const ValueKey('daily-mystery-qa-surface')),
       matchesGoldenFile('goldens/daily_mystery_f1_landing.png'),
     );
+  });
+
+  testWidgets('F1 dossier shows resume and completed review states', (
+    tester,
+  ) async {
+    final cubit = GuessDriverCubit(
+      races: const [_race],
+      allDrivers: const ['Lando Norris', 'Wrong Driver'],
+      storage: SecureGameStorage(),
+      now: () => DateTime(2026, 7, 19, 12),
+    );
+    addTearDown(cubit.close);
+    await cubit.load();
+    final ready = cubit.state;
+    for (final (state, status, action, resource) in [
+      (
+        ready.copyWith(guesses: const ['Wrong Driver'], remainingHearts: 9),
+        'IN PROGRESS',
+        'RESUME CHALLENGE',
+        '9 HEARTS TO SOLVE',
+      ),
+      (
+        ready.copyWith(
+          archive: const GuessDriverArchive(
+            resultsByDay: {
+              '2026-07-19': GuessDriverDailyResult(
+                won: true,
+                heartsRemaining: 7,
+                targetDriverName: 'Lando Norris',
+              ),
+            },
+          ),
+        ),
+        'SOLVED TODAY',
+        'REVIEW TODAY\'S RACE',
+        '7 HEARTS LEFT',
+      ),
+    ]) {
+      await _pumpAt(
+        tester,
+        GuessDriverHomeScreen(
+          state: state,
+          onBack: () {},
+          onOpenToday: () {},
+          onOpenLogs: () {},
+          onRetry: () {},
+          now: () => DateTime(2026, 7, 19, 12),
+        ),
+        size: const Size(320, 640),
+        textScale: 1.4,
+        reducedMotion: true,
+      );
+      expect(find.text(status), findsOneWidget);
+      expect(find.text(action), findsOneWidget);
+      expect(find.text(resource), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    }
   });
 
   testWidgets(

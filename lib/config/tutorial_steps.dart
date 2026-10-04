@@ -34,7 +34,7 @@ const homeTutorialSteps = [
   TutorialStepData(
     title: 'Welcome to PITCH/DUEL',
     body:
-        'A fast 4-round card duel. Stats, scenarios and a touch of luck decide each round.',
+        'A fast 4-round card duel. Card combinations, scenarios and timing decide each round.',
     icon: Icons.sports_soccer,
     accent: Cyber.cyan,
     hint: '4 ROUNDS  ·  1 MOVE EACH',
@@ -104,16 +104,16 @@ const playTutorialSteps = [
   TutorialStepData(
     title: 'Pick Player + Action',
     body:
-        'Tap a player (OVR = base power). Then pick 1 action card matching your role. Tap yellow actions for risky high-reward moves.',
+        'Pick one player and one action. Match the player affinity for +4 and the scenario for +6. Each card plays once per match.',
     icon: Icons.touch_app,
     hint: 'PLAYER  +  ACTION  →  TAP TO LOCK',
   ),
   TutorialStepData(
-    title: 'Power Preview & Luck',
+    title: 'Power & Combinations',
     body:
-        'EST shows your total power (player + action + bonus). CPU power is hidden. A luck roll decides close rounds.',
+        'The preview shows card power and both combination bonuses. Timing adds 0–8. Rival range covers their legal pairs; their choice stays hidden. Exact ties flip a coin.',
     icon: Icons.stars,
-    hint: 'HIGHER POWER WINS  ·  LUCK CAN FLIP IT',
+    hint: 'AFFINITY +4  ·  SCENARIO MATCH +6  ·  TIMING +0–8',
   ),
 ];
 
@@ -121,9 +121,9 @@ const resultTutorialSteps = [
   TutorialStepData(
     title: 'Round Result',
     body:
-        'The outcome shows: GOAL, SAVED, MISSED, FOUL, or RED CARD. Used players appear marked and are locked for the match.',
+        'Higher attack power scores a GOAL; higher defense power is SAVED. Exact ties flip a coin: GOAL or BLOCKED. Spent players and actions stay locked for both sides.',
     icon: Icons.sports_soccer,
-    hint: 'GOAL ✓  ·  SAVED ✓  ·  MISSED ✗  ·  FOUL ⚠️  ·  RED CARD 🔴',
+    hint: 'GOAL  ·  SAVED  ·  BLOCKED',
   ),
   TutorialStepData(
     title: 'Next Round Begins',

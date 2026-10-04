@@ -20,6 +20,8 @@ import '../../models/grand_prix.dart' show formatLapTime;
 import '../../models/match.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/packs.dart';
+import '../../models/pitch_duel_rules.dart';
+import '../../models/pitch_duel_mastery.dart';
 import '../../models/progression.dart';
 import '../../models/streak.dart';
 import '../../models/daily_quest.dart';
@@ -218,12 +220,31 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     );
     on<ScenarioShown>(_onScenarioShown);
     on<PlayStarted>(_onPlayStarted);
-    on<PlayerSelected>(
-      (event, emit) => emit(state.copyWith(selectedPlayerCard: event.card)),
-    );
-    on<ActionSelected>(
-      (event, emit) => emit(state.copyWith(selectedActionCard: event.card)),
-    );
+    on<PlayerSelected>((event, emit) {
+      if (state.phase != MatchPhase.play) return;
+      final pool = state.playerAttacking
+          ? state.deckAttackers
+          : state.deckDefenders;
+      final card = pool
+          .where(
+            (c) =>
+                c.id == event.card.id &&
+                !state.usedPlayerCards.contains(c.id) &&
+                !state.redCardedCards.contains(c.id),
+          )
+          .firstOrNull;
+      if (card != null) emit(state.copyWith(selectedPlayerCard: card));
+    });
+    on<ActionSelected>((event, emit) {
+      if (state.phase != MatchPhase.play) return;
+      final card = pitchLegalActions(
+        actions: state.deckActions,
+        usedIds: state.usedActionCards,
+        round: state.currentRound,
+        attacking: state.playerAttacking,
+      ).where((c) => c.id == event.card.id).firstOrNull;
+      if (card != null) emit(state.copyWith(selectedActionCard: card));
+    });
     on<MovePlayed>(_onMovePlayed);
     on<RoundAdvanced>(_onRoundAdvanced);
     on<MatchFinished>(_onMatchFinished);
@@ -1821,54 +1842,49 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
     final oppPlayers = state.playerAttacking
         ? state.opponentDefenders
-              .where((card) => !state.opponentRedCarded.contains(card.id))
+              .where(
+                (card) =>
+                    !state.opponentRedCarded.contains(card.id) &&
+                    !state.opponentUsedPlayerCards.contains(card.id),
+              )
               .toList()
         : state.opponentAttackers
-              .where((card) => !state.opponentRedCarded.contains(card.id))
+              .where(
+                (card) =>
+                    !state.opponentRedCarded.contains(card.id) &&
+                    !state.opponentUsedPlayerCards.contains(card.id),
+              )
               .toList();
-    final fallback = state.playerAttacking
-        ? state.opponentDefenders.first
-        : state.opponentAttackers.first;
-    final PlayerCard oppPlayer;
-    if (oppPlayers.isEmpty) {
-      oppPlayer = fallback;
-    } else {
-      oppPlayer = chooseOpponentPlayer(
-        oppPlayers,
-        state.progression.levelFor(ProgressTrack.pitchDuel),
-        random: _random,
-      );
-    }
-
-    // Action choice respects the opponent's role and the scenario.
-    final oppDefending = state.playerAttacking;
-    final relevantCategory = oppDefending
-        ? ActionCategory.defense
-        : ActionCategory.attack;
-    final roleActions = state.opponentActions
-        .where(
-          (a) =>
-              a.category == relevantCategory ||
-              a.category == ActionCategory.special,
-        )
-        .toList();
-    final actionPool = roleActions.isEmpty
-        ? state.opponentActions
-        : roleActions;
-    final scenarioFavorsOpp = oppDefending
-        ? scenario.defenseBonus > 8
-        : scenario.attackBonus > 8;
+    final actionPool = pitchLegalActions(
+      actions: state.opponentActions,
+      usedIds: state.opponentUsedActionCards,
+      round: state.currentRound,
+      attacking: !state.playerAttacking,
+    );
+    final pairs = [
+      for (final player in oppPlayers)
+        for (final action in actionPool) (player: player, action: action),
+    ];
+    if (pairs.isEmpty) return null;
     final pitchLevel = state.progression.levelFor(ProgressTrack.pitchDuel);
-    final ActionCard oppAction;
-    if (scenarioFavorsOpp && _random.nextDouble() < cpuSmartness(pitchLevel)) {
-      oppAction = actionPool.reduce((a, b) => a.power >= b.power ? a : b);
-    } else {
-      oppAction = chooseOpponentAction(actionPool, pitchLevel, random: _random);
+    if (_random.nextDouble() < cpuSmartness(pitchLevel)) {
+      int score(({PlayerCard player, ActionCard action}) pair) => pitchPower(
+        player: pair.player,
+        action: pair.action,
+        scenario: scenario,
+        attacking: !state.playerAttacking,
+      ).base;
+      final best = pairs.map(score).reduce(max);
+      final tied = pairs.where((pair) => score(pair) == best).toList();
+      return tied[_random.nextInt(tied.length)];
     }
-    return (player: oppPlayer, action: oppAction);
+    return pairs[_random.nextInt(pairs.length)];
   }
 
   void _onPlayStarted(PlayStarted event, Emitter<GameState> emit) {
+    if (state.phase != MatchPhase.scenario || state.currentScenario == null) {
+      return;
+    }
     final pick = _pickOpponentMove();
     emit(
       state.copyWith(
@@ -1880,10 +1896,25 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   }
 
   void _onMovePlayed(MovePlayed event, Emitter<GameState> emit) {
+    if (state.phase != MatchPhase.play) return;
     final playerCard = state.selectedPlayerCard;
     final actionCard = state.selectedActionCard;
     final scenario = state.currentScenario;
     if (playerCard == null || actionCard == null || scenario == null) return;
+    final playerPool = state.playerAttacking
+        ? state.deckAttackers
+        : state.deckDefenders;
+    if (!playerPool.any((c) => c.id == playerCard.id) ||
+        state.usedPlayerCards.contains(playerCard.id) ||
+        state.redCardedCards.contains(playerCard.id) ||
+        !pitchLegalActions(
+          actions: state.deckActions,
+          usedIds: state.usedActionCards,
+          round: state.currentRound,
+          attacking: state.playerAttacking,
+        ).any((c) => c.id == actionCard.id)) {
+      return;
+    }
 
     // Consume the pick committed at play start; fall back to a fresh pick for
     // states that never went through PlayStarted (tests, dev paths).
@@ -1901,23 +1932,28 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final defenderCard = state.playerAttacking ? oppPlayer : playerCard;
     final attackAction = state.playerAttacking ? actionCard : oppAction;
     final defenseAction = state.playerAttacking ? oppAction : actionCard;
-    // The player's swing comes from the Shot Meter when provided; the opponent
-    // always rolls randomly. A null surge (reduced-motion bypass) falls back to
-    // a random roll, leaving the original behaviour unchanged.
-    final playerSwing = event.playerSurge ?? _random.nextDouble() * 20;
-    final oppSwing = _random.nextDouble() * 20;
+    final playerSwing =
+        event.shotTiming?.bonus ??
+        (event.playerSurge?.round() ?? 4).clamp(0, pitchTimingMax);
+    final oppSwing = _random.nextInt(pitchTimingMax + 1);
     final attackSwing = state.playerAttacking ? playerSwing : oppSwing;
     final defenseSwing = state.playerAttacking ? oppSwing : playerSwing;
-    final attackPower =
-        attackerCard.rating +
-        attackAction.power +
-        scenario.attackBonus +
-        attackSwing;
-    final defensePower =
-        defenderCard.rating +
-        defenseAction.power +
-        scenario.defenseBonus +
-        defenseSwing;
+    final attackBreakdown = pitchPower(
+      player: attackerCard,
+      action: attackAction,
+      scenario: scenario,
+      attacking: true,
+      timing: attackSwing,
+    );
+    final defenseBreakdown = pitchPower(
+      player: defenderCard,
+      action: defenseAction,
+      scenario: scenario,
+      attacking: false,
+      timing: defenseSwing,
+    );
+    final attackPower = attackBreakdown.total.toDouble();
+    final defensePower = defenseBreakdown.total.toDouble();
     final outcome = _resolveRound(attackPower, defensePower);
 
     final opponentRedCarded = [...state.opponentRedCarded];
@@ -1943,6 +1979,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       outcome: outcome,
       attackPower: attackPower,
       defensePower: defensePower,
+      attackBreakdown: attackBreakdown,
+      defenseBreakdown: defenseBreakdown,
+      shotTiming: event.shotTiming,
     );
 
     emit(
@@ -1952,6 +1991,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         opponentScore: state.opponentScore + (opponentGoal ? 1 : 0),
         usedPlayerCards: [...state.usedPlayerCards, playerCard.id],
         usedActionCards: [...state.usedActionCards, actionCard.id],
+        opponentUsedPlayerCards: [
+          ...state.opponentUsedPlayerCards,
+          oppPlayer.id,
+        ],
+        opponentUsedActionCards: [
+          ...state.opponentUsedActionCards,
+          oppAction.id,
+        ],
         redCardedCards: redCarded,
         opponentRedCarded: opponentRedCarded,
         roundResults: [...state.roundResults, result],
@@ -1962,6 +2009,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   }
 
   void _onRoundAdvanced(RoundAdvanced event, Emitter<GameState> emit) {
+    if (state.phase != MatchPhase.roundResult) return;
     if (state.currentRound >= 4) {
       // A level score after 4 rounds is a draw — no penalties.
       add(MatchFinished());
@@ -1987,6 +2035,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     MatchFinished event,
     Emitter<GameState> emit,
   ) async {
+    // GameBloc serializes events across types; a repeated finish sees finalResult.
     if (state.phase == MatchPhase.finalResult) return;
     _pitchSessionId ??= 'pitch-${DateTime.now().microsecondsSinceEpoch}';
     await _onQuestActivity(
@@ -2024,6 +2073,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         .firstOrNull;
     final historyEntry = MatchHistoryEntry(
       id: 'match-${DateTime.now().microsecondsSinceEpoch}',
+      pitchMasteryIndex: pitchMasteryGoal(state.matchHistory).kind.index,
       deckName: activeDeck?.name ?? 'Unknown Deck',
       timestampIso: DateTime.now().toIso8601String(),
       resultLabel: resultLabel,
@@ -2036,6 +2086,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
               scenarioTitle: round.scenario.title,
               outcomeLabel: outcomeLabel(round.outcome),
               playerAttacking: round.playerAttacking,
+              playerBreakdown: round.playerAttacking
+                  ? round.attackBreakdown
+                  : round.defenseBreakdown,
+              opponentBreakdown: round.playerAttacking
+                  ? round.defenseBreakdown
+                  : round.attackBreakdown,
             ),
           )
           .toList(),

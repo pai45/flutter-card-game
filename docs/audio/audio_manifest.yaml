@@ -1071,6 +1071,32 @@ assets:
     source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
     edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
     output_sha256: ef7cba7509ce0ad9c06f8695f969a5edb1486c2b666fb6cee0d1680782e99357
+  - path: assets/audio/gp_engine_high.wav
+    use: race engine high RPM band
+    category: ambient
+    duration_seconds: 3.000
+    loop: true
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: 12cf33053b07558f76d8989bf60dc0ab9f9616cf2a1a4120451238fa78ee1769
+    source_sha256: 12cf33053b07558f76d8989bf60dc0ab9f9616cf2a1a4120451238fa78ee1769
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 48031c67e23752011372392dcb480941402b4859e0fa0b561d2e3757721baa27
+  - path: assets/audio/gp_engine_low.wav
+    use: race engine low RPM band
+    category: ambient
+    duration_seconds: 3.000
+    loop: true
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: 12cf33053b07558f76d8989bf60dc0ab9f9616cf2a1a4120451238fa78ee1769
+    source_sha256: 12cf33053b07558f76d8989bf60dc0ab9f9616cf2a1a4120451238fa78ee1769
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 441fd3e75a1575867114be9cb68cddfce5e98cbb81ae86a95cef71663a1c8a1f
   - path: assets/audio/gp_finish.wav
     use: finish line
     category: reward
@@ -1188,6 +1214,19 @@ assets:
     source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
     edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
     output_sha256: 260ac853e79b7f9787f6c9a38fc4c6fc7a4e645f018658e32e8e29d5a7b7bfe4
+  - path: assets/audio/gp_tyre_loop.wav
+    use: grip-driven continuous tyre scrub
+    category: ambient
+    duration_seconds: 3.000
+    loop: true
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: 12cf33053b07558f76d8989bf60dc0ab9f9616cf2a1a4120451238fa78ee1769
+    source_sha256: 12cf33053b07558f76d8989bf60dc0ab9f9616cf2a1a4120451238fa78ee1769
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 2452836fb7261d8b5d5a42e42308fea5366f762cbd78fef733679ee2e82fbf01
   - path: assets/audio/gp_wall_impact.wav
     use: wall impact
     category: gameplay
@@ -1201,6 +1240,19 @@ assets:
     source_sha256: b0f2ba4dabde9a87eb9c188a19d31e0c2300fd321adeba08d3b9b8aa011d7037
     edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
     output_sha256: c2440860ee093696de7ccd3e06e4a48a236e95f4f1dd8fc07b998ed6c7eb464b
+  - path: assets/audio/gp_wind.wav
+    use: speed-driven racing wind
+    category: ambient
+    duration_seconds: 3.000
+    loop: true
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: 12cf33053b07558f76d8989bf60dc0ab9f9616cf2a1a4120451238fa78ee1769
+    source_sha256: 12cf33053b07558f76d8989bf60dc0ab9f9616cf2a1a4120451238fa78ee1769
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: fd19f24779a993fe1c070a9fac0ec5b401e8c7174af2009d981b86b941a0cd1c
   - path: assets/audio/level_up.wav
     use: level gained
     category: reward

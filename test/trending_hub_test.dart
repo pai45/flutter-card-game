@@ -392,6 +392,62 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('Cricket Trending keeps both innings and result together', (
+    tester,
+  ) async {
+    await _setPhoneSize(tester, const Size(320, 720));
+    final bundle = await _HubBundle.create();
+    addTearDown(bundle.dispose);
+    final fixture = await MockPredictionRepository().fixtureById('1496576');
+    expect(fixture, isNotNull);
+    await bundle.predictions.ingestFixtures([
+      fixture!.copyWith(
+        status: MatchStatus.finished,
+        homeScore: '201/7 (20 ov)',
+        awayScore: '203/5 (19.1 ov, target 202)',
+        resultLine: 'India won by 5 wickets',
+      ),
+    ]);
+
+    await tester.pumpWidget(bundle.wrap(const _HubHarness(initialTopTab: 0)));
+    await tester.pump(const Duration(seconds: 2));
+    final card = find.byKey(const ValueKey('trend-live-cricket'));
+    await tester.scrollUntilVisible(
+      card,
+      250,
+      scrollable: find
+          .descendant(
+            of: find.byKey(const ValueKey('match-trending-feed')),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.pump();
+
+    for (final line in [
+      'England',
+      '201/7',
+      '(20 ov)',
+      'India',
+      '203/5',
+      '(19.1 ov, target 202)',
+      'India won by 5 wickets',
+    ]) {
+      expect(
+        find.descendant(of: card, matching: find.text(line)),
+        findsOneWidget,
+      );
+    }
+    final homeScore = tester.getRect(
+      find.descendant(of: card, matching: find.text('201/7')),
+    );
+    final awayScore = tester.getRect(
+      find.descendant(of: card, matching: find.text('203/5')),
+    );
+    expect(homeScore.top, lessThan(awayScore.top));
+    expect(tester.takeException(), isNull);
+  });
+
   for (final size in const [
     Size(320, 1000),
     Size(393, 1000),

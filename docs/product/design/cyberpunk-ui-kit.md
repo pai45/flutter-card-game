@@ -1,8 +1,8 @@
 # StatOz Cyberpunk UI Kit
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-29
-> **Scope:** Reusable technical components, sport unlock sheets, and the Cricket Guess the Player lobby
+> **Last verified:** 2026-10-03
+> **Scope:** Reusable technical components, sport unlock sheets, Guess the Player and Guess the Driver lobbies
 
 ## Product Purpose
 
@@ -18,9 +18,13 @@ Every sport unlock bottom sheet adopts the kit. Import components through
 `lib/widgets/cyber/cyber_widgets.dart`; implementation is in `cyber_kit.dart`.
 `CyberKit` in `lib/config/theme.dart` owns shared dimensions and motion values.
 Existing buttons and panels retain their default appearance.
-The Cricket Guess the Player lobby is the first full-screen adoption: it uses
+The Guess the Player lobbies use the full-screen kit across Cricket, Football,
+and Basketball: each uses
 the framed case surface, sport emblem, status/reward badges, section rules, and
 primary/secondary actions while keeping its existing game and archive flows.
+Guess the Driver uses that same dossier layout with a Motorsport emblem, a
+heart-budget badge in place of XP, race records, and its existing daily and
+archive routes. `DailyCaseLobby` is the shared layout under `cyber_widgets.dart`.
 
 ## Player Flow
 
@@ -88,7 +92,7 @@ authoritative. Gallery controls and purchases use in-memory fixtures only.
 
 ## Planned Scope and Current Limitations
 
-- **BUILT:** All sport unlock sheets, the Cricket Guess the Player lobby, and the focused reusable kit.
+- **BUILT:** All sport unlock sheets, all three Guess the Player lobbies, the Guess the Driver lobby, and the focused reusable kit.
 - **PROTOTYPE:** Isolated gallery at `tool/cyber_kit_preview.dart`; not in player navigation.
 - Other sheets and mission ladders do not adopt this family in this rollout.
 
@@ -97,7 +101,9 @@ authoritative. Gallery controls and purchases use in-memory fixtures only.
 - [Shared kit](../../../lib/widgets/cyber/cyber_kit.dart)
 - [Sport unlock sheets](../../../lib/screens/predictions/widgets/unlock_sheets.dart)
 - [Interactive gallery](../../../tool/cyber_kit_preview.dart)
-- [Cricket lobby](../../../lib/screens/guess_player/cricket_guess_player_lobby.dart)
+- [Shared Guess the Player lobby](../../../lib/screens/guess_player/guess_player_lobby.dart)
+- [Shared daily case layout](../../../lib/widgets/cyber/daily_case_lobby.dart)
+- [Guess the Driver lobby](../../../lib/screens/guess_driver/guess_driver_home_screen.dart)
 
 Run `flutter run -d chrome -t tool/cyber_kit_preview.dart`. The gallery includes
 all sports, 0/49/50/80 OZ balances, 393 px normal and 320 px enlarged text, short
@@ -110,5 +116,7 @@ to inspect interaction states. Reset restores the fixture.
   accessible buttons, keyboard and reduced motion.
 - `test/sport_unlock_bloc_test.dart`: actual spend, owned/broke guards and reveal queue.
 - `test/quest_experience_test.dart`: existing quest and sheet regressions.
-- `test/cricket_guess_player_lobby_test.dart`: Cricket lobby states, actions,
-  narrow layout, and sport-specific rollout.
+- `test/cricket_guess_player_lobby_test.dart`: lobby states, actions,
+  narrow layout, and all three sport variants.
+- `test/daily_mystery_ui_test.dart`: Guess the Driver fresh, resumed, completed,
+  and visual snapshot states.

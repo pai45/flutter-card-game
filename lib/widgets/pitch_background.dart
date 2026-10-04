@@ -20,12 +20,19 @@ class FullPitchBackground extends StatelessWidget {
       Cyber.bg,
     );
     return RepaintBoundary(
-      child: ColoredBox(
-        color: pitchColor.withValues(alpha: 0.94),
-        child: const CustomPaint(
-          painter: FullPitchPainter(),
-          child: SizedBox.expand(),
-        ),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/pitch_duel/board_texture.png',
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => ColoredBox(color: pitchColor),
+          ),
+          const CustomPaint(
+            painter: FullPitchPainter(),
+            child: SizedBox.expand(),
+          ),
+        ],
       ),
     );
   }

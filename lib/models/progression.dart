@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import '../config/enums.dart';
 import 'cards.dart';
 
 // Cumulative XP required to reach level L. L1 = 0, L2 = 100, L3 = 300.
@@ -140,7 +141,11 @@ int grandPrixXpMultiplier(int laps) => switch (laps) {
 // earns a little, and longer distances multiply the position payout (see
 // [grandPrixXpMultiplier]). A new personal best on the circuit+distance adds
 // +3. XP only — racing never subtracts XP and never pays coins.
-int calculateGrandPrixXP(int position, {bool personalBest = false, int laps = 1}) {
+int calculateGrandPrixXP(
+  int position, {
+  bool personalBest = false,
+  int laps = 1,
+}) {
   final base = switch (position) {
     1 => 26,
     2 => 22,
@@ -251,7 +256,10 @@ class PlayerProgression {
 
   /// Test / rival helper: places [totalXP] on Cards/Meta so aggregate level
   /// matches the legacy single-pool value.
-  factory PlayerProgression({int totalXP = 0, Map<ProgressTrack, int>? xpByTrack}) {
+  factory PlayerProgression({
+    int totalXP = 0,
+    Map<ProgressTrack, int>? xpByTrack,
+  }) {
     if (xpByTrack != null) {
       return PlayerProgression._(_normalizeXpByTrack(xpByTrack));
     }
@@ -285,8 +293,7 @@ class PlayerProgression {
 
   int levelFor(ProgressTrack track) => levelFromXp(xpFor(track));
 
-  LevelProgress progressFor(ProgressTrack track) =>
-      levelProgress(xpFor(track));
+  LevelProgress progressFor(ProgressTrack track) => levelProgress(xpFor(track));
 
   int get totalXP => xpByTrack.values.fold<int>(0, (sum, xp) => sum + xp);
 
@@ -415,9 +422,23 @@ OpponentDeck generateOpponentDeck(
   final picks = <ActionCard>[];
 
   for (var i = 0; i < 6 && remaining.isNotEmpty; i++) {
+    // Two dedicated plays per role guarantee four non-repeating legal moves.
+    final candidates = remaining
+        .where(
+          (card) => i < 2
+              ? card.category == ActionCategory.attack
+              : i < 4
+              ? card.category == ActionCategory.defense
+              : true,
+        )
+        .toList();
+    if (candidates.isEmpty) continue;
     final card = rng.nextDouble() < smartness
-        ? byPower.firstWhere(remaining.contains, orElse: () => remaining.first)
-        : remaining[rng.nextInt(remaining.length)];
+        ? byPower.firstWhere(
+            candidates.contains,
+            orElse: () => candidates.first,
+          )
+        : candidates[rng.nextInt(candidates.length)];
     picks.add(card);
     remaining.remove(card);
   }

@@ -116,6 +116,51 @@ void main() {
     },
   );
 
+  test('profile swap persists only the inactive career snapshot', () async {
+    final storage = SecureGameStorage();
+    await storage.ensureLocalProfiles();
+
+    expect(await _storedSlotNames(), {LocalProfileSlot.firstTime.name});
+
+    await storage.switchLocalProfile(LocalProfileSlot.firstTime);
+    expect(await _storedSlotNames(), {LocalProfileSlot.returning.name});
+
+    await storage.switchLocalProfile(LocalProfileSlot.returning);
+    expect(await _storedSlotNames(), {LocalProfileSlot.firstTime.name});
+    expect((await storage.loadProgression()).totalXP, 850);
+  });
+
+  test('secure mutations are serialized during a profile swap', () async {
+    final storage = SecureGameStorage(storage: _SerialMutationStorage());
+    await storage.ensureLocalProfiles();
+
+    await storage.switchLocalProfile(LocalProfileSlot.firstTime);
+    await storage.switchLocalProfile(LocalProfileSlot.returning);
+
+    expect(await storage.loadActiveLocalProfile(), LocalProfileSlot.returning);
+    expect((await storage.loadProgression()).totalXP, 850);
+  });
+
+  test('a failed activation restores the outgoing career for retry', () async {
+    final guardedStorage = _FailingActivationStorage();
+    final storage = SecureGameStorage(storage: guardedStorage);
+    await storage.ensureLocalProfiles();
+    guardedStorage.failNextActivation(LocalProfileSlot.firstTime);
+
+    await expectLater(
+      storage.switchLocalProfile(LocalProfileSlot.firstTime),
+      throwsStateError,
+    );
+
+    expect(await storage.loadActiveLocalProfile(), LocalProfileSlot.returning);
+    expect(await storage.loadOnboardingComplete(), isTrue);
+    expect((await storage.loadProgression()).totalXP, 850);
+    expect(await _storedSlotNames(), {LocalProfileSlot.firstTime.name});
+
+    await storage.switchLocalProfile(LocalProfileSlot.firstTime);
+    expect(await storage.loadActiveLocalProfile(), LocalProfileSlot.firstTime);
+  });
+
   test(
     'a clean first-time slot boots at level 1 with no active streak',
     () async {
@@ -140,6 +185,109 @@ void main() {
       );
     },
   );
+}
+
+Future<Set<String>> _storedSlotNames() async {
+  final raw = await const FlutterSecureStorage().read(
+    key: 'pd_local_profile_slots_v1',
+  );
+  return Map<String, dynamic>.from(jsonDecode(raw!) as Map).keys.toSet();
+}
+
+class _SerialMutationStorage extends FlutterSecureStorage {
+  bool _mutationInFlight = false;
+
+  Future<T> _mutate<T>(Future<T> Function() operation) async {
+    if (_mutationInFlight) {
+      throw StateError('concurrent secure-storage mutation');
+    }
+    _mutationInFlight = true;
+    try {
+      await Future<void>.delayed(const Duration(milliseconds: 1));
+      return await operation();
+    } finally {
+      _mutationInFlight = false;
+    }
+  }
+
+  @override
+  Future<void> write({
+    required String key,
+    required String? value,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) => _mutate(
+    () => super.write(
+      key: key,
+      value: value,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    ),
+  );
+
+  @override
+  Future<void> delete({
+    required String key,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) => _mutate(
+    () => super.delete(
+      key: key,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    ),
+  );
+}
+
+class _FailingActivationStorage extends FlutterSecureStorage {
+  String? _activationToFail;
+
+  void failNextActivation(LocalProfileSlot slot) {
+    _activationToFail = slot.name;
+  }
+
+  @override
+  Future<void> write({
+    required String key,
+    required String? value,
+    IOSOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    MacOsOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) {
+    if (key == 'pd_active_local_profile_v1' && value == _activationToFail) {
+      _activationToFail = null;
+      throw StateError('activation interrupted');
+    }
+    return super.write(
+      key: key,
+      value: value,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
 }
 
 /// Mimics flutter_secure_storage on web for a value encrypted under a lost

@@ -1,7 +1,7 @@
 # Cyber UI Design System
 
 > **Status:** BUILT
-> **Last verified:** 2026-10-02
+> **Last verified:** 2026-10-04
 > **Scope:** Theme tokens, typography, shape language, glow hierarchy, layout, and shared cyber components
 
 ## Product Purpose
@@ -113,6 +113,31 @@ Persistent search uses the shared `CyberSearchField`: a calm 56 px rectangular
 panel with one cyan outline, no glow, and no nested filled input or clipped
 corners. Chamfers remain reserved for cards, panels, and action controls; the
 plain search silhouette prioritizes a clean typing target.
+
+### Football card presentation [BUILT]
+
+`CyberPlayerCardTile` selects a football-specific presentation for attacker,
+defender and keeper roles (`pitchDuelStyle` can opt out). `CyberActionCardTile`
+shares the sci-fi playing-card frame: large corner OVR/power, angular etched
+rails, quiet one-to-four rarity inlays, a separate nameplate and affinity glyph.
+Players use portrait windows and mirrored lower indices; actions use tactical
+blueprint art. Backs use a symmetric circuit print. The frame brightens on
+selection, without a check square covering the card's index. Static print has no
+continuous foil animation. Numeric indices fit their reserved corner width at
+enlarged text; names/ability details retain scoped body typography.
+
+Current-role players are full-size on the board; other-role cards are omitted
+from that round's choices. Used/reserved football cards use muted labels through
+`PremiumCardShell(calmDisabled: true, showSelectionMarker: false)`, preserving
+other sports' existing shell behavior. Fronts/backs use opposing top-left and
+bottom-right cuts. `CyberPanel(cornerCuts: true)` applies the same path to clipping
+and border painting without migrating unrelated legacy panels.
+`PitchContributionStrip` is shared by details and recap; `PitchMasteryPanel` is
+shared by the lobby and full time. `PitchVectorArt` provides token tinting and
+missing-art fallbacks. Backgrounds/artwork live in `assets/pitch_duel/`; text and
+frames remain Flutter-rendered. Game text uses Orbitron display / Exo 2 body.
+The fixed-height `PlayerLevelBadge` fits its numeric stack within the header at
+enlarged text, including expanded XP detail, avoiding clipped lobby chrome.
 
 ## Rewards and Progression
 

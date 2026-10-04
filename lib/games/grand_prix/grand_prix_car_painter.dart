@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/widgets.dart';
 
 import '../../data/grand_prix_liveries.dart';
+import '../../config/theme.dart';
 
 /// Shared top-down F1 car drawing for Grand Prix Dash.
 ///
@@ -58,41 +59,109 @@ RRect _rr(double l, double t, double w, double h, double r) =>
 /// Draws the car into a `w`×`h` box (nose up at y=0, rear wing at y=h).
 /// Looks right around a 1:2 width:length box — [GrandPrixCarPreviewPainter]
 /// letterboxes arbitrary canvases to that aspect.
-void paintGrandPrixCar(Canvas canvas, double w, double h, GrandPrixCarStyle s) {
+void paintGrandPrixCar(
+  Canvas canvas,
+  double w,
+  double h,
+  GrandPrixCarStyle s, {
+  double steering = 0,
+  double brake = 0,
+  bool deploying = false,
+}) {
   final r = w * 0.05;
   final thin = max(1.0, w * 0.030);
 
   // Ground shadow.
-  canvas.drawOval(Rect.fromLTWH(w * 0.01, h * 0.02, w * 0.98, h * 0.96), s.shadow);
+  canvas.drawOval(
+    Rect.fromLTWH(w * 0.01, h * 0.02, w * 0.98, h * 0.96),
+    s.shadow,
+  );
 
   // Front wing (under the nose): endplates, upper flap, main plane.
-  canvas.drawRRect(_rr(w * 0.005, h * 0.005, w * 0.060, h * 0.115, r), s.carbon);
-  canvas.drawRRect(_rr(w * 0.935, h * 0.005, w * 0.060, h * 0.115, r), s.carbon);
-  canvas.drawRRect(_rr(w * 0.09, h * 0.018, w * 0.82, h * 0.032, r), s.accentDark);
+  canvas.drawRRect(
+    _rr(w * 0.005, h * 0.005, w * 0.060, h * 0.115, r),
+    s.carbon,
+  );
+  canvas.drawRRect(
+    _rr(w * 0.935, h * 0.005, w * 0.060, h * 0.115, r),
+    s.carbon,
+  );
+  canvas.drawRRect(
+    _rr(w * 0.09, h * 0.018, w * 0.82, h * 0.032, r),
+    s.accentDark,
+  );
   canvas.drawRRect(_rr(w * 0.05, h * 0.055, w * 0.90, h * 0.048, r), s.accent);
 
   // Suspension wishbones (under the tyres).
   final susp = s.suspension..strokeWidth = thin;
-  canvas.drawLine(Offset(w * 0.42, h * 0.200), Offset(w * 0.10, h * 0.185), susp);
-  canvas.drawLine(Offset(w * 0.42, h * 0.245), Offset(w * 0.10, h * 0.240), susp);
-  canvas.drawLine(Offset(w * 0.58, h * 0.200), Offset(w * 0.90, h * 0.185), susp);
-  canvas.drawLine(Offset(w * 0.58, h * 0.245), Offset(w * 0.90, h * 0.240), susp);
-  canvas.drawLine(Offset(w * 0.38, h * 0.725), Offset(w * 0.10, h * 0.715), susp);
-  canvas.drawLine(Offset(w * 0.38, h * 0.785), Offset(w * 0.10, h * 0.780), susp);
-  canvas.drawLine(Offset(w * 0.62, h * 0.725), Offset(w * 0.90, h * 0.715), susp);
-  canvas.drawLine(Offset(w * 0.62, h * 0.785), Offset(w * 0.90, h * 0.780), susp);
+  canvas.drawLine(
+    Offset(w * 0.42, h * 0.200),
+    Offset(w * 0.10, h * 0.185),
+    susp,
+  );
+  canvas.drawLine(
+    Offset(w * 0.42, h * 0.245),
+    Offset(w * 0.10, h * 0.240),
+    susp,
+  );
+  canvas.drawLine(
+    Offset(w * 0.58, h * 0.200),
+    Offset(w * 0.90, h * 0.185),
+    susp,
+  );
+  canvas.drawLine(
+    Offset(w * 0.58, h * 0.245),
+    Offset(w * 0.90, h * 0.240),
+    susp,
+  );
+  canvas.drawLine(
+    Offset(w * 0.38, h * 0.725),
+    Offset(w * 0.10, h * 0.715),
+    susp,
+  );
+  canvas.drawLine(
+    Offset(w * 0.38, h * 0.785),
+    Offset(w * 0.10, h * 0.780),
+    susp,
+  );
+  canvas.drawLine(
+    Offset(w * 0.62, h * 0.725),
+    Offset(w * 0.90, h * 0.715),
+    susp,
+  );
+  canvas.drawLine(
+    Offset(w * 0.62, h * 0.785),
+    Offset(w * 0.90, h * 0.780),
+    susp,
+  );
 
   // Tyres — rears run wider, with a grey rim slot in each.
-  void tyreAt(double l, double t, double tw, double th) {
+  void tyreAt(double l, double t, double tw, double th, {bool front = false}) {
+    canvas.save();
+    if (front) {
+      canvas.translate(l + tw / 2, t + th / 2);
+      canvas.rotate(steering * 0.25);
+      canvas.translate(-l - tw / 2, -t - th / 2);
+    }
     canvas.drawRRect(_rr(l, t, tw, th, w * 0.055), s.tyre);
     canvas.drawRRect(
       _rr(l + tw * 0.32, t + th * 0.24, tw * 0.36, th * 0.52, w * 0.03),
       s.rim,
     );
+    if (brake > 0) {
+      canvas.drawLine(
+        Offset(l + tw * 0.65, t + th * 0.3),
+        Offset(l + tw * 0.65, t + th * 0.7),
+        Paint()
+          ..color = Cyber.amber.withValues(alpha: brake * 0.6)
+          ..strokeWidth = thin,
+      );
+    }
+    canvas.restore();
   }
 
-  tyreAt(-w * 0.005, h * 0.145, w * 0.195, h * 0.135);
-  tyreAt(w * 0.810, h * 0.145, w * 0.195, h * 0.135);
+  tyreAt(-w * 0.005, h * 0.145, w * 0.195, h * 0.135, front: true);
+  tyreAt(w * 0.810, h * 0.145, w * 0.195, h * 0.135, front: true);
   tyreAt(-w * 0.015, h * 0.685, w * 0.215, h * 0.155);
   tyreAt(w * 0.800, h * 0.685, w * 0.215, h * 0.155);
 
@@ -113,24 +182,63 @@ void paintGrandPrixCar(Canvas canvas, double w, double h, GrandPrixCarStyle s) {
     ..close();
   canvas.drawPath(body, s.body);
   canvas.drawPath(body, s.bodyEdge..strokeWidth = max(1.0, w * 0.022));
+  // A restrained specular ridge and sidepod shadow give depth at racing size.
+  canvas.drawLine(
+    Offset(w * 0.48, h * 0.18),
+    Offset(w * 0.46, h * 0.33),
+    s.glint..strokeWidth = max(1, w * 0.025),
+  );
+  canvas.drawLine(
+    Offset(w * 0.80, h * 0.49),
+    Offset(w * 0.64, h * 0.70),
+    s.bodyEdge..strokeWidth = max(1, w * 0.035),
+  );
 
   // Sidepod radiator intakes.
-  canvas.drawRRect(_rr(w * 0.205, h * 0.445, w * 0.115, h * 0.045, r), s.carbon);
-  canvas.drawRRect(_rr(w * 0.680, h * 0.445, w * 0.115, h * 0.045, r), s.carbon);
+  canvas.drawRRect(
+    _rr(w * 0.205, h * 0.445, w * 0.115, h * 0.045, r),
+    s.carbon,
+  );
+  canvas.drawRRect(
+    _rr(w * 0.680, h * 0.445, w * 0.115, h * 0.045, r),
+    s.carbon,
+  );
 
   // Accent nose stripe + engine-cover spine.
-  canvas.drawRRect(_rr(w * 0.474, h * 0.045, w * 0.052, h * 0.135, r), s.accent);
-  canvas.drawRRect(_rr(w * 0.468, h * 0.565, w * 0.064, h * 0.270, r), s.accent);
+  canvas.drawRRect(
+    _rr(w * 0.474, h * 0.045, w * 0.052, h * 0.135, r),
+    s.accent,
+  );
+  canvas.drawRRect(
+    _rr(w * 0.468, h * 0.565, w * 0.064, h * 0.270, r),
+    s.accent,
+  );
 
   // Wing mirrors.
-  canvas.drawRRect(_rr(w * 0.335, h * 0.372, w * 0.048, h * 0.020, r), s.accent);
-  canvas.drawRRect(_rr(w * 0.617, h * 0.372, w * 0.048, h * 0.020, r), s.accent);
+  canvas.drawRRect(
+    _rr(w * 0.335, h * 0.372, w * 0.048, h * 0.020, r),
+    s.accent,
+  );
+  canvas.drawRRect(
+    _rr(w * 0.617, h * 0.372, w * 0.048, h * 0.020, r),
+    s.accent,
+  );
 
   // Cockpit, halo and the driver's helmet.
-  canvas.drawRRect(_rr(w * 0.415, h * 0.360, w * 0.170, h * 0.185, w * 0.07), s.carbon);
+  canvas.drawRRect(
+    _rr(w * 0.415, h * 0.360, w * 0.170, h * 0.185, w * 0.07),
+    s.carbon,
+  );
   final haloPaint = s.halo..strokeWidth = max(1.0, w * 0.028);
-  canvas.drawOval(Rect.fromLTWH(w * 0.400, h * 0.350, w * 0.200, h * 0.205), haloPaint);
-  canvas.drawLine(Offset(w * 0.50, h * 0.350), Offset(w * 0.50, h * 0.440), haloPaint);
+  canvas.drawOval(
+    Rect.fromLTWH(w * 0.400, h * 0.350, w * 0.200, h * 0.205),
+    haloPaint,
+  );
+  canvas.drawLine(
+    Offset(w * 0.50, h * 0.350),
+    Offset(w * 0.50, h * 0.440),
+    haloPaint,
+  );
   canvas.drawCircle(Offset(w * 0.50, h * 0.475), w * 0.062, s.accent);
   canvas.drawCircle(Offset(w * 0.478, h * 0.462), w * 0.020, s.glint);
 
@@ -145,15 +253,36 @@ void paintGrandPrixCar(Canvas canvas, double w, double h, GrandPrixCarStyle s) {
   }
 
   // Rear wing (topmost at the rear): endplates, main plane + DRS slot, flap.
-  canvas.drawRRect(_rr(w * 0.060, h * 0.845, w * 0.055, h * 0.135, r), s.carbon);
-  canvas.drawRRect(_rr(w * 0.885, h * 0.845, w * 0.055, h * 0.135, r), s.carbon);
-  canvas.drawRRect(_rr(w * 0.130, h * 0.845, w * 0.740, h * 0.028, r), s.accentDark);
-  canvas.drawRRect(_rr(w * 0.100, h * 0.875, w * 0.800, h * 0.062, r), s.accent);
+  canvas.drawRRect(
+    _rr(w * 0.060, h * 0.845, w * 0.055, h * 0.135, r),
+    s.carbon,
+  );
+  canvas.drawRRect(
+    _rr(w * 0.885, h * 0.845, w * 0.055, h * 0.135, r),
+    s.carbon,
+  );
+  canvas.drawRRect(
+    _rr(w * 0.130, h * 0.845, w * 0.740, h * 0.028, r),
+    s.accentDark,
+  );
+  canvas.drawRRect(
+    _rr(w * 0.100, h * 0.875, w * 0.800, h * 0.062, r),
+    s.accent,
+  );
   canvas.drawLine(
     Offset(w * 0.12, h * 0.905),
     Offset(w * 0.88, h * 0.905),
     s.carbon..strokeWidth = max(1.0, w * 0.016),
   );
+  if (deploying) {
+    canvas.drawLine(
+      Offset(w * 0.38, h * 0.96),
+      Offset(w * 0.62, h * 0.96),
+      Paint()
+        ..color = Cyber.cyan
+        ..strokeWidth = max(1.5, w * 0.04),
+    );
+  }
 }
 
 /// Letterboxed [paintGrandPrixCar] for regular widget trees (lobby livery

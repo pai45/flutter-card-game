@@ -44,6 +44,60 @@ class GrandPrixLobbyScreen extends StatefulWidget {
   State<GrandPrixLobbyScreen> createState() => _GrandPrixLobbyScreenState();
 }
 
+class _CircuitMastery extends StatelessWidget {
+  const _CircuitMastery({required this.stats, required this.circuit});
+  final GrandPrixStats stats;
+  final GrandPrixCircuitId circuit;
+
+  @override
+  Widget build(BuildContext context) {
+    final earned = stats.masteryFor(circuit);
+    final remaining = GrandPrixMastery.values.where(
+      (stamp) => !earned.contains(stamp),
+    );
+    return CyberPanel(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'CIRCUIT MASTERY',
+                style: Cyber.label(9, color: Cyber.muted),
+              ),
+              const Spacer(),
+              Text(
+                '${earned.length}/3',
+                style: Cyber.display(12, color: Cyber.gold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final stamp in GrandPrixMastery.values)
+                CyberChip(
+                  label: stamp.label,
+                  color: earned.contains(stamp) ? Cyber.gold : Cyber.muted,
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            remaining.isEmpty
+                ? 'Circuit mastered. Chase your next personal best.'
+                : 'NEXT // ${remaining.first.goal}',
+            style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
   void _openPitDeck() {
     final navigator = Navigator.of(context);
@@ -207,6 +261,11 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
                                                   .selectLaps(laps);
                                             },
                                           ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        _CircuitMastery(
+                                          stats: state.stats,
+                                          circuit: state.circuitId,
                                         ),
                                         const SizedBox(height: 22),
                                         CyberSlideUpFadeIn(

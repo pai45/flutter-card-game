@@ -1809,9 +1809,7 @@ class ActionCardTile extends StatelessWidget {
           card.title,
           style: const TextStyle(fontWeight: FontWeight.w800),
         ),
-        subtitle: Text(
-          '${card.category.name.toUpperCase()} - ${card.effect}${card.risky ? ' - Risky' : ''}',
-        ),
+        subtitle: Text('${card.category.name.toUpperCase()} - ${card.effect}'),
         trailing: Text(
           '+${card.power}',
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),

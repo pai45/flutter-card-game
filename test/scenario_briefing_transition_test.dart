@@ -174,7 +174,7 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.byKey(const ValueKey('duel-full-pitch')), findsOneWidget);
-    expect(find.byKey(const ValueKey('opponent-full-hand')), findsOneWidget);
+    expect(find.byKey(const ValueKey('opponent-compact-hand')), findsOneWidget);
   }
 
   testWidgets('attack dock starts with player and action guidance', (
@@ -229,131 +229,85 @@ void main() {
       opponentCommitted: true,
     );
     expect(find.text('COMMIT ATTACK').hitTestable(), findsOneWidget);
-    expect(find.textContaining('GOAL CHANCE').hitTestable(), findsOneWidget);
-    expect(find.text('LOCKED'), findsNWidgets(2));
+    expect(
+      find.textContaining('RIVAL POWER RANGE').hitTestable(),
+      findsOneWidget,
+    );
+    expect(find.byType(CardBackFace), findsNWidgets(2));
   });
 
   testWidgets(
-    'all four card rails are straight and the opponent action hand is mirrored',
+    'only current-role players are full-size; rival has two anonymous backs',
     (tester) async {
       await pumpGuidanceState(tester, attacking: true);
       final base = GameState.initial();
-      final opponentActions = base.deckActions
-          .where(
-            (card) =>
-                card.category == ActionCategory.defense ||
-                card.category == ActionCategory.special,
-          )
-          .toList();
-
-      List<double> bottoms(Iterable<String> keys) => keys
-          .map(
-            (key) => tester.getRect(find.byKey(ValueKey<String>(key))).bottom,
-          )
-          .toList();
-
-      void expectStraight(List<double> values) {
-        expect(values, isNotEmpty);
-        for (final value in values.skip(1)) {
-          expect(value, closeTo(values.first, 0.1));
-        }
-      }
-
-      expectStraight(
-        bottoms(
-          [
-            ...base.deckAttackers,
-            ...base.deckDefenders,
-          ].map((card) => 'user-player-card-${card.id}'),
-        ),
-      );
-      expectStraight(
-        bottoms(
-          base.deckActions
-              .where(
-                (card) =>
-                    card.category == ActionCategory.attack ||
-                    card.category == ActionCategory.special,
-              )
-              .map((card) => 'user-action-card-${card.id}'),
-        ),
-      );
-      expectStraight(
-        bottoms(
-          [
-            ...base.deckAttackers,
-            ...base.deckDefenders,
-          ].map((card) => 'opponent-player-card-${card.id}'),
-        ),
-      );
-      expectStraight(
-        bottoms(
-          opponentActions.map((card) => 'opponent-action-card-${card.id}'),
-        ),
-      );
-
-      final opponentActionRail = find.byKey(
-        const ValueKey('opponent-action-rail'),
-      );
-      final opponentPlayerRail = find.byKey(
-        const ValueKey('opponent-player-rail'),
-      );
-      expect(
-        tester.getRect(opponentActionRail).bottom,
-        lessThan(tester.getRect(opponentPlayerRail).top),
-      );
-      final actionBacks = tester
-          .widgetList<CardBackFace>(
+      final players = tester
+          .widgetList<CyberPlayerCardTile>(
             find.descendant(
-              of: opponentActionRail,
-              matching: find.byType(CardBackFace),
+              of: find.byKey(const ValueKey('user-player-rail')),
+              matching: find.byType(CyberPlayerCardTile),
             ),
           )
           .toList();
-      expect(actionBacks, hasLength(opponentActions.length));
       expect(
-        actionBacks.every(
-          (back) => back.silhouette == CardBackSilhouette.action,
-        ),
+        players.map((p) => p.card.id),
+        base.deckAttackers.map((p) => p.id),
+      );
+      expect(
+        players.every((p) => p.size == VisualCardSize.md && !p.tiltOnSelect),
         isTrue,
       );
-
-      for (final card in opponentActions) {
-        final transform = tester.widget<Transform>(
-          find.byKey(ValueKey('opponent-action-card-${card.id}')),
+      for (final card in base.deckDefenders) {
+        expect(
+          find.byKey(ValueKey('user-player-card-${card.id}')),
+          findsNothing,
         );
-        expect(transform.transform.storage[0], closeTo(-1, 0.001));
-        expect(transform.transform.storage[5], closeTo(-1, 0.001));
       }
-
-      final boardPlayerTiles = tester.widgetList<CyberPlayerCardTile>(
-        find.descendant(
-          of: find.byKey(const ValueKey('user-player-rail')),
-          matching: find.byType(CyberPlayerCardTile),
-        ),
+      final playerBottoms = base.deckAttackers
+          .map(
+            (c) => tester
+                .getRect(find.byKey(ValueKey('user-player-card-${c.id}')))
+                .bottom,
+          )
+          .toList();
+      expect(playerBottoms[0], closeTo(playerBottoms[1], 0.1));
+      final backs = tester
+          .widgetList<CardBackFace>(find.byType(CardBackFace))
+          .toList();
+      expect(backs, hasLength(2));
+      expect(backs.map((b) => b.silhouette), [
+        CardBackSilhouette.player,
+        CardBackSilhouette.action,
+      ]);
+      expect(
+        tester
+            .getSize(find.byKey(const ValueKey('opponent-compact-hand')))
+            .height,
+        lessThanOrEqualTo(78),
       );
-      final boardActionTiles = tester.widgetList<CyberActionCardTile>(
-        find.descendant(
-          of: find.byKey(const ValueKey('user-action-rail')),
-          matching: find.byType(CyberActionCardTile),
-        ),
-      );
-      expect(boardPlayerTiles.every((tile) => !tile.tiltOnSelect), isTrue);
-      expect(boardActionTiles.every((tile) => !tile.tiltOnSelect), isTrue);
     },
   );
 
-  testWidgets('both opponent picks remain hidden when their locks settle', (
-    tester,
-  ) async {
-    await pumpGuidanceState(tester, attacking: false, opponentCommitted: true);
-    expect(find.text('LOCKED'), findsNWidgets(2));
-    final lockedBacks = tester.widgetList<CardBackFace>(
-      find.descendant(
-        of: find.byKey(const ValueKey('opponent-full-hand')),
-        matching: find.byType(CardBackFace),
-      ),
-    );
-    expect(lockedBacks, hasLength(8));
-  });
+  testWidgets(
+    'rival player and action identities stay hidden after commitment',
+    (tester) async {
+      await pumpGuidanceState(
+        tester,
+        attacking: false,
+        opponentCommitted: true,
+      );
+      final base = GameState.initial();
+      expect(find.byType(CardBackFace), findsNWidgets(2));
+      expect(find.text(base.deckAttackers.first.shortName), findsNothing);
+      expect(
+        find.text(
+          base.deckActions
+              .firstWhere((a) => a.category == ActionCategory.attack)
+              .title
+              .toUpperCase(),
+        ),
+        findsNothing,
+      );
+    },
+  );
 }

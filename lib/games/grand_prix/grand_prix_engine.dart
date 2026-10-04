@@ -1,17 +1,17 @@
 /// Pure race simulation for Grand Prix Dash.
 ///
 /// No Flutter/Flame imports — everything here is deterministic given a seeded
-/// [Random] and a fixed tick, so it is fully unit-testable (mirrors
-/// `football_chess_engine.dart`). The simulation is 1D: each car is a distance
-/// along the lap centerline plus a lateral offset. Corners affect physics only
-/// through their `safeSpeed`; how the road bends on screen is rendering-only
-/// (see [centerlineX]).
+/// [Random] and a fixed tick. Track-space progress, steering, lateral momentum,
+/// heading, grip, tow and energy stay independent of Flutter/Flame.
 library;
 
 import 'dart:math';
 
 import '../../models/grand_prix.dart';
 import '../../models/progression.dart' show cpuSmartness;
+import 'grand_prix_track.dart';
+
+export 'grand_prix_track.dart';
 
 // ---------------------------------------------------------------------------
 // Tuning constants (m, m/s, m/s², seconds). All race feel lives here.
@@ -72,13 +72,32 @@ const double kWallSpinMinSpeed = 30;
 const double kSpinSeconds = 0.8;
 const double kSpinSpeedFactor = 0.25; // crawl speed multiplier while spinning
 const double kContactRearDecel = 22; // m/s² lost by the rear car while touching
-const double kContactFrontDecel = 10; // m/s² lost by the car hit from behind
+const double kContactFrontDecel = 14; // impact remains a loss even under ERS
 const double kContactPushRate = 12; // lateral separation m/s while overlapping
 const double kHeavyContactClosingSpeed = 22;
 const double kJumpStartCutSeconds = 2.0;
 const int kFieldSize = 20;
 const double kGridGap = 7.0; // metres between grid slots
 const double kMaxCornerError = 0.35; // weak-CPU corner-entry overspeed fraction
+
+/// The scroller stretches lane widths relative to forward distance. Keep that
+/// projection from turning an ordinary lane change into a sideways-looking car.
+double projectedGrandPrixCarHeading({
+  required double roadSlope,
+  required double relativeHeading,
+  required double lateralScale,
+  required double forwardScale,
+  required bool straight,
+}) {
+  final angle = atan(
+    (roadSlope * kBendCompression + tan(relativeHeading)) *
+        lateralScale /
+        forwardScale,
+  );
+  final bend = straight ? 0.0 : (roadSlope.abs() / .5).clamp(0.0, 1.0);
+  final limit = pi / 15 + (pi / 5 - pi / 15) * bend;
+  return angle.clamp(-limit, limit);
+}
 
 // ---------------------------------------------------------------------------
 // Launch grading (the lights-out skill moment)
@@ -124,6 +143,8 @@ Duration sampleCpuReaction(double strength, Random random) {
 
 enum CarMode { racing, spinning, finished }
 
+enum CpuRacecraft { patient, balanced, aggressive }
+
 class CarState {
   CarState({
     required this.index,
@@ -135,7 +156,8 @@ class CarState {
     this.strength = 0,
     this.paceJitter = 0,
     this.cornerNoise = 0,
-  });
+    this.personality = CpuRacecraft.balanced,
+  }) : cruiseLateral = lateral;
 
   final int index;
   final bool isPlayer;
@@ -145,6 +167,24 @@ class CarState {
   double distance; // m along the lap; negative on the grid behind the line
   double lateral; // m, negative = left
   double speed = 0;
+  double previousDistance = 0;
+  double previousLateral = 0;
+  double previousHeading = 0;
+  bool hasPreviousPose = false;
+  double steeringAngle = 0;
+  double lateralVelocity = 0;
+  double heading = 0;
+  double yawRate = 0;
+  double grip = 1;
+  double energy = 1;
+  double towStrength = 0;
+  bool deploying = false;
+  double throttleLoad = 0;
+  double brakeLoad = 0;
+  double recoveryTimer = 0;
+  double ghostTimer = 0;
+  double decisionTimer = 0;
+  double passTarget = 0;
   int sectionIndex = 0;
   CarMode mode = CarMode.racing;
   double spinTimer = 0;
@@ -158,19 +198,40 @@ class CarState {
   final double strength; // cpuSmartness(level) with per-car spread
   final double paceJitter; // small ± on top speed
   final double cornerNoise; // 0..1 — how hot this driver enters corners
-  double targetLateral = 0;
+  final CpuRacecraft personality;
+  double cruiseLateral;
+  int decisionSection = 0;
 
   bool get finished => mode == CarMode.finished;
   bool get spinning => mode == CarMode.spinning;
   bool get onGrass => lateral.abs() > kTrackHalfWidth;
+  bool get onKerb => lateral.abs() > kTrackHalfWidth - 0.35 && !onGrass;
+  bool get recovering => recoveryTimer > 0;
+  int get gear => (1 + speed / 14).floor().clamp(1, 8);
+  double get rpm =>
+      (0.3 + (speed % 14) / 14 * 0.62 + throttleLoad * 0.08).clamp(0.0, 1.0);
 }
 
 class RaceInputs {
-  const RaceInputs({this.steer = 0, this.throttle = false, this.brake = false});
+  const RaceInputs({
+    this.steer = 0,
+    this.throttle = false,
+    this.brake = false,
+    this.throttleAmount,
+    this.brakeAmount,
+    this.deploy = false,
+  });
 
   final double steer; // −1 (left) .. 1 (right)
   final bool throttle;
   final bool brake;
+  final double? throttleAmount;
+  final double? brakeAmount;
+  final bool deploy;
+  static double _pedal(double value) =>
+      value.isFinite ? value.clamp(0.0, 1.0) : 0;
+  double get throttleValue => _pedal(throttleAmount ?? (throttle ? 1.0 : 0.0));
+  double get brakeValue => _pedal(brakeAmount ?? (brake ? 1.0 : 0.0));
 }
 
 /// Everything the cubit fixes at race start so the Flame game and the engine
@@ -183,6 +244,7 @@ class RaceSetup {
     required this.startPosition,
     required this.seed,
     this.laps = 1,
+    this.rulesetVersion = grandPrixRulesetVersion,
   });
 
   final GrandPrixCircuit circuit;
@@ -193,17 +255,29 @@ class RaceSetup {
 
   /// Race distance in laps (1 = sprint).
   final int laps;
+  final int rulesetVersion;
 }
 
 class RaceField {
   RaceField({required this.circuit, required this.cars, this.laps = 1})
-    : sectionStarts = _cumulative(circuit.sections);
+    : sectionStarts = _cumulative(circuit.sections) {
+    geometry = GrandPrixTrackGeometry(circuit, sectionStarts);
+  }
 
   final GrandPrixCircuit circuit;
   final List<CarState> cars;
   final List<double> sectionStarts;
   final int laps;
+  late final GrandPrixTrackGeometry geometry;
   double raceClockMs = 0;
+  bool playerCleanRace = true;
+  double playerLastContactMs = -10000;
+  int playerRecoveries = 0;
+  final List<int> playerLapTimesMs = [];
+  double _lastLapCrossingMs = 0;
+  final Map<int, double> pendingCleanPasses = {};
+  final Set<int> cleanPassedCars = {};
+  bool playerCornerContact = false;
 
   /// Full race distance — the finish line's position on the distance axis.
   double get raceLength => circuit.lapLength * laps;
@@ -233,6 +307,10 @@ class PlayerRaceOutcome {
     required this.lapTimeMs,
     this.bestOvertakeName,
     this.dnf = false,
+    this.lapTimesMs = const [],
+    this.cleanOvertakes = 0,
+    this.cleanRace = false,
+    this.recoveries = 0,
   });
 
   final int position;
@@ -243,6 +321,19 @@ class PlayerRaceOutcome {
 
   /// True when the player never finished — they got stuck and timed out.
   final bool dnf;
+  final List<int> lapTimesMs;
+  final int cleanOvertakes;
+  final bool cleanRace;
+  final int recoveries;
+}
+
+enum GrandPrixMomentKind { cleanPass, cleanCorner, lap, recovery }
+
+class GrandPrixMoment {
+  const GrandPrixMoment(this.kind, this.label, this.detail);
+  final GrandPrixMomentKind kind;
+  final String label;
+  final String detail;
 }
 
 /// Coarse per-tick events — everything the HUD/cubit cares about. High-
@@ -254,6 +345,8 @@ class RaceTickEvents {
   bool playerContact = false;
   bool playerTireScrub = false;
   bool playerCrossedLine = false;
+  GrandPrixMoment? moment;
+  bool lapCompleted = false;
 
   /// The player stayed stuck past [kStuckTimeout] — the race is over (DNF).
   bool playerStuckOut = false;
@@ -265,6 +358,8 @@ class RaceTickEvents {
       !playerContact &&
       !playerTireScrub &&
       !playerCrossedLine &&
+      moment == null &&
+      !lapCompleted &&
       !playerStuckOut;
 }
 
@@ -282,11 +377,6 @@ int sectionAt(
     if (s >= sectionStarts[i]) return i;
   }
   return 0;
-}
-
-double _smoothstep(double t) {
-  final x = t.clamp(0.0, 1.0);
-  return x * x * (3 - 2 * x);
 }
 
 /// Distance within the current lap. Grid distances (≤ 0, behind the line)
@@ -319,25 +409,7 @@ double centerlineX(
   List<double> sectionStarts,
   double s,
 ) {
-  var x = 0.0;
-  final clamped = s.clamp(0.0, circuit.lapLength);
-  for (var i = 0; i < circuit.sections.length; i++) {
-    final section = circuit.sections[i];
-    final start = sectionStarts[i];
-    final end = start + section.length;
-    if (clamped <= start) break;
-    final t = ((clamped.clamp(start, end)) - start) / section.length;
-    switch (section.type) {
-      case TrackSectionType.straight:
-        break;
-      case TrackSectionType.corner:
-        x += section.signedBend * _smoothstep(t);
-      case TrackSectionType.chicane:
-        // Out by half the bend, then back — net zero shift.
-        x += section.signedBend * sin(t * pi) * 0.5;
-    }
-  }
-  return x;
+  return trackCenterlineX(circuit, sectionStarts, s);
 }
 
 /// 1 + the number of cars ahead. Finished cars rank by finish time and always
@@ -399,6 +471,8 @@ RaceField buildField(RaceSetup setup, List<String> driverNames, Random random) {
           ),
           paceJitter: (random.nextDouble() - 0.5) * 0.04,
           cornerNoise: 0.2 + random.nextDouble() * 0.8,
+          personality:
+              CpuRacecraft.values[random.nextInt(CpuRacecraft.values.length)],
         ),
       );
       cpuCount++;
@@ -437,6 +511,7 @@ class GrandPrixEngine {
   /// Advances the whole field by [dt] seconds. Mutates [field]; returns the
   /// coarse events of this tick.
   RaceTickEvents tick(RaceField field, RaceInputs playerInputs, double dt) {
+    assert(dt > 0 && dt.isFinite);
     final events = RaceTickEvents();
     final player = field.player;
     final prevPlayerPosition = positionOf(field, player);
@@ -449,17 +524,22 @@ class GrandPrixEngine {
     field.raceClockMs += dt * 1000;
 
     for (final car in field.cars) {
+      car.previousDistance = car.distance;
+      car.previousLateral = car.lateral;
+      car.previousHeading = car.heading;
+      car.hasPreviousPose = true;
       if (car.finished) {
         // Coast over the line so finishers glide out of frame.
         car.speed = max(0, car.speed - kCoast * dt);
         car.distance += car.speed * dt;
         continue;
       }
-      final inputs = car.isPlayer ? playerInputs : _cpuInputs(field, car);
+      final inputs = car.isPlayer ? playerInputs : _cpuInputs(field, car, dt);
       _stepCar(field, car, inputs, dt, events);
     }
 
     _resolveContacts(field, dt, events);
+    _recordLaps(field, events);
     _detectFinishes(field, dt, events);
 
     // Position + overtake diff (player only — the HUD cares about the player).
@@ -469,6 +549,13 @@ class GrandPrixEngine {
       for (final car in field.cars) {
         if (car.isPlayer || !prevAhead.contains(car.index)) continue;
         if (car.distance <= player.distance && !car.finished) {
+          if (!field.cleanPassedCars.contains(car.index) &&
+              field.raceClockMs - field.playerLastContactMs >= 1000) {
+            field.pendingCleanPasses.putIfAbsent(
+              car.index,
+              () => field.raceClockMs,
+            );
+          }
           events.overtakes.add(
             OvertakeEvent(
               overtakenName: car.name,
@@ -479,12 +566,15 @@ class GrandPrixEngine {
         }
       }
     }
+    _gradeCleanPasses(field, events);
 
     // Stuck watchdog: if the player runs off / into a barrier and grinds to a
     // crawl, the clock runs out and the race is over. Reset the moment they're
     // moving again — steering back onto the track is the escape.
     if (!player.finished) {
-      if (player.speed < kStuckSpeed) {
+      if (player.recovering) {
+        field.playerStuckSeconds = 0;
+      } else if (player.speed < kStuckSpeed) {
         field.playerStuckSeconds += dt;
         if (field.playerStuckSeconds >= kStuckTimeout) {
           events.playerStuckOut = true;
@@ -494,6 +584,75 @@ class GrandPrixEngine {
       }
     }
     return events;
+  }
+
+  /// A three-second stationary recovery. Distance and energy are preserved;
+  /// rivals keep racing. Pick the clearest lane and grant brief collision
+  /// clearance on release so a rejoin cannot shove a rival out of the way.
+  bool recoverPlayer(RaceField field) {
+    final car = field.player;
+    if (car.finished || car.recovering || field.playerStuckSeconds < 2.5) {
+      return false;
+    }
+    car.recoveryTimer = 3;
+    car.speed = 0;
+    car.lateralVelocity = 0;
+    car.steeringAngle = 0;
+    car.mode = CarMode.racing;
+    car.spinTimer = 0;
+    car.launchBoostTimer = 0;
+    car.launchAccelFactor = 1;
+    car.deploying = false;
+    field.playerRecoveries++;
+    field.playerCleanRace = false;
+    field.playerStuckSeconds = 0;
+    field.pendingCleanPasses.clear();
+    return true;
+  }
+
+  void _recordLaps(RaceField field, RaceTickEvents events) {
+    final car = field.player;
+    if (car.finished) return;
+    final boundary =
+        (field.playerLapTimesMs.length + 1) * field.circuit.lapLength;
+    if (boundary > field.raceLength || car.distance < boundary) return;
+    final crossedAt =
+        field.raceClockMs -
+        (car.distance - boundary) / max(0.01, car.speed) * 1000;
+    final lapMs = max(1, (crossedAt - field._lastLapCrossingMs).round());
+    final oldBest = field.playerLapTimesMs.isEmpty
+        ? null
+        : field.playerLapTimesMs.reduce(min);
+    field.playerLapTimesMs.add(lapMs);
+    field._lastLapCrossingMs = crossedAt;
+    events.lapCompleted = true;
+    if (boundary < field.raceLength) {
+      final improved = oldBest != null && lapMs < oldBest;
+      events.moment = GrandPrixMoment(
+        GrandPrixMomentKind.lap,
+        improved ? 'FASTER LAP' : 'LAP COMPLETE',
+        '${formatLapTime(lapMs)}${improved ? ' · −${((oldBest - lapMs) / 1000).toStringAsFixed(2)}s' : ''}',
+      );
+    }
+  }
+
+  void _gradeCleanPasses(RaceField field, RaceTickEvents events) {
+    for (final index in field.pendingCleanPasses.keys.toList()) {
+      final rival = field.cars.firstWhere((car) => car.index == index);
+      final since = field.pendingCleanPasses[index]!;
+      if (rival.distance >= field.player.distance ||
+          field.playerLastContactMs >= since) {
+        field.pendingCleanPasses.remove(index);
+      } else if (field.raceClockMs - since >= 1000) {
+        field.cleanPassedCars.add(index);
+        field.pendingCleanPasses.remove(index);
+        events.moment = GrandPrixMoment(
+          GrandPrixMomentKind.cleanPass,
+          'CLEAN OVERTAKE',
+          '${rival.name} · ${field.cleanPassedCars.length} CLEAN',
+        );
+      }
+    }
   }
 
   // -- per-car step ---------------------------------------------------------
@@ -506,13 +665,62 @@ class GrandPrixEngine {
     RaceTickEvents events,
   ) {
     final sections = field.circuit.sections;
-    car.sectionIndex = sectionAt(
-      field.sectionStarts,
-      sections,
-      lapLocalDistance(field.circuit.lapLength, car.distance),
-    );
+    final previousSection = car.sectionIndex;
+    final sample = field.geometry.sample(car.distance);
+    car.sectionIndex = sample.sectionIndex;
     final section = sections[car.sectionIndex];
     final prevLateral = car.lateral;
+    if (car.isPlayer && previousSection != car.sectionIndex) {
+      final previous = sections[previousSection];
+      if (!previous.isStraight &&
+          !field.playerCornerContact &&
+          car.grip > 0.8 &&
+          !car.onGrass &&
+          car.speed >= previous.safeSpeed! * 0.85) {
+        events.moment = const GrandPrixMoment(
+          GrandPrixMomentKind.cleanCorner,
+          'CLEAN EXIT',
+          'LINE HELD · CARRY THE SPEED',
+        );
+      }
+      field.playerCornerContact = false;
+    }
+
+    if (car.ghostTimer > 0) car.ghostTimer = max(0, car.ghostTimer - dt);
+    if (car.recovering) {
+      car.recoveryTimer = max(0, car.recoveryTimer - dt);
+      if (!car.recovering) {
+        var bestLane = 0.0;
+        var bestClearance = -1.0;
+        for (final lane in const [0.0, -2.5, 2.5]) {
+          var clearance = 10.0;
+          for (final rival in field.cars) {
+            if (identical(rival, car) ||
+                (rival.distance - car.distance).abs() > 14) {
+              continue;
+            }
+            clearance = min(clearance, (rival.lateral - lane).abs());
+          }
+          if (clearance > bestClearance) {
+            bestClearance = clearance;
+            bestLane = lane;
+          }
+        }
+        car.lateral = bestLane;
+        car.previousLateral = bestLane;
+        car.heading = 0;
+        car.previousHeading = 0;
+        car.ghostTimer = 1;
+        if (car.isPlayer) {
+          events.moment = const GrandPrixMoment(
+            GrandPrixMomentKind.recovery,
+            'BACK ON TRACK',
+            'ACCELERATE · FIND YOUR RHYTHM',
+          );
+        }
+      }
+      return;
+    }
 
     // Timers.
     if (car.spinTimer > 0) {
@@ -529,8 +737,9 @@ class GrandPrixEngine {
       if (car.launchBoostTimer == 0) car.launchAccelFactor = 1.0;
     }
 
-    // Slipstream (straights only).
-    car.slipstreaming = false;
+    // Tow builds while following and fades after pulling out. Weak fresh tows
+    // provide a small immediate benefit; sustained alignment earns the full tow.
+    var towTarget = 0.0;
     if (section.isStraight && !car.spinning) {
       for (final other in field.cars) {
         if (identical(other, car)) continue;
@@ -538,26 +747,62 @@ class GrandPrixEngine {
         if (gap >= kSlipstreamMin &&
             gap <= kSlipstreamMax &&
             (other.lateral - car.lateral).abs() < kSlipstreamAlign) {
-          car.slipstreaming = true;
-          break;
+          towTarget = max(
+            towTarget,
+            (1 -
+                (gap - kSlipstreamMin) /
+                    (kSlipstreamMax - kSlipstreamMin) *
+                    0.35),
+          );
         }
       }
+    }
+    car.towStrength +=
+        (towTarget - car.towStrength) *
+        (1 - exp(-dt * (towTarget > 0 ? 2.5 : 2.0)));
+    car.slipstreaming = towTarget > 0 || car.towStrength > 0.1;
+    final tow = towTarget > 0 ? max(0.2, car.towStrength) : car.towStrength;
+    car.throttleLoad = inputs.throttleValue;
+    car.brakeLoad = inputs.brakeValue;
+    car.deploying =
+        inputs.deploy &&
+        car.energy > 0 &&
+        car.speed > 15 &&
+        car.throttleLoad > 0 &&
+        car.brakeLoad == 0 &&
+        !car.spinning &&
+        !car.onGrass;
+    if (car.deploying) {
+      car.energy = max(0, car.energy - dt * 0.23);
+    } else if (car.speed > 12 && !car.spinning && !car.onGrass) {
+      car.energy = min(
+        1,
+        car.energy +
+            dt * (car.brakeLoad * 0.12 + (car.throttleLoad == 0 ? 0.025 : 0)),
+      );
     }
 
     // Effective top speed.
     var effTop = kTopSpeed;
-    if (car.slipstreaming) effTop *= 1 + kSlipstreamBoost;
+    effTop *= 1 + kSlipstreamBoost * tow;
+    if (car.deploying) effTop *= 1.08;
     if (!car.isPlayer) effTop *= 0.9 + 0.1 * car.strength + car.paceJitter;
     if (car.onGrass) effTop *= kGrassTopSpeedFactor;
 
     // Speed integration.
     final throttleOn =
-        inputs.throttle && car.throttleCutTimer == 0 && !car.spinning;
-    if (inputs.brake && !car.spinning) {
-      car.speed = max(0, car.speed - kBrake * dt);
+        car.throttleLoad > 0 && car.throttleCutTimer == 0 && !car.spinning;
+    if (car.brakeLoad > 0 && !car.spinning) {
+      car.speed = max(0, car.speed - kBrake * car.brakeLoad * dt);
     } else if (throttleOn) {
       final headroom = max(0.0, 1 - car.speed / effTop);
-      car.speed += kAccel * car.launchAccelFactor * headroom * dt;
+      car.speed +=
+          kAccel *
+          car.launchAccelFactor *
+          headroom *
+          car.throttleLoad *
+          (car.deploying ? 1.25 : 1.0) *
+          dt;
     } else {
       car.speed = max(0, car.speed - kCoast * dt);
     }
@@ -574,6 +819,16 @@ class GrandPrixEngine {
     // the way into the outside wall is what spins the car — handled at the wall
     // clamp below.
     final safeSpeed = section.safeSpeed;
+    final overspeed = safeSpeed == null
+        ? 0.0
+        : max(0.0, car.speed - safeSpeed) / safeSpeed;
+    car.grip =
+        (1 - overspeed * 0.3).clamp(0.65, 1.0) *
+        (car.onGrass
+            ? 0.5
+            : car.onKerb
+            ? 0.88
+            : 1.0);
     if (safeSpeed != null && !car.spinning && car.speed > safeSpeed) {
       car.speed = max(0, car.speed - kScrub * (car.speed - safeSpeed) * dt);
       if (car.isPlayer) events.playerTireScrub = true;
@@ -581,7 +836,43 @@ class GrandPrixEngine {
 
     // Lateral integration: steering, then the corner's curvature drift.
     if (!car.spinning) {
-      car.lateral += kSteerRate * inputs.steer.clamp(-1.0, 1.0) * dt;
+      final previousHeading = car.heading;
+      final steer = inputs.steer.isFinite ? inputs.steer.clamp(-1.0, 1.0) : 0.0;
+      car.steeringAngle += (steer - car.steeringAngle) * (1 - exp(-dt * 12));
+      final speedFactor = (car.speed / 12).clamp(0.0, 1.0);
+      final steeringAuthority = (1 - car.speed / kTopSpeed * 0.2).clamp(
+        0.7,
+        1.0,
+      );
+      final rotation = car.brakeLoad > 0
+          ? 1.08
+          : car.throttleLoad == 0
+          ? 1.04
+          : 1.0;
+      var targetVelocity =
+          kSteerRate *
+          car.steeringAngle *
+          speedFactor *
+          steeringAuthority *
+          car.grip *
+          rotation;
+      // Lane changes need forward movement, especially while pulling away.
+      // The player keeps more steering authority than traffic. Corners retain
+      // the steering needed to follow their curvature.
+      if (section.isStraight) {
+        final laneChangeSpeed = min(
+          car.isPlayer ? 4.0 : 2.5,
+          car.speed * (car.isPlayer ? .04 : .028),
+        );
+        targetVelocity = targetVelocity.clamp(
+          -laneChangeSpeed,
+          laneChangeSpeed,
+        );
+      }
+      car.lateralVelocity +=
+          (targetVelocity - car.lateralVelocity) *
+          (1 - exp(-dt * (car.onGrass ? 5 : 10)));
+      car.lateral += car.lateralVelocity * dt;
 
       // Curvature drift: the car holds a straight heading unless steered, so as
       // the road bends its centerline slides out from under it. Without steering
@@ -589,10 +880,18 @@ class GrandPrixEngine {
       // the player must steer INTO the bend to follow the road. Straights don't
       // bend, so they add no drift — the car only moves on the player's input.
       final ahead = car.distance + car.speed * dt;
-      final centerShift =
-          raceCenterlineX(field.circuit, field.sectionStarts, ahead) -
-          raceCenterlineX(field.circuit, field.sectionStarts, car.distance);
+      final centerShift = field.geometry.sample(ahead).centerX - sample.centerX;
       car.lateral -= centerShift * kBendCompression;
+      // Heading is relative to the road; the renderer adds its projected
+      // tangent once. Following the bend must not double the body's rotation.
+      final relativeVelocity =
+          car.lateralVelocity - centerShift * kBendCompression / dt;
+      car.heading +=
+          (atan2(relativeVelocity, max(12, car.speed)) - car.heading) *
+          (1 - exp(-dt * 9));
+      car.yawRate = (car.heading - previousHeading) / dt;
+    } else {
+      car.lateralVelocity *= exp(-dt * 8);
     }
     if (car.onGrass) {
       car.speed = max(0, car.speed - kGrassDrag * dt);
@@ -604,6 +903,7 @@ class GrandPrixEngine {
       // graze, not a repeat spin.
       final freshHit = prevLateral.abs() < kWallLateral;
       car.lateral = car.lateral.clamp(-kWallLateral, kWallLateral);
+      car.lateralVelocity = 0;
       if (freshHit &&
           !section.isStraight &&
           !car.spinning &&
@@ -618,7 +918,12 @@ class GrandPrixEngine {
         // A graze, or scraping the wall down a straight, just bleeds speed.
         car.speed = max(0, car.speed - kBrake * 0.75 * dt);
       }
-      if (car.isPlayer) events.playerWallContact = true;
+      if (car.isPlayer) {
+        events.playerWallContact = true;
+        field.playerCleanRace = false;
+        field.playerCornerContact = true;
+        field.playerLastContactMs = field.raceClockMs;
+      }
     }
 
     // Distance integration.
@@ -627,28 +932,41 @@ class GrandPrixEngine {
 
   // -- CPU driver -----------------------------------------------------------
 
-  RaceInputs _cpuInputs(RaceField field, CarState car) {
+  RaceInputs _cpuInputs(RaceField field, CarState car, double dt) {
+    if (car.recovering) return const RaceInputs();
+    car.sectionIndex = field.geometry.sample(car.distance).sectionIndex;
     var brake = _shouldBrake(
       field,
       car,
       errorFactor: kMaxCornerError * (1 - car.strength) * car.cornerNoise,
     );
 
-    // Steering: ease toward the racing line; defend the inside on straights.
-    var target = _racingLineLateral(field, car);
     final section = field.circuit.sections[car.sectionIndex];
-    if (section.isStraight && car.strength > 0.5) {
-      final attacker = _attackerBehind(field, car);
-      if (attacker != null && _random.nextDouble() < car.strength * 0.03) {
-        // Occasional covering move toward the attacker's side.
-        car.targetLateral = attacker.lateral.clamp(
-          -kTrackHalfWidth * 0.8,
-          kTrackHalfWidth * 0.8,
-        );
+    if (car.decisionSection != car.sectionIndex) {
+      car.decisionSection = car.sectionIndex;
+      car.passTarget = 0;
+      if (section.isStraight) {
+        car.cruiseLateral = car.lateral.clamp(-2.7, 2.7);
       }
-      if (car.targetLateral != 0) target = car.targetLateral;
-    } else {
-      car.targetLateral = 0;
+    }
+    // Hold the grid/exit lane on straights. Do not herd the entire field back
+    // into the middle after each pass or repeatedly hunt a new lane.
+    var target = section.isStraight
+        ? car.cruiseLateral
+        : _racingLineLateral(field, car);
+    car.decisionTimer -= dt;
+    if (section.isStraight && car.speed > 35 && car.strength > 0.5) {
+      final attacker = _attackerBehind(field, car);
+      if (attacker != null &&
+          attacker.speed > car.speed + 3 &&
+          car.distance - attacker.distance < 14 &&
+          (attacker.lateral - car.lateral).abs() < 1.5 &&
+          car.decisionTimer <= 0 &&
+          _random.nextDouble() < car.strength * 0.65) {
+        car.cruiseLateral = attacker.lateral.clamp(-2.7, 2.7);
+        target = car.cruiseLateral;
+        car.decisionTimer = 2;
+      }
     }
 
     // Avoidance/passing: never plow into a slower car ahead — pull to the
@@ -656,32 +974,92 @@ class GrandPrixEngine {
     // when right on its gearbox.
     final blocker = _blockerAhead(field, car);
     if (blocker != null) {
-      if (section.isStraight) {
-        final passSide = blocker.lateral >= car.lateral ? -1 : 1;
-        target = (car.lateral + passSide * kCarWidth * 1.6).clamp(
-          -kTrackHalfWidth,
-          kTrackHalfWidth,
-        );
+      if (section.isStraight && car.speed > 8) {
+        if (car.decisionTimer <= 0 &&
+            (car.passTarget == 0 ||
+                (car.lateral - car.passTarget).abs() < .35)) {
+          var bestClearance = -1.0;
+          for (final side in const [-1.0, 1.0]) {
+            final lane = (blocker.lateral + side * kCarWidth * 1.35).clamp(
+              -kTrackHalfWidth * 0.85,
+              kTrackHalfWidth * 0.85,
+            );
+            var clearance = 10.0;
+            for (final other in field.cars) {
+              if (identical(other, car) ||
+                  (other.distance - car.distance).abs() > 22) {
+                continue;
+              }
+              clearance = min(clearance, (other.lateral - lane).abs());
+            }
+            if (clearance > bestClearance) {
+              bestClearance = clearance;
+              car.passTarget = lane;
+            }
+          }
+          car.decisionTimer = car.personality == CpuRacecraft.aggressive
+              ? 1.25
+              : 1.8;
+          car.cruiseLateral = car.passTarget;
+        }
+        target = car.cruiseLateral;
       }
-      if (blocker.distance - car.distance < kCarLength * 1.4) brake = true;
+      final closing = max(0.0, car.speed - blocker.speed);
+      final followingDistance =
+          kCarLength * 2.2 + closing * .3 + closing * closing / (2 * kBrake);
+      if (blocker.distance - car.distance < followingDistance) brake = true;
+    } else if (car.decisionTimer <= 0) {
+      car.passTarget = 0;
+    }
+
+    if (section.isStraight) {
+      final upcoming = field.geometry.cornerAhead(
+        car.distance,
+        field.raceLength,
+      );
+      if (upcoming != null && upcoming.distance < 70) {
+        final entry = 1 - upcoming.distance / 70;
+        target += (_racingLineLateral(field, car) - target) * entry;
+      }
     }
 
     final delta = target - car.lateral;
-    final steer = delta.abs() < 0.25
-        ? 0.0
-        : (delta.sign * min(1, delta.abs() / 2));
-    return RaceInputs(steer: steer, throttle: !brake, brake: brake);
+    final curvature =
+        field.geometry.sample(car.distance).slope *
+        kBendCompression *
+        car.speed;
+    final feedForward = curvature / (kSteerRate * max(0.55, car.grip));
+    final steer = ((delta.abs() < 0.15 ? 0.0 : delta / 1.8) + feedForward)
+        .clamp(-1.0, 1.0);
+    final deploy =
+        section.isStraight &&
+        !brake &&
+        car.energy > 0.25 &&
+        (blocker != null ||
+            _attackerBehind(field, car) != null ||
+            car.personality == CpuRacecraft.aggressive);
+    return RaceInputs(
+      steer: steer,
+      throttle: !brake,
+      brake: brake,
+      deploy: deploy,
+    );
   }
 
-  /// The nearest meaningfully slower car directly ahead within a couple of
-  /// car lengths — the one this CPU must steer around or lift for.
+  /// The nearest slower car within closing-speed braking range. A stopped
+  /// car needs much earlier braking than traffic travelling at a similar pace.
   CarState? _blockerAhead(RaceField field, CarState car) {
     CarState? nearest;
     var nearestGap = double.infinity;
     for (final other in field.cars) {
       if (identical(other, car) || other.finished) continue;
       final gap = other.distance - car.distance;
-      if (gap <= 0 || gap > kCarLength * 3) continue;
+      final closing = max(0.0, car.speed - other.speed);
+      final lookahead = max(
+        kCarLength * 3,
+        kCarLength * 2.2 + closing * .5 + closing * closing / (2 * kBrake),
+      );
+      if (gap <= 0 || gap > lookahead) continue;
       if ((other.lateral - car.lateral).abs() > kCarWidth * 1.3) continue;
       if (other.speed > car.speed - 1) continue;
       if (gap < nearestGap) {
@@ -743,22 +1121,7 @@ class GrandPrixEngine {
   /// The lateral the racing line wants at the car's current spot: apex on the
   /// inside through corners/chicanes, track middle on straights.
   double _racingLineLateral(RaceField field, CarState car) {
-    final section = field.circuit.sections[car.sectionIndex];
-    switch (section.type) {
-      case TrackSectionType.straight:
-        return 0;
-      case TrackSectionType.corner:
-        final insideSign = section.direction == CornerDirection.left ? -1 : 1;
-        return insideSign * kTrackHalfWidth * 0.55;
-      case TrackSectionType.chicane:
-        // Flick to the entry side then across — approximate with the entry
-        // side for the first half, exit side for the second.
-        final start = field.sectionStarts[car.sectionIndex];
-        final local = lapLocalDistance(field.circuit.lapLength, car.distance);
-        final t = (local - start) / section.length;
-        final entrySign = section.direction == CornerDirection.left ? -1 : 1;
-        return (t < 0.5 ? entrySign : -entrySign) * kTrackHalfWidth * 0.45;
-    }
+    return field.geometry.racingLine(car.distance, kTrackHalfWidth);
   }
 
   CarState? _attackerBehind(RaceField field, CarState car) {
@@ -782,34 +1145,54 @@ class GrandPrixEngine {
       ..sort((a, b) => a.distance.compareTo(b.distance));
     for (var i = 0; i < ordered.length - 1; i++) {
       final rear = ordered[i];
-      final front = ordered[i + 1];
-      if (rear.finished || front.finished) continue;
-      if (front.distance - rear.distance > kCarLength) continue;
-      if ((front.lateral - rear.lateral).abs() > kCarWidth) continue;
+      // A third car in another lane must not hide an overlapping pair.
+      for (var j = i + 1; j < ordered.length; j++) {
+        final front = ordered[j];
+        if (front.distance - rear.distance > kCarLength) break;
+        if (rear.finished ||
+            front.finished ||
+            rear.recovering ||
+            front.recovering ||
+            rear.ghostTimer > 0 ||
+            front.ghostTimer > 0) {
+          continue;
+        }
+        if (front.distance - rear.distance > kCarLength) continue;
+        if ((front.lateral - rear.lateral).abs() > kCarWidth) continue;
 
-      // Contact costs BOTH cars speed — it's a downside, not a weapon. CPU↔CPU
-      // touches are softened: full contact physics is a player experience, and
-      // unsoftened it bunches high-level fields into slow contact trains.
-      final playerInvolved = rear.isPlayer || front.isPlayer;
-      final softening = playerInvolved ? 1.0 : 0.35;
-      final closing = rear.speed - front.speed;
-      rear.speed = max(0, rear.speed - kContactRearDecel * softening * dt);
-      front.speed = max(0, front.speed - kContactFrontDecel * softening * dt);
-      // Nudge apart laterally.
-      final push =
-          (rear.lateral <= front.lateral ? -1 : 1) * kContactPushRate * dt;
-      rear.lateral = (rear.lateral + push).clamp(-kWallLateral, kWallLateral);
-      front.lateral = (front.lateral - push).clamp(-kWallLateral, kWallLateral);
+        // Contact costs BOTH cars speed — it's a downside, not a weapon. CPU↔CPU
+        // touches are softened: full contact physics is a player experience, and
+        // unsoftened it bunches high-level fields into slow contact trains.
+        final playerInvolved = rear.isPlayer || front.isPlayer;
+        final softening = playerInvolved ? 1.0 : 0.35;
+        final closing = rear.speed - front.speed;
+        rear.speed = max(0, rear.speed - kContactRearDecel * softening * dt);
+        front.speed = max(0, front.speed - kContactFrontDecel * softening * dt);
+        // Nudge apart laterally.
+        final push =
+            (rear.lateral <= front.lateral ? -1 : 1) * kContactPushRate * dt;
+        rear.lateral = (rear.lateral + push).clamp(-kWallLateral, kWallLateral);
+        front.lateral = (front.lateral - push).clamp(
+          -kWallLateral,
+          kWallLateral,
+        );
 
-      if (closing > kHeavyContactClosingSpeed && !rear.spinning) {
-        rear.mode = CarMode.spinning;
-        // A car-contact spin is lighter than a wall smash: a shorter spin (vs
-        // the full kSpinSeconds a mid-corner wall hit keeps) and much less speed
-        // lost, so a heavy rear-end is a setback, not a race-ender.
-        rear.spinTimer = kSpinSeconds * 0.7;
-        rear.speed = min(rear.speed, front.speed * 0.78);
+        if (closing > kHeavyContactClosingSpeed && !rear.spinning) {
+          rear.mode = CarMode.spinning;
+          // A car-contact spin is lighter than a wall smash: a shorter spin (vs
+          // the full kSpinSeconds a mid-corner wall hit keeps) and much less speed
+          // lost, so a heavy rear-end is a setback, not a race-ender.
+          rear.spinTimer = kSpinSeconds * 0.7;
+          rear.speed = min(rear.speed, front.speed * 0.78);
+        }
+        if (playerInvolved) {
+          events.playerContact = true;
+          field.playerCleanRace = false;
+          field.playerCornerContact = true;
+          field.playerLastContactMs = field.raceClockMs;
+          field.pendingCleanPasses.clear();
+        }
       }
-      if (rear.isPlayer || front.isPlayer) events.playerContact = true;
     }
   }
 

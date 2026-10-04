@@ -1,6 +1,7 @@
 import '../../config/game_ladder.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
+import '../../models/pitch_duel_rules.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/streak.dart';
 import '../../models/daily_quest.dart';
@@ -362,12 +363,11 @@ class ActionSelected extends GameEvent {
 }
 
 class MovePlayed extends GameEvent {
-  MovePlayed({this.playerSurge});
+  MovePlayed({this.playerSurge, this.shotTiming});
 
-  /// The player's power swing (0..20) from the Shot Meter, replacing the hidden
-  /// random roll on the player's side. Null falls back to a random swing
-  /// (e.g. the reduced-motion bypass).
+  /// Legacy callers are clamped to 0..8. Absent timing uses the accessible +4.
   final double? playerSurge;
+  final ShotTimingResult? shotTiming;
 }
 
 class RoundAdvanced extends GameEvent {}

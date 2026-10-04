@@ -4,6 +4,58 @@ import 'package:card_game/models/grand_prix.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'legacy records and career survive while new ruleset starts separate',
+    () {
+      final old = GrandPrixStats.fromJson({
+        'races': 12,
+        'wins': 3,
+        'bestLapMsByCircuit': {'emeraldPark': 88000, 'emeraldPark@3L': 270000},
+      });
+      final stats = old
+          .recordResult(
+            position: 5,
+            lapTimeMs: 92000,
+            circuit: GrandPrixCircuitId.emeraldPark,
+            mastery: [GrandPrixMastery.cleanFinish],
+          )
+          .copyWith(
+            classicControls: true,
+            hapticsEnabled: false,
+            reducedEffects: true,
+            coachSeen: true,
+          );
+      final revived = GrandPrixStats.fromJson(
+        Map<String, dynamic>.from(
+          jsonDecode(jsonEncode(stats.toJson())) as Map,
+        ),
+      );
+      expect(revived.races, 13);
+      expect(revived.wins, 3);
+      expect(revived.bestLapMs(GrandPrixCircuitId.emeraldPark), 92000);
+      expect(
+        revived.bestLapMs(GrandPrixCircuitId.emeraldPark, rulesetVersion: 1),
+        88000,
+      );
+      expect(
+        revived.bestLapMs(
+          GrandPrixCircuitId.emeraldPark,
+          laps: 3,
+          rulesetVersion: 1,
+        ),
+        270000,
+      );
+      expect(revived.masteryFor(GrandPrixCircuitId.emeraldPark), {
+        GrandPrixMastery.cleanFinish,
+      });
+      expect(
+        revived.classicControls && revived.reducedEffects && revived.coachSeen,
+        isTrue,
+      );
+      expect(revived.hapticsEnabled, isFalse);
+    },
+  );
+
   test('recordResult folds wins, podiums, streaks, and best position', () {
     var stats = const GrandPrixStats();
 
@@ -141,7 +193,11 @@ void main() {
     });
     expect(legacy.lastCircuit, GrandPrixCircuitId.emeraldPark);
     expect(legacy.lastLivery, GrandPrixLivery.gridLine);
-    expect(legacy.bestLapMs(GrandPrixCircuitId.emeraldPark), 91000);
+    expect(legacy.bestLapMs(GrandPrixCircuitId.emeraldPark), isNull);
+    expect(
+      legacy.bestLapMs(GrandPrixCircuitId.emeraldPark, rulesetVersion: 1),
+      91000,
+    );
   });
 
   test('verdict tiers and lap formatting', () {

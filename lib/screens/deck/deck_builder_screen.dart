@@ -8,6 +8,7 @@ import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../config/tutorial_steps.dart';
 import '../../models/cards.dart';
+import '../../models/pitch_duel_rules.dart';
 import '../../models/deck.dart';
 import '../../models/football_chess.dart';
 import '../../utils/card_helpers.dart';
@@ -71,6 +72,10 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
       selectedAttackers.every((id) => id != null) &&
       selectedDefenders.every((id) => id != null) &&
       selectedActions.every((id) => id != null) &&
+      pitchCanComplete(
+        actionCardsByIds(selectedActions.whereType<String>().toList()),
+        const [true, false, true, false],
+      ) &&
       selectedKeeper != null;
 
   int _bestSlotIndex(DeckPickerLane lane) {
@@ -120,7 +125,12 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
             .length;
         final unbalancedActions =
             selectedActionCards.length == 6 &&
-            (actionAtk == 0 || actionDef == 0);
+            !pitchCanComplete(selectedActionCards, const [
+              true,
+              false,
+              true,
+              false,
+            ]);
         final focusedPlayer = switch (activeLane) {
           DeckPickerLane.attacker => selectedAttackerCards.elementAtOrNull(
             activeSlotIndex,
@@ -351,6 +361,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                         },
                         secondaryLabel: editing ? 'SAVE' : 'EDIT',
                         secondaryOnTap: () {
+                          if (editing && !valid) return;
                           if (editing) {
                             context.read<GameBloc>().add(
                               DeckSaved(_buildStoredSlot(active)),
@@ -824,6 +835,15 @@ class DeckFocusedSelectionPanel extends StatelessWidget {
               ],
             ),
           ),
+          if (selectedPlayer != null || selectedAction != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              selectedPlayer != null
+                  ? pitchPlayerAbility(selectedPlayer!)
+                  : pitchActionAbility(selectedAction!),
+              style: Cyber.bodyFor(context, 12, color: Cyber.cyan),
+            ),
+          ],
           if (lane == DeckPickerLane.action) ...[
             const SizedBox(height: 8),
             Wrap(
@@ -980,20 +1000,15 @@ class DeckActionWarningPanel extends StatelessWidget {
     return CyberPanel(
       accent: Cyber.amber,
       padding: const EdgeInsets.all(12),
-      child: const Row(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.warning_amber_rounded, color: Cyber.amber, size: 18),
-          SizedBox(width: 10),
+          const Icon(Icons.warning_amber_rounded, color: Cyber.amber, size: 18),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Action strip is missing attack or defense coverage — one-sided decks feel brittle in live rounds.',
-              style: TextStyle(
-                color: Color(0xfff3f4f6),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                height: 1.4,
-              ),
+              'Equip actions for two attacks and two defenses. Flexible actions can cover either role, once per match.',
+              style: Cyber.bodyFor(context, 12, color: AppTheme.whiteColor),
             ),
           ),
         ],

@@ -18,6 +18,16 @@ abstract final class CyberKit {
 }
 
 class AppTheme {
+  static LinearGradient get pitchPortraitVeil => LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      backgroundPrimary.withValues(alpha: 0.05),
+      backgroundPrimary.withValues(alpha: 0.12),
+      backgroundPrimary,
+    ],
+    stops: const [0, 0.55, 1],
+  );
   static const Color whiteColor = Color(0xFFFFFFFF);
   static const Color blackColor = Color(0xFF000000);
   static const Color activeButtonColor = Color(0xFF2B7FFF);

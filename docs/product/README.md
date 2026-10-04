@@ -1,7 +1,7 @@
 # StatOz / Pitch Duel Product Documentation
 
 > **Status:** BUILT
-> **Last verified:** 2026-10-02
+> **Last verified:** 2026-10-04
 > **Audience:** Product, design, engineering, QA, and coding agents
 
 This folder is the canonical product source of truth for StatOz, the sports
@@ -94,7 +94,7 @@ Guess the Player entries share one implementation and one product page.
 
 | Sport | Game | Status | Product page |
 |---|---|---|---|
-| Football | Pitch Duel | BUILT | [Pitch Duel](games/pitch-duel.md) |
+| Football | Pitch Duel — combinations, timing and match goals | BUILT | [Pitch Duel](games/pitch-duel.md) |
 | Football | Penalty Shootout | BUILT | [Penalty Shootout](games/penalty-shootout.md) |
 | Football | 5v5 Football Chess | BUILT | [Football Chess](games/football-chess.md) |
 | Football | Football Quiz | BUILT | [Football Quiz](games/football-quiz.md) |
@@ -106,7 +106,7 @@ Guess the Player entries share one implementation and one product page.
 | Basketball | Hoop Duel | BUILT | [Hoop Duel](games/hoop-duel.md) |
 | Basketball | Basketball Quiz | BUILT | [Basketball Quiz](games/basketball-quiz.md) |
 | Basketball | Guess the Player | BUILT | [Guess the Player](games/guess-the-player.md#sport-variants) |
-| F1 | Grand Prix Dash | BUILT | [Grand Prix Dash](games/grand-prix-dash.md) |
+| F1 | Grand Prix Dash — racing, ERS and circuit mastery | BUILT | [Grand Prix Dash](games/grand-prix-dash.md) |
 | F1 | Motorsport Quiz | BUILT | [Motorsport Quiz](games/motorsport-quiz.md) |
 | F1 | Guess the Driver | BUILT | [Guess the Driver](games/guess-the-driver.md) |
 | Tennis | Tennis Rally | BUILT | [Tennis Rally](games/tennis-rally.md) |

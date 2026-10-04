@@ -1,8 +1,8 @@
 # Pitch Duel Card Game
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
-> **Scope:** Starter pack, collection/deck gate, four-round card match, shootout, settlement, and progression
+> **Last verified:** 2026-10-04
+> **Scope:** Starter pack, collection/deck gate, four-round card match, combinations, timing, settlement, and progression
 
 Pitch Duel is StatOz's football card game. It turns the user's collection into a playable tactical match: build a squad, choose cards round by round, resolve football scenarios, and earn XP/coins from the result.
 
@@ -158,144 +158,124 @@ A playable deck requires:
 - 1 owned goalkeeper
 - 6 owned action cards
 
-The active deck is used when starting a match. If a deck is incomplete or contains unowned cards, the match start is blocked with a deck-required state.
+The active deck is used when starting a match. Actions must be distinct and support two attacks and two defenses, allowing special cards to cover either role once. If a deck is incomplete, lacks role coverage, or contains unowned cards, the match start is blocked with a deck-required state.
 
-## Mechanics and Rules
-A Pitch Duel match has four regular rounds.
+## Mechanics and Rules [BUILT]
 
-The match flow is:
+Single-player matches retain four rounds: toss, role choice, scenario briefing,
+one player plus one action, timing, resolution, then full time. The player
+attacks twice and defends twice, alternating from the initial role. Every used
+player and action is spent for the match, for both sides. Ownership is retained.
+An action is **RESERVED** when using it would leave a later round without a
+legal action; the hand explains the role it is protecting.
 
-1. Match intro
-2. Coin toss
-3. Role choice or CPU role assignment
-4. Scenario reveal
-5. Player/action card selection
-6. Shot Meter strike
-7. Round resolution
-8. Round result
-9. Next round until full time
-10. Penalties if tied
-11. Final result, rewards, and match history
+### Power and combinations
 
-The user attacks twice and defends twice across the four rounds. The first-round role is determined by the toss result and role choice; later rounds alternate from that starting role.
+`Total = player OVR + action power + role scenario bonus + affinity match + scenario match + timing`
 
-## Round Play
+Affinity match adds **+4** once. Scenario match adds **+6** once. Both stack to
+**+10**, at every rarity tier. Existing IDs, ratings, powers and tiers remain.
+One affinity per attacker/defender is derived from their existing trait and
+keyed by stable player ID in Pitch Duel metadata.
 
-Each round presents a football scenario, such as counter attack, set piece chance, box defense, or penalty box chaos.
+| Affinity | Matching actions |
+|---|---|
+| Finisher | Through Ball, Power Shot, Long Shot |
+| Creator | Skill Move, Mind Game |
+| Runner | Cut Inside, Quick Break, Fast Recovery |
+| Stopper | Slide Tackle, Last-Ditch Tackle |
+| Reader | Press High, Intercept, Mind Game |
+| Anchor | Block Lane, Tight Marking, Fast Recovery |
 
-The scenario gives attack and defense context. The user then chooses:
+Scenario briefing lists role-compatible matching actions. Authored matches
+include Quick Break / Counter Attack, Long Shot / Set Piece Chance and Block
+Lane / Box Defense. The complete mapping lives in `pitchScenarioActions` in
+`lib/models/pitch_duel_rules.dart`. All In earns neither combination bonus.
+Tactical Foul is displayed as **Disrupt Play**, preserving ID `act14` and power.
+Accuracy penalties, bypasses, debuffs, fouls and red-card risks are inactive;
+card details explain the actual power and matching bonuses.
 
-- a role-appropriate player card
-- a role-appropriate action card
+### Timing and outcome
 
-When attacking, the user chooses from attackers and attack/special actions. When defending, the user chooses from defenders and defense/special actions.
+The centered meter sweeps in **900 ms per direction**, paused while its tutorial
+is open. Marker distance from center determines the bonus, using the same zone
+boundaries for painting and scoring:
 
-The opponent chooses from its generated deck. As the user's level increases, the opponent is tuned toward stronger cards and smarter action choices.
+| Zone | Distance from center | Bonus |
+|---|---|---|
+| Perfect | ≤ 0.045 | +8 |
+| Great | ≤ 0.10 | +6 |
+| Good | ≤ 0.25 | +4 |
+| Early / Late | > 0.25 | +0 |
 
-Once both cards are selected, the action button shows the user's current goal or stop chance and invites them to strike. This opens the Shot Meter.
+The marker freezes on impact, shows the exact bonus, and returns a typed timing
+result. Reduced motion skips timing with fixed **+4**. CPU timing is a uniform
+integer **0–8**. Card power and timing remain separate. **Rival power range**
+covers the weakest remaining legal pair through the strongest plus eight;
+it never reads the hidden committed selection or claims a goal probability.
 
-## Shot Meter
+Higher attack total produces **GOAL**; higher defense total produces **SAVED**.
+Exact ties flip a coin between **GOAL** and **BLOCKED**. Only goals increment
+the attacking side's score. A level score after four rounds is a **draw**.
+Penalty Shootout is a separate mode. Older history with penalty fields remains
+readable, but new Pitch Duel matches do not enter penalties.
 
-The Shot Meter is the user's active timing moment inside each round. It replaces the user's hidden power roll with a skill-based strike.
+### CPU and commitment
 
-Before the strike, the meter shows:
+CPU decks supply two dedicated attack and two defense actions plus two extras.
+The CPU spends players/actions once and observes the same reservation rules.
+Difficulty uses the existing smartness chance (`min(1, Pitch Duel level / 12)`)
+to choose the strongest contextual legal pair; otherwise it picks a random
+legal pair. At equal strength it chooses randomly among tied pairs.
 
-- **Goal Chance** when the user is attacking.
-- **Stop Chance** when the user is defending.
-- **Power range** from the selected card/action/scenario base up to base plus 20.
-- **Risk warning** when the selected action can trigger a foul or red card.
+Moves only resolve in the play phase. Duplicate commit and round-advance events
+are ignored after the phase changes. Reward settlement is serialized by the
+existing shared event queue and guarded by the final-result phase.
 
-The meter sweeps across a strike bar. The user taps to stop the marker. Timing quality creates a power surge from 0 to 20:
+## Gratification and Feedback [BUILT]
 
-- **Perfect**: best timing, strongest surge.
-- **Great**: strong timing, high surge.
-- **Good**: usable timing, moderate surge.
-- **Early/Late**: weak timing, low surge.
+The persistent board keeps a compact rival header above the scenario and
+power, with only the two current-role players below. Two anonymous card backs
+represent the rival play; neither the hidden identities nor their hand positions
+are exposed. Players remain full-size; short screens scroll the hand while COMMIT
+stays docked. Action labels show the actual available MATCH +4/+6/+10 bonus.
+The scenario's info action opens the full power calculation and matching actions.
 
-The surge is added to the user's side of the round:
+Football cards use a dedicated sci-fi playing-card face: portrait windows, bold
+corner indices, angular etched rails, mirrored lower player indices, quiet rarity
+inlays, affinity glyphs, and blueprint action art. Selected frames brighten without
+covering labels; used/reserved cards retain their silhouettes with muted labels.
+Long-press opens the full ability. Portraits and frames are isolated for repaint;
+the board no longer runs an animated stadium underneath its opaque pitch texture.
 
-- while attacking, the surge boosts attack power
-- while defending, the surge boosts defense power
+The normal **1.4-second** reveal explains player → action → scenario →
+combination → timing → verdict → score. Existing HeadToHeadPowerMeter,
+stingers and score ticks are reused. **TAP TO FINISH REVEAL** completes the
+presentation without resolving the move again. NEXT ROUND becomes available
+when the reveal finishes, with no additional countdown or automatic advance.
+Reduced motion presents settled numbers immediately. Full time shows the best
+combination and its contributions, with **PLAY AGAIN** prominent.
 
-The CPU still receives its own hidden random swing, so the Shot Meter gives the user agency without removing uncertainty.
+The lobby shows the equipped squad, next match goal and **PLAY MATCH**; an invalid
+deck instead offers **FIX YOUR DECK**. Deck building shows matching actions, and
+pack summaries suggest an available +4 pair. Reduced-motion pack opening goes
+straight to the already-settled summary.
 
-If the device has reduced motion enabled, the timed meter is skipped and the round falls back to the standard random swing.
+### Match goals and replay [BUILT]
 
-## Round Outcomes
+Three skill goals rotate after completed, non-demo Pitch Duel matches:
+**LINK TWO PLAYS**, **BUILD A +10 COMBO**, and **LINK BOTH ROLES**. Lobby shows
+the next goal and the best linked-round count in retained history. The rival header
+shows live goal progress, and full time reports completion plus the next goal.
+Goals use settled combination breakdowns; they add no extra XP, coins or upgrades
+and remain achievable with reduced motion. Other sports and demos do not advance
+the cycle. Optional `pitchMasteryIndex` in match history preserves rotation when
+older history is trimmed; legacy entries use the retained match count as a fallback.
 
-Round resolution compares **attack strength** and **defense strength** and turns the gap between them into one of six outcomes.
-
-### Power Calculation
-
-Each side's power is the sum of four contributions:
-
-```
-attack power  = attacker rating + attack action power + scenario attack bonus  + attack swing
-defense power = defender rating + defense action power + scenario defense bonus + defense swing
-```
-
-- **Card rating** — the OVR of the player card in that role.
-- **Action power** — the chosen action card's power.
-- **Scenario bonus** — the round's attack or defense tilt.
-- **Swing** — the 0–20 wildcard: the Shot Meter surge on the user's side, and a hidden random swing on the CPU's side.
-
-Only the **gap** between the two matters for the outcome:
-
-```
-diff = attack power − defense power
-```
-
-### Settlement Order
-
-The result is decided in two stages. Risky-card effects are checked first and override the power table.
-
-**Stage 1 — risky-card overrides (independent of power):**
-
-- A **risky defense** action carries a flat **12% chance of a red card** (the defender is sent off).
-- A **risky attack** action carries a flat **12% chance of a foul**.
-- Red card is checked before foul. If either triggers, the power table below is skipped.
-
-**Stage 2 — power table:** if no risky effect fired, the power gap maps to outcome probabilities. The game is **attack-oriented** — a clear attacking advantage converts most of the time:
-
-| Power gap `diff` | Goal | Saved | Other |
-|------------------|------|-------|-------|
-| **> 15** — attacker dominant | 80% | 15% | 5% blocked |
-| **> 5** — attacker favored | 65% | 25% | 10% missed |
-| **−5 to 5** — even | 45% | 35% | 20% (missed / blocked) |
-| **−15 to −5** — defender favored | 10% | 65% | 25% blocked |
-| **≤ −15** — defender dominant | 5% | 75% | 20% blocked |
-
-The goal column is exactly the **Goal Chance / Stop Chance** the Shot Meter shows before the strike, so the displayed odds are honest. A stronger power advantage gives better scoring odds, but a goal is never fully guaranteed (still 5% when dominated) and a stop is never fully guaranteed.
-
-### Outcome Effects
-
-| Outcome | Meaning | Effect on the match |
-|---------|---------|---------------------|
-| **Goal** | Attacker beats the defense | Attacking side scores **+1** — the only outcome that changes the score |
-| **Saved** | Keeper stops the shot | No change (HELD) |
-| **Blocked** | Defender smothers the shot | No change (HELD) |
-| **Missed** | Shot off target | No change (HELD) |
-| **Foul** | Risky attack gives the ball away | No change (HELD) |
-| **Red Card** | Risky defense → defender sent off | Defender card removed for the rest of the match; no score change |
-
-Risky actions can create fouls or red cards, so high-power choices can carry downside. Red-carded cards are removed from future availability for the affected side.
-
-### Implementation Reference
-
-| Concern | Source |
-|---------|--------|
-| Round build + power calculation | `lib/blocs/game/game_bloc.dart` → `_onMovePlayed` |
-| Outcome resolution table | `lib/blocs/game/game_bloc.dart` → `_resolveRound` |
-| Shot Meter honest odds | `lib/blocs/game/game_bloc.dart` → `goalChanceForDiff` |
-| Full mechanics reference | [`docs/technical/round-resolution.md`](../../technical/round-resolution.md) |
-
-Odds-table parity between the engine and the Shot Meter is guarded by `test/shot_meter_odds_test.dart`.
-
-## Penalty Shootout
-
-If a Pitch Duel match is tied after four rounds, the match can be decided by penalties before the final result. That in-match penalty score is saved as legacy `penaltyPlayerScore` / `penaltyOpponentScore` history data when present.
-
-The standalone **Penalty Shootout** mode is a separate Games-tab experience with its own lobby, opponent reveal, five-kicks-each format, early-out rules, sudden death, rewards, history entries, and streak category. See [Penalty Shootout](penalty-shootout.md) for the current standalone shootout rules.
+Assets include two subdued PNG backgrounds, sixteen original vector action
+illustrations, seven scenario emblems and six affinity glyphs under
+`assets/pitch_duel/`. Existing football portraits are reused; text and card frames
+remain Flutter-rendered. Other sport player cards keep their existing presentation.
 
 ## Final Result And Rewards
 
@@ -308,11 +288,11 @@ The final result records whether the user achieved:
 Rewards connect the match to the broader product economy:
 
 - Victory gives more coins than a draw or defeat.
-- Match XP can increase or decrease based on result, margin, shutout, or penalties.
+- Match XP can increase or decrease based on result, margin, or shutout.
 - XP never drops below zero. Current implementation derives level from total XP, so a large enough negative XP delta can de-level the user.
 - Level-ups can trigger celebration states.
 
-Match results are saved to history with the deck name, score, penalty score if any, round summary, and XP earned.
+Match results are saved to history with the deck name, score, optional legacy penalty fields, round summary, optional power breakdowns, and XP earned.
 
 For the full XP curve, pack XP formulas, level progress fields, de-leveling nuance, and CPU difficulty scaling, see [Progression and Leveling](../systems/progression-and-leveling.md).
 
@@ -334,20 +314,14 @@ For the full XP curve, pack XP formulas, level progress fields, de-leveling nuan
 
 ## Rewards and Progression
 Match settlement credits the Pitch Duel XP track and Oz Coins through typed
-ledgers. A regulation draw awards **+4 XP**. Wins/losses, penalty outcomes,
+ledgers. A regulation draw awards **+4 XP**. Wins/losses,
 round/score context, and CPU level scaling use the formulas documented in
 [Progression and Leveling](../systems/progression-and-leveling.md).
-
-## Gratification and Feedback
-
-Starter-pack opening, card selection, shot timing, multi-beat round resolution,
-score-impact ticks, shootout pressure, final settlement, XP/coin count-ups, and
-level-up celebrations create the core reward rhythm.
 
 ## Visible States
 
 Starter-pack required/claimed, invalid/valid deck, matchmaking, round setup,
-card locked, shot meter, resolving, round result, shootout, final result,
+card ready/selected/spent, reserved action, match-goal progress, shot meter, resolving, round result, final result,
 reward settlement, and level-up states are represented.
 
 ## Persistence
@@ -356,22 +330,49 @@ Owned cards, decks, progression tracks, wallet, XP/coin ledgers, starter pack,
 daily drop, tutorial state, and bounded match history persist through shared
 secure storage. An in-progress Pitch Duel match is not a cross-session resume contract.
 
+## Persistence and Compatibility
+
+`MatchHistoryRound` optionally stores player/opponent `PowerBreakdown`. Old
+records without these fields still load. `MatchHistoryEntry.pitchMasteryIndex`
+is also optional and does not migrate ownership or rewards. Affinities are scoped metadata, so
+ownership and saved deck IDs need no migration. Old unsupported one-sided
+decks stay editable but cannot start until repaired. Wallet, XP, reward sources,
+and starter-pack contracts retain their existing formulas.
+
 ## Planned Scope and Current Limitations
 
-- **BUILT:** Single-player CPU match, collection/deck loop, four regulation
-  rounds, shootout tiebreaker, rewards, history, streaks, and progression.
-- **PLANNED:** Network multiplayer and server-authoritative competition are not
-  implemented; existing opponent behavior is local CPU play.
+- **BUILT:** Four-round combinations, symmetric card exhaustion, revised timing,
+  sci-fi playing cards, compact board, faster contribution reveal, squad lobby,
+  rotating match goals and recap.
+- **PLANNED:** No additional gameplay scope is approved in this update. Cup runs,
+  multiplayer, extra slots and persistent upgrades remain outside the release.
+- **DEPRECATED:** Probabilistic risk/odds helpers remain for rollback; the live
+  path uses deterministic totals and exact-tie coin flips.
+- **Limitation:** The roughly 15-second return-to-first-choice target excludes
+  starter packs and first-time tutorials; perceived clarity and pacing still
+  benefit from player usability testing on physical devices.
 
 ## Implementation References
 
-- [`lib/blocs/game/game_bloc.dart`](../../../lib/blocs/game/game_bloc.dart)
-- [`lib/models/progression.dart`](../../../lib/models/progression.dart)
-- [`lib/screens/game/game_screen.dart`](../../../lib/screens/game/game_screen.dart)
-- [Round resolution and match settlement](../../technical/round-resolution.md)
+- `lib/models/pitch_duel_rules.dart`: metadata, legality, power, timing and range.
+- `lib/models/pitch_duel_mastery.dart`: rotating skill goals and history-derived progress.
+- `lib/blocs/game/game_bloc.dart`: CPU choices, commitment and settlement.
+- `lib/screens/game/widgets/duel_board_phase.dart`, `match_phases.dart`, `final_result_phase.dart`.
+- `lib/widgets/cyber/cyber_widgets.dart`: football variant, contribution strip and asset fallback.
+- [Technical round reference](../../technical/round-resolution.md).
 
 ## Tests
 
-- [`test/round_result_overflow_test.dart`](../../../test/round_result_overflow_test.dart)
-- [`test/progression_economy_test.dart`](../../../test/progression_economy_test.dart)
-- [`test/progression_tracks_test.dart`](../../../test/progression_tracks_test.dart)
+`pitch_duel_rules_test.dart`, `pitch_duel_match_test.dart` and
+`pitch_duel_presentation_test.dart` cover combinations, timing boundaries,
+contextual wins, exhaustion, CPU range privacy, repeated commits/settlement,
+history compatibility, phone layouts, tutorial pause, skip/reduced motion and
+missing artwork. Existing shot-meter, briefing, round-result, collection/deck
+and economy suites remain regression checks.
+
+`pitch_duel_mastery_test.dart` checks goal rotation, attack/defense progress and
+old history. `spotlight_walkthrough_test.dart` checks clear pixels for scaled and
+overlapping targets, tap routing and teardown. `pitch_duel_card_visual_test.dart`
+uses real fonts at enlarged phone layouts and can export renders with
+`--dart-define=PITCH_VISUAL_QA=true`. Browser access was unavailable on 2026-10-04;
+these rendered frames were reviewed, but browser/device frame pacing remains unverified.

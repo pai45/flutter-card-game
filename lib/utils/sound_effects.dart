@@ -311,7 +311,15 @@ extension AudioSceneSpec on AudioScene {
         .toSet();
     final track = ambience;
     if (track != null) assets.add(track.spec.asset);
-    if (this == AudioScene.grandPrix) assets.add('audio/gp_engine.wav');
+    if (this == AudioScene.grandPrix) {
+      assets.addAll([
+        'audio/gp_engine.wav',
+        'audio/gp_engine_low.wav',
+        'audio/gp_engine_high.wav',
+        'audio/gp_wind.wav',
+        'audio/gp_tyre_loop.wav',
+      ]);
+    }
     return assets.toList(growable: false);
   }
 }
@@ -507,7 +515,20 @@ abstract interface class AudioPlaybackBackend {
   Future<void> dispose();
 }
 
-class AudioplayersAudioBackend implements AudioPlaybackBackend {
+/// Optional race mixer capability keeps existing game backends compatible.
+abstract interface class GrandPrixAudioPlaybackBackend {
+  Future<void> startGrandPrixLayers();
+  Future<void> updateGrandPrixLayers({
+    required double rpm,
+    required double load,
+    required double speed,
+    required double scrub,
+  });
+  Future<void> stopGrandPrixLayers();
+}
+
+class AudioplayersAudioBackend
+    implements AudioPlaybackBackend, GrandPrixAudioPlaybackBackend {
   AudioplayersAudioBackend() {
     for (final players in _effectPlayers.values) {
       for (final player in players) {
@@ -532,6 +553,61 @@ class AudioplayersAudioBackend implements AudioPlaybackBackend {
   };
   final AudioPlayer _ambience = AudioPlayer();
   final AudioPlayer _dynamic = AudioPlayer();
+  final Map<String, AudioPlayer> _raceVoices = {};
+  bool _raceVoicesStarting = false;
+
+  @override
+  Future<void> startGrandPrixLayers() async {
+    if (_raceVoicesStarting || _raceVoices.isNotEmpty) return;
+    _raceVoicesStarting = true;
+    try {
+      for (final name in const [
+        'gp_engine_low',
+        'gp_engine_high',
+        'gp_wind',
+        'gp_tyre_loop',
+      ]) {
+        final player = AudioPlayer()..audioCache = _cache;
+        _raceVoices[name] = player;
+        await player.setReleaseMode(ReleaseMode.loop);
+        await player.play(AssetSource('audio/$name.wav'), volume: 0);
+      }
+    } catch (_) {
+      await stopGrandPrixLayers();
+      rethrow;
+    } finally {
+      _raceVoicesStarting = false;
+    }
+  }
+
+  @override
+  Future<void> updateGrandPrixLayers({
+    required double rpm,
+    required double load,
+    required double speed,
+    required double scrub,
+  }) async {
+    final mix = rpm.clamp(0.0, 1.0);
+    final gain = 0.1 + load.clamp(0.0, 1.0) * 0.17;
+    final volumes = {
+      'gp_engine_low': (1 - mix * 0.85) * gain,
+      'gp_engine_high': mix * gain,
+      'gp_wind': speed.clamp(0.0, 1.0) * 0.08,
+      'gp_tyre_loop': scrub.clamp(0.0, 1.0) * 0.12,
+    };
+    await Future.wait([
+      for (final entry in volumes.entries)
+        if (_raceVoices[entry.key] case final player?)
+          player.setVolume(entry.value),
+    ]);
+  }
+
+  @override
+  Future<void> stopGrandPrixLayers() async {
+    final players = _raceVoices.values.toList();
+    _raceVoices.clear();
+    await Future.wait([for (final player in players) player.dispose()]);
+  }
 
   @override
   Future<void> preload(List<String> assetPaths) async {
@@ -596,6 +672,7 @@ class AudioplayersAudioBackend implements AudioPlaybackBackend {
         for (final player in players) player.stop(),
       _ambience.stop(),
       _dynamic.stop(),
+      stopGrandPrixLayers(),
     ]);
   }
 
@@ -606,6 +683,7 @@ class AudioplayersAudioBackend implements AudioPlaybackBackend {
         for (final player in players) player.dispose(),
       _ambience.dispose(),
       _dynamic.dispose(),
+      stopGrandPrixLayers(),
     ]);
   }
 }
@@ -642,6 +720,140 @@ class AudioController with WidgetsBindingObserver {
   double _dynamicRate = 1;
   Timer? _duckTimer;
   bool _isBackgrounded = false;
+  String? _raceOwner;
+  bool _raceLayersRequested = false;
+  bool _raceMixPending = false;
+  ({double rpm, double load, double speed, double scrub}) _raceMix = (
+    rpm: 0.3,
+    load: 0,
+    speed: 0,
+    scrub: 0,
+  );
+  Future<void> _raceQueue = Future.value();
+  int _raceActionsPending = 0;
+
+  Future<void> _queueRace(Future<void> Function() action) {
+    _raceActionsPending++;
+    _raceQueue = _raceQueue
+        .then((_) async {
+          try {
+            await action();
+          } finally {
+            _raceActionsPending--;
+          }
+        })
+        .catchError((Object error) {
+          debugPrint('Grand Prix audio unavailable: $error');
+        });
+    return _raceQueue;
+  }
+
+  Future<void> enterGrandPrixScene(String owner) async {
+    _raceOwner = owner;
+    _raceLayersRequested = false;
+    _raceMix = (rpm: 0.3, load: 0, speed: 0, scrub: 0);
+    await _queueRace(() async {
+      if (_raceOwner != owner) return;
+      if (_backend case GrandPrixAudioPlaybackBackend layered) {
+        await layered.stopGrandPrixLayers();
+      }
+      await stopDynamicLoop();
+    });
+    if (_raceOwner == owner) await enterScene(AudioScene.grandPrix);
+  }
+
+  Future<void> leaveGrandPrixScene(String owner) async {
+    if (_raceOwner != owner) return;
+    _raceOwner = null;
+    _raceLayersRequested = false;
+    await _queueRace(() async {
+      if (_raceOwner != null) return;
+      if (_backend case GrandPrixAudioPlaybackBackend layered) {
+        await layered.stopGrandPrixLayers();
+      }
+      if (_raceOwner == null) await leaveScene(AudioScene.grandPrix);
+    });
+  }
+
+  Future<void> startGrandPrixAudio(String owner) async {
+    if (_raceOwner != owner) return;
+    _raceLayersRequested = true;
+    await _queueRace(() async {
+      if (_raceOwner != owner ||
+          !_raceLayersRequested ||
+          muted.value ||
+          _isBackgrounded) {
+        return;
+      }
+      if (_backend case GrandPrixAudioPlaybackBackend layered) {
+        await layered.startGrandPrixLayers();
+        if (_raceOwner == owner &&
+            _raceLayersRequested &&
+            !muted.value &&
+            !_isBackgrounded) {
+          await layered.updateGrandPrixLayers(
+            rpm: _raceMix.rpm,
+            load: _raceMix.load,
+            speed: _raceMix.speed,
+            scrub: _raceMix.scrub,
+          );
+        } else {
+          await layered.stopGrandPrixLayers();
+        }
+      } else {
+        await startDynamicLoop();
+      }
+    });
+  }
+
+  Future<void> updateGrandPrixAudio(
+    String owner, {
+    required double rpm,
+    required double load,
+    required double speed,
+    required double scrub,
+  }) async {
+    if (_raceOwner != owner) return;
+    _raceMix = (rpm: rpm, load: load, speed: speed, scrub: scrub);
+    if (!_raceLayersRequested || muted.value || _isBackgrounded) return;
+    // Keep one queued mix; slow platform calls use the newest telemetry.
+    if (_raceMixPending) return;
+    _raceMixPending = true;
+    await _queueRace(() async {
+      try {
+        if (_raceOwner != owner ||
+            !_raceLayersRequested ||
+            muted.value ||
+            _isBackgrounded) {
+          return;
+        }
+        if (_backend case GrandPrixAudioPlaybackBackend layered) {
+          await layered.updateGrandPrixLayers(
+            rpm: _raceMix.rpm,
+            load: _raceMix.load,
+            speed: _raceMix.speed,
+            scrub: _raceMix.scrub,
+          );
+        } else {
+          await updateDynamicLoop(speed);
+        }
+      } finally {
+        _raceMixPending = false;
+      }
+    });
+  }
+
+  Future<void> stopGrandPrixAudio(String owner) async {
+    if (_raceOwner != owner) return;
+    _raceLayersRequested = false;
+    await _queueRace(() async {
+      if (_raceOwner != owner || _raceLayersRequested) return;
+      if (_backend case GrandPrixAudioPlaybackBackend layered) {
+        await layered.stopGrandPrixLayers();
+      }
+      await stopDynamicLoop();
+    });
+  }
 
   AudioScene? get currentScene => _scene;
 
@@ -683,6 +895,10 @@ class AudioController with WidgetsBindingObserver {
   }
 
   Future<void> enterScene(AudioScene scene, {bool musicEnabled = true}) async {
+    if (scene != AudioScene.grandPrix) {
+      _raceOwner = null;
+      _raceLayersRequested = false;
+    }
     if (_scene != scene) {
       await leaveScene();
       _scene = scene;
@@ -705,6 +921,9 @@ class AudioController with WidgetsBindingObserver {
     _legacyTrack = null;
     _dynamicLoopRequested = false;
     await Future.wait([_backend.stopAmbience(), _backend.stopDynamicLoop()]);
+    if (_backend case GrandPrixAudioPlaybackBackend layered) {
+      await layered.stopGrandPrixLayers();
+    }
   }
 
   Future<void> setSceneMusicEnabled(bool enabled) async {
@@ -774,6 +993,9 @@ class AudioController with WidgetsBindingObserver {
   Future<void> _restoreSceneAudio() async {
     if (muted.value || _isBackgrounded) return;
     await _startCurrentAmbience();
+    if (_raceLayersRequested && _raceOwner != null) {
+      await startGrandPrixAudio(_raceOwner!);
+    }
     if (_dynamicLoopRequested) {
       await _backend.startDynamicLoop(
         'audio/gp_engine.wav',
@@ -791,6 +1013,9 @@ class AudioController with WidgetsBindingObserver {
     if (backgrounded) {
       unawaited(_backend.stopAmbience());
       unawaited(_backend.stopDynamicLoop());
+      if (_backend case GrandPrixAudioPlaybackBackend layered) {
+        unawaited(_queueRace(layered.stopGrandPrixLayers));
+      }
     } else {
       unawaited(_restoreSceneAudio());
     }
@@ -799,6 +1024,9 @@ class AudioController with WidgetsBindingObserver {
   Future<void> disposeAll() async {
     WidgetsBinding.instance.removeObserver(this);
     _duckTimer?.cancel();
+    _raceLayersRequested = false;
+    _raceOwner = null;
+    if (_raceActionsPending > 0) await _raceQueue;
     await _backend.dispose();
     muted.dispose();
   }

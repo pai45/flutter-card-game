@@ -302,12 +302,17 @@ class SecureGameStorage {
     if (installed == '$returningProfilePresetVersion') return;
 
     final preset = await buildReturningProfilePreset(now: now);
+    final activeRaw = await _readOrDiscard(_activeLocalProfileKey);
+    final active = activeRaw == LocalProfileSlot.returning.name
+        ? LocalProfileSlot.returning
+        : LocalProfileSlot.firstTime;
     final slots = await _readLocalProfiles();
     slots[LocalProfileSlot.returning.name] = preset.toSnapshot();
+    // Live data is the active slot; never duplicate it inside the slot blob.
+    slots.remove(active.name);
     await _writeLocalProfiles(slots);
 
-    final activeRaw = await _readOrDiscard(_activeLocalProfileKey);
-    if (activeRaw == LocalProfileSlot.returning.name) {
+    if (active == LocalProfileSlot.returning) {
       await _restoreLocalProfile(preset.toSnapshot());
     }
     await _storage.write(
@@ -319,6 +324,7 @@ class SecureGameStorage {
   /// Shared across instances: logout asks several times at once, and parallel
   /// first runs would each snapshot and write the slots.
   static Future<void>? _ensuringLocalProfiles;
+  static Future<void>? _switchingLocalProfile;
 
   Future<void> _createLocalProfilesIfMissing() async {
     final existing = await _readOrDiscard(_localProfilesKey);
@@ -331,11 +337,15 @@ class SecureGameStorage {
     // A new install can already have a few default game keys written while the
     // app boots. Only completed onboarding identifies a pre-profile career.
     final hasExistingCareer = secure[_onboardingCompleteKey] == 'true';
+    // The active career already lives in the normal `pd_*` keys. Persist only
+    // the inactive slot here; keeping another copy of the active career made
+    // every switch briefly hold three full saves and could exceed the web
+    // localStorage quota.
     final slots = <String, dynamic>{
-      LocalProfileSlot.firstTime.name: _emptyLocalProfile(),
-      LocalProfileSlot.returning.name: hasExistingCareer
-          ? current
-          : _emptyLocalProfile(),
+      if (hasExistingCareer)
+        LocalProfileSlot.firstTime.name: _emptyLocalProfile()
+      else
+        LocalProfileSlot.returning.name: _emptyLocalProfile(),
     };
     await _storage.write(key: _localProfilesKey, value: jsonEncode(slots));
     await _storage.write(
@@ -420,21 +430,57 @@ class SecureGameStorage {
     );
   }
 
-  /// Atomically saves the outgoing career snapshot before clearing game data
-  /// and restoring [target]. The app then recreates its blocs so no state from
-  /// the previous player remains in memory.
-  Future<void> switchLocalProfile(LocalProfileSlot target) async {
+  /// Swaps the live career with the inactive slot without ever persisting a
+  /// third full copy. Secure-store mutations are deliberately serialized: the
+  /// web backend is not reliable when many encrypt/delete operations race.
+  /// Any failure rolls the live keys and inactive slot back to their original
+  /// state before the error reaches the selector.
+  Future<void> switchLocalProfile(LocalProfileSlot target) {
+    final inFlight = _switchingLocalProfile;
+    if (inFlight != null) return inFlight;
+    final operation = _switchLocalProfile(target);
+    _switchingLocalProfile = operation;
+    return operation.whenComplete(() {
+      if (identical(_switchingLocalProfile, operation)) {
+        _switchingLocalProfile = null;
+      }
+    });
+  }
+
+  Future<void> _switchLocalProfile(LocalProfileSlot target) async {
     final active = await loadActiveLocalProfile();
     if (target == active) return;
 
     final slots = await _readLocalProfiles();
-    slots[active.name] = await _captureLocalProfile();
+    final outgoingSnapshot = await _captureLocalProfile();
     final targetSnapshot = Map<String, dynamic>.from(
       slots[target.name] as Map? ?? _emptyLocalProfile(),
     );
-    await _writeLocalProfiles(slots);
-    await _restoreLocalProfile(targetSnapshot);
-    await _storage.write(key: _activeLocalProfileKey, value: target.name);
+    final nextSlots = <String, dynamic>{active.name: outgoingSnapshot};
+
+    try {
+      // Clear first to release the active career's storage before its snapshot
+      // replaces the target slot. This avoids the quota spike that previously
+      // made CONTINUE CAREER fail on web.
+      await _clearLiveProfile();
+      await _writeLocalProfiles(nextSlots);
+      await _applyLocalProfile(targetSnapshot);
+      await _storage.write(key: _activeLocalProfileKey, value: target.name);
+    } catch (error, stack) {
+      // The marker still names [active]. Rebuild that career and put [target]
+      // back as the sole inactive snapshot so retrying is safe.
+      try {
+        await _clearLiveProfile();
+        await _writeLocalProfiles(<String, dynamic>{
+          target.name: targetSnapshot,
+        });
+        await _applyLocalProfile(outgoingSnapshot);
+        await _storage.write(key: _activeLocalProfileKey, value: active.name);
+      } catch (_) {
+        // Preserve the original switch failure and stack for diagnostics.
+      }
+      Error.throwWithStackTrace(error, stack);
+    }
   }
 
   Future<Map<String, dynamic>> _readLocalProfiles() async {
@@ -487,33 +533,41 @@ class SecureGameStorage {
   }
 
   Future<void> _restoreLocalProfile(Map<String, dynamic> snapshot) async {
+    await _clearLiveProfile();
+    await _applyLocalProfile(snapshot);
+  }
+
+  Future<void> _clearLiveProfile() async {
     final currentSecure = await _readAllSafely();
-    await Future.wait([
-      for (final key in currentSecure.keys.toList())
-        if (_isManagedSecureKey(key)) _storage.delete(key: key),
-    ]);
+    for (final key in currentSecure.keys.toList()) {
+      if (_isManagedSecureKey(key)) {
+        await _storage.delete(key: key);
+      }
+    }
 
     final preferences = await SharedPreferences.getInstance();
-    await Future.wait([
-      for (final key in preferences.getKeys().toList())
-        if (_isManagedPreferenceKey(key)) preferences.remove(key),
-    ]);
+    for (final key in preferences.getKeys().toList()) {
+      if (_isManagedPreferenceKey(key)) {
+        await preferences.remove(key);
+      }
+    }
+  }
 
+  Future<void> _applyLocalProfile(Map<String, dynamic> snapshot) async {
     final secure = Map<String, dynamic>.from(
       snapshot['secure'] as Map? ?? const <String, dynamic>{},
     );
-    await Future.wait([
-      for (final entry in secure.entries)
-        _storage.write(key: entry.key, value: entry.value as String),
-    ]);
+    for (final entry in secure.entries) {
+      await _storage.write(key: entry.key, value: entry.value as String);
+    }
 
+    final preferences = await SharedPreferences.getInstance();
     final preferenceValues = Map<String, dynamic>.from(
       snapshot['preferences'] as Map? ?? const <String, dynamic>{},
     );
-    await Future.wait([
-      for (final entry in preferenceValues.entries)
-        _restorePreference(preferences, entry.key, entry.value),
-    ]);
+    for (final entry in preferenceValues.entries) {
+      await _restorePreference(preferences, entry.key, entry.value);
+    }
   }
 
   Future<bool> _restorePreference(

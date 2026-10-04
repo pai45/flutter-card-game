@@ -16,9 +16,11 @@ import '../../games/grand_prix/grand_prix_game.dart';
 import '../../models/grand_prix.dart';
 import '../../utils/game_audio_mappings.dart';
 import '../../utils/sound_effects.dart';
-import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/cyber/cyber_cta_button.dart';
 import 'widgets/grand_prix_controls.dart';
 import 'widgets/grand_prix_result.dart';
+import 'widgets/grand_prix_driving_hud.dart';
+import 'widgets/grand_prix_race_feedback.dart';
 
 /// The live race: full-bleed Flame scroller under a slim cyber HUD (position,
 /// lap progress, speed), the five-lights start rig, overtake toasts, the
@@ -39,7 +41,8 @@ class GrandPrixRaceScreen extends StatefulWidget {
   State<GrandPrixRaceScreen> createState() => _GrandPrixRaceScreenState();
 }
 
-class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
+class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen>
+    with WidgetsBindingObserver {
   late final GrandPrixCubit _cubit;
   late final GrandPrixGame _game;
   RaceSetup? _setup;
@@ -48,12 +51,20 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
   bool _lightsScheduled = false;
   bool _lightsOutSounded = false;
   bool _engineStarted = false;
+  bool _hasLaunched = false;
   int _lastLightsOn = 0;
   Timer? _engineTimer;
+  Timer? _lightsTimer;
+  Timer? _finishTimer;
+  Timer? _momentTimer;
+  final ValueNotifier<GrandPrixMoment?> _moment = ValueNotifier(null);
+  DateTime? _lastMomentAt;
+  int _pauseReset = 0;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _cubit = context.read<GrandPrixCubit>();
     _setup = _cubit.state.setup;
     final reducedMotion = WidgetsBinding
@@ -68,29 +79,41 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
       onPlayerFinished: _onPlayerFinished,
       onAudioEvent: _onRaceAudioEvent,
       reducedMotion: reducedMotion,
+      onMoment: _onMoment,
     );
-    AudioController.instance.enterScene(AudioScene.grandPrix);
+    AudioController.instance.enterGrandPrixScene(_questMatchId);
     // The phase is already `grid` when this screen mounts, so the
     // BlocListener never fires for it — kick off the lights beat here.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _scheduleLights(context);
+      if (mounted) _scheduleLights();
     });
   }
 
-  void _scheduleLights(BuildContext context) {
-    if (_lightsScheduled) return;
+  void _scheduleLights() {
+    if (_lightsScheduled || !_cubit.state.stats.coachSeen) return;
     _lightsScheduled = true;
     final reducedMotion = MediaQuery.of(context).disableAnimations;
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (mounted) _cubit.beginLights(reducedMotion: reducedMotion);
+    _lightsTimer = Timer(const Duration(milliseconds: 1200), () {
+      if (mounted &&
+          _game.isLoaded &&
+          _cubit.state.phase == GrandPrixPhase.grid) {
+        _cubit.beginLights(reducedMotion: reducedMotion);
+      } else if (mounted && !_game.isLoaded) {
+        _lightsScheduled = false;
+        _scheduleLights();
+      }
     });
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _momentTimer?.cancel();
+    _lightsTimer?.cancel();
+    _finishTimer?.cancel();
+    _moment.dispose();
     _engineTimer?.cancel();
-    AudioController.instance.stopDynamicLoop();
-    AudioController.instance.leaveScene(AudioScene.grandPrix);
+    AudioController.instance.leaveGrandPrixScene(_questMatchId);
     _game.stopRace();
     // Leaving mid-race discards the attempt (no stats, no reward). A RACE
     // AGAIN relaunch has already replaced the setup by the time this route
@@ -99,7 +122,8 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
     final midRace =
         phase == GrandPrixPhase.grid ||
         phase == GrandPrixPhase.lights ||
-        phase == GrandPrixPhase.racing;
+        phase == GrandPrixPhase.racing ||
+        phase == GrandPrixPhase.paused;
     if (midRace && identical(_cubit.state.setup, _setup)) {
       _cubit.abandonRace();
     }
@@ -109,7 +133,98 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
   void _onOvertake(OvertakeEvent event) {
     _cubit.onOvertake(event);
     playSound(SoundEffect.gpOvertake);
-    HapticFeedback.selectionClick();
+    if (_cubit.state.stats.hapticsEnabled) HapticFeedback.selectionClick();
+  }
+
+  void _onMoment(GrandPrixMoment moment) {
+    if (!mounted) return;
+    final now = DateTime.now();
+    if (moment.kind == GrandPrixMomentKind.cleanCorner &&
+        _lastMomentAt != null &&
+        now.difference(_lastMomentAt!) < const Duration(milliseconds: 1600)) {
+      return;
+    }
+    _lastMomentAt = now;
+    _momentTimer?.cancel();
+    _moment.value = moment;
+    if (moment.kind == GrandPrixMomentKind.cleanPass) {
+      playSound(SoundEffect.uiConfirm);
+      if (_cubit.state.stats.hapticsEnabled) HapticFeedback.lightImpact();
+    }
+    _momentTimer = Timer(const Duration(milliseconds: 1600), () {
+      if (mounted) _moment.value = null;
+    });
+  }
+
+  void _pauseRace() {
+    final phase = _cubit.state.phase;
+    if (phase == GrandPrixPhase.finished || phase == GrandPrixPhase.result) {
+      return;
+    }
+    _game.stopRace();
+    _lightsTimer?.cancel();
+    _lightsScheduled = false;
+    _engineTimer?.cancel();
+    _engineStarted = false;
+    AudioController.instance.stopGrandPrixAudio(_questMatchId);
+    _cubit.pauseRace();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed && mounted) {
+      _pauseRace();
+      setState(() => _pauseReset++);
+    }
+  }
+
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    final key = event.logicalKey;
+    final relevant = {
+      LogicalKeyboardKey.arrowLeft,
+      LogicalKeyboardKey.arrowRight,
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.keyA,
+      LogicalKeyboardKey.keyD,
+      LogicalKeyboardKey.keyW,
+      LogicalKeyboardKey.keyS,
+      LogicalKeyboardKey.space,
+      LogicalKeyboardKey.escape,
+    };
+    if (!relevant.contains(key)) return KeyEventResult.ignored;
+    if (key == LogicalKeyboardKey.escape && event is KeyDownEvent) {
+      _pauseRace();
+      return KeyEventResult.handled;
+    }
+    if (_cubit.state.phase != GrandPrixPhase.racing &&
+        _cubit.state.phase != GrandPrixPhase.lights) {
+      _game.clearInputs();
+      return KeyEventResult.handled;
+    }
+    final keys = HardwareKeyboard.instance.logicalKeysPressed;
+    final throttle =
+        keys.contains(LogicalKeyboardKey.keyW) ||
+        keys.contains(LogicalKeyboardKey.arrowUp);
+    _game.setInputs(
+      left:
+          keys.contains(LogicalKeyboardKey.keyA) ||
+          keys.contains(LogicalKeyboardKey.arrowLeft),
+      right:
+          keys.contains(LogicalKeyboardKey.keyD) ||
+          keys.contains(LogicalKeyboardKey.arrowRight),
+      throttle: throttle,
+      brake:
+          keys.contains(LogicalKeyboardKey.keyS) ||
+          keys.contains(LogicalKeyboardKey.arrowDown),
+      deploy: keys.contains(LogicalKeyboardKey.space),
+    );
+    if (throttle &&
+        event is KeyDownEvent &&
+        _cubit.state.phase == GrandPrixPhase.lights) {
+      _cubit.registerThrottleTap();
+    }
+    return KeyEventResult.handled;
   }
 
   void _onPlayerFinished(PlayerRaceOutcome outcome) {
@@ -134,23 +249,27 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
     _lastLightsOn = state.lightsOn;
     switch (state.phase) {
       case GrandPrixPhase.grid:
-        _scheduleLights(context);
+        _scheduleLights();
       case GrandPrixPhase.racing:
         final grade = state.launchGrade;
         if (grade != null) {
           _game.startRace(grade);
-          if (grade == LaunchGrade.jump) {
-            playSound(SoundEffect.gpJumpStart);
-          }
           _startEngineAudio();
-          if (grade == LaunchGrade.jump) {
-            HapticFeedback.heavyImpact();
-          } else {
-            HapticFeedback.mediumImpact();
+          if (!_hasLaunched) {
+            _hasLaunched = true;
+            if (grade == LaunchGrade.jump) playSound(SoundEffect.gpJumpStart);
+            if (_cubit.state.stats.hapticsEnabled &&
+                grade == LaunchGrade.jump) {
+              HapticFeedback.heavyImpact();
+            } else if (_cubit.state.stats.hapticsEnabled) {
+              HapticFeedback.mediumImpact();
+            }
           }
         }
       case GrandPrixPhase.finished:
         _onFinished(state);
+      case GrandPrixPhase.paused:
+        _game.stopRace();
       case GrandPrixPhase.idle:
       case GrandPrixPhase.lights:
       case GrandPrixPhase.result:
@@ -161,10 +280,15 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
   void _startEngineAudio() {
     if (_engineStarted) return;
     _engineStarted = true;
-    AudioController.instance.startDynamicLoop();
+    AudioController.instance.startGrandPrixAudio(_questMatchId);
     _engineTimer = Timer.periodic(const Duration(milliseconds: 120), (_) {
-      AudioController.instance.updateDynamicLoop(
-        (_game.speedKph.value / 320).clamp(0.0, 1.0),
+      final t = _game.telemetry.value;
+      AudioController.instance.updateGrandPrixAudio(
+        _questMatchId,
+        rpm: t.rpm,
+        load: t.throttle,
+        speed: (_game.speedKph.value / 320).clamp(0.0, 1.0),
+        scrub: (1 - t.grip) * 3 + t.brake * 0.1,
       );
     });
   }
@@ -175,7 +299,7 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
     _rewardsDispatched = true;
     _game.stopRace();
     _engineTimer?.cancel();
-    AudioController.instance.stopDynamicLoop();
+    AudioController.instance.stopGrandPrixAudio(_questMatchId);
     final resultCue = result.retired
         ? SoundEffect.gpDnf
         : result.position <= 3
@@ -184,7 +308,7 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
         ? SoundEffect.gpPoints
         : null;
     if (resultCue != null) playSound(resultCue);
-    HapticFeedback.heavyImpact();
+    if (_cubit.state.stats.hapticsEnabled) HapticFeedback.heavyImpact();
     final verdictLabel = result.retired
         ? 'Retired'
         : switch (result.verdict) {
@@ -209,7 +333,7 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
         xp: result.xp,
       ),
     );
-    Future.delayed(const Duration(milliseconds: 900), () {
+    _finishTimer = Timer(const Duration(milliseconds: 900), () {
       if (mounted) _cubit.showResult();
     });
   }
@@ -225,39 +349,116 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
             p.lightsOn != c.lightsOn ||
             p.lightsOut != c.lightsOut,
         listener: _drive,
-        child: SafeArea(
-          child: Stack(
-            children: [
-              Positioned.fill(child: GameWidget(game: _game)),
-              Align(
-                alignment: Alignment.topCenter,
-                child: _RaceHud(game: _game, onExit: widget.onExit),
-              ),
-              Align(child: _LightsRig()),
-              _LaunchGradeFlash(),
-              _LapFlash(game: _game),
-              _StuckWarning(game: _game),
-              _OvertakeToast(),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: GrandPrixControls(
-                  onLeft: (down) => _game.setInputs(left: down),
-                  onRight: (down) => _game.setInputs(right: down),
-                  onBrake: (down) => _game.setInputs(brake: down),
-                  onThrottle: (down) {
-                    _game.setInputs(throttle: down);
-                    if (down && _cubit.state.phase == GrandPrixPhase.lights) {
-                      _cubit.registerThrottleTap();
+        child: Focus(
+          autofocus: true,
+          onKeyEvent: _onKey,
+          onFocusChange: (focused) {
+            if (!focused && _cubit.state.phase == GrandPrixPhase.racing) {
+              _pauseRace();
+            }
+          },
+          child: SafeArea(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ExcludeFocus(
+                    child: GameWidget(game: _game, autofocus: false),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.topCenter,
+                  child: GrandPrixDrivingHud(game: _game, onPause: _pauseRace),
+                ),
+                Align(child: _LightsRig()),
+                _LaunchGradeFlash(),
+                _LapFlash(game: _game),
+                _StuckWarning(game: _game),
+                _OvertakeToast(),
+                GrandPrixMomentToast(moment: _moment),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: BlocBuilder<GrandPrixCubit, GrandPrixState>(
+                    builder: (context, state) {
+                      _game.reducedMotion =
+                          MediaQuery.disableAnimationsOf(context) ||
+                          state.stats.reducedEffects;
+                      final enabled =
+                          (state.phase == GrandPrixPhase.racing ||
+                              state.phase == GrandPrixPhase.lights ||
+                              state.phase == GrandPrixPhase.grid) &&
+                          state.stats.coachSeen;
+                      if (!enabled) return const SizedBox.shrink();
+                      return GrandPrixControls(
+                        key: ValueKey('live:${state.stats.classicControls}'),
+                        classicControls: state.stats.classicControls,
+                        onSteer: (value) => _game.setInputs(steer: value),
+                        onDeploy: (down) => _game.setInputs(deploy: down),
+                        onLeft: (down) => _game.setInputs(left: down),
+                        onRight: (down) => _game.setInputs(right: down),
+                        onBrake: (down) => _game.setInputs(brake: down),
+                        onThrottle: (down) {
+                          _game.setInputs(throttle: down);
+                          if (down &&
+                              _cubit.state.phase == GrandPrixPhase.lights) {
+                            _cubit.registerThrottleTap();
+                          }
+                        },
+                      );
+                    },
+                  ),
+                ),
+                Align(
+                  alignment: const Alignment(0, 0.52),
+                  child: ValueListenableBuilder<double>(
+                    valueListenable: _game.stuckSeconds,
+                    builder: (context, seconds, _) => seconds < 2.5
+                        ? const SizedBox.shrink()
+                        : Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 64),
+                            child: HudCtaButton(
+                              label: 'RECOVER · 3s',
+                              accent: Cyber.amber,
+                              onTap: _game.recoverPlayer,
+                            ),
+                          ),
+                  ),
+                ),
+                BlocBuilder<GrandPrixCubit, GrandPrixState>(
+                  builder: (context, state) {
+                    if (state.phase == GrandPrixPhase.paused) {
+                      return Positioned.fill(
+                        child: GrandPrixPauseLayer(
+                          key: ValueKey(_pauseReset),
+                          onExit: widget.onExit,
+                          onResume: () => _cubit.resumeRace(
+                            reducedMotion: MediaQuery.disableAnimationsOf(
+                              context,
+                            ),
+                          ),
+                        ),
+                      );
                     }
+                    if (state.phase == GrandPrixPhase.grid &&
+                        !state.stats.coachSeen) {
+                      return Positioned.fill(
+                        child: GrandPrixGridCoach(
+                          onReady: () {
+                            _cubit.acknowledgeCoach();
+                            _scheduleLights();
+                          },
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
                   },
                 ),
-              ),
-              _ResultLayer(
-                questMatchId: _questMatchId,
-                onExit: widget.onExit,
-                onRaceAgain: widget.onRaceAgain,
-              ),
-            ],
+                _ResultLayer(
+                  questMatchId: _questMatchId,
+                  onExit: widget.onExit,
+                  onRaceAgain: widget.onRaceAgain,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -268,128 +469,6 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
 // ---------------------------------------------------------------------------
 // Top HUD: exit · position · lap bar · speed
 // ---------------------------------------------------------------------------
-
-class _RaceHud extends StatelessWidget {
-  const _RaceHud({required this.game, required this.onExit});
-
-  final GrandPrixGame game;
-  final VoidCallback onExit;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(8, 6, 12, 8),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Cyber.bg.withValues(alpha: 0.92),
-            Cyber.bg.withValues(alpha: 0.0),
-          ],
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              IconButton(
-                onPressed: onExit,
-                icon: const Icon(Icons.close, color: Cyber.muted, size: 20),
-                visualDensity: VisualDensity.compact,
-              ),
-              const Spacer(),
-              BlocBuilder<GrandPrixCubit, GrandPrixState>(
-                buildWhen: (p, c) => p.playerPosition != c.playerPosition,
-                builder: (context, state) => Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      'P${state.playerPosition}',
-                      style: Cyber.display(26, color: Cyber.cyan).copyWith(
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                    Text(
-                      '/$kFieldSize',
-                      style: Cyber.display(13, color: Cyber.muted).copyWith(
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              ValueListenableBuilder<double>(
-                valueListenable: game.speedKph,
-                builder: (context, kph, _) => SizedBox(
-                  width: 84,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '${kph.round()} KPH',
-                      maxLines: 1,
-                      softWrap: false,
-                      style: Cyber.display(13, color: Colors.white).copyWith(
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              const SizedBox(width: 12),
-              ValueListenableBuilder<int>(
-                valueListenable: game.currentLap,
-                builder: (context, lap, _) => Text(
-                  game.laps == 1 ? 'LAP' : 'LAP $lap/${game.laps}',
-                  style: const TextStyle(
-                    color: Cyber.muted,
-                    fontFamily: Cyber.displayFont,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.6,
-                    fontFeatures: [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: ValueListenableBuilder<double>(
-                  valueListenable: game.lapProgress,
-                  builder: (context, progress, _) => CyberProgressBar(
-                    value: progress,
-                    accent: Cyber.f1Red,
-                    height: 5,
-                    radius: 2,
-                    animate: false,
-                    trackColor: Cyber.f1Red.withValues(alpha: 0.14),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              ValueListenableBuilder<bool>(
-                valueListenable: game.slipstreamActive,
-                builder: (context, tow, _) => AnimatedOpacity(
-                  duration: const Duration(milliseconds: 160),
-                  opacity: tow ? 1 : 0,
-                  child: const CyberChip(label: 'TOW', color: Cyber.cyan),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Start lights rig
@@ -562,7 +641,9 @@ class _LapFlashState extends State<_LapFlash> {
     if (lap <= 1 || lap == _shownLap) return;
     setState(() => _shownLap = lap);
     playSound(SoundEffect.gpLap);
-    HapticFeedback.mediumImpact();
+    if (context.read<GrandPrixCubit>().state.stats.hapticsEnabled) {
+      HapticFeedback.mediumImpact();
+    }
   }
 
   @override

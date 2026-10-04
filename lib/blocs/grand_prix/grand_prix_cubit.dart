@@ -28,6 +28,8 @@ class GrandPrixCubit extends Cubit<GrandPrixState> {
   final Random _random;
   final List<Timer> _lightTimers = [];
   DateTime? _lightsOutAt;
+  GrandPrixPhase? _phaseBeforePause;
+  Future<void> _saveQueue = Future.value();
 
   static const _lightIntervalMs = 1000;
   static const _minHoldMs = 200;
@@ -63,19 +65,73 @@ class GrandPrixCubit extends Cubit<GrandPrixState> {
     GrandPrixLivery livery, {
     required Iterable<String> ownedLiveryIds,
   }) {
-    if (!gp_liveries.isGrandPrixLiveryOwned(livery.name, ownedLiveryIds)) return;
+    if (!gp_liveries.isGrandPrixLiveryOwned(livery.name, ownedLiveryIds)) {
+      return;
+    }
     if (livery == state.stats.lastLivery) return;
     _persistStats(state.stats.copyWith(lastLivery: livery));
   }
 
   void selectLaps(int laps) {
+    if (laps < 1 || laps > 9) return;
     if (laps == state.stats.lastLaps) return;
     _persistStats(state.stats.copyWith(lastLaps: laps));
   }
 
   void _persistStats(GrandPrixStats stats) {
     emit(state.copyWith(stats: stats));
-    unawaited(_storage.saveGrandPrixStats(stats));
+    unawaited(_saveStats(stats));
+  }
+
+  Future<void> _saveStats(GrandPrixStats stats) {
+    _saveQueue = _saveQueue.then((_) => _storage.saveGrandPrixStats(stats));
+    return _saveQueue;
+  }
+
+  void setDrivingPreferences({
+    bool? classicControls,
+    bool? hapticsEnabled,
+    bool? reducedEffects,
+  }) => _persistStats(
+    state.stats.copyWith(
+      classicControls: classicControls,
+      hapticsEnabled: hapticsEnabled,
+      reducedEffects: reducedEffects,
+    ),
+  );
+
+  void acknowledgeCoach() =>
+      _persistStats(state.stats.copyWith(coachSeen: true));
+
+  void pauseRace() {
+    final phase = state.phase;
+    if (phase != GrandPrixPhase.racing &&
+        phase != GrandPrixPhase.grid &&
+        phase != GrandPrixPhase.lights) {
+      return;
+    }
+    _phaseBeforePause = phase;
+    _cancelTimers();
+    emit(state.copyWith(phase: GrandPrixPhase.paused));
+  }
+
+  void resumeRace({required bool reducedMotion}) {
+    if (state.phase != GrandPrixPhase.paused) return;
+    final previous = _phaseBeforePause;
+    _phaseBeforePause = null;
+    if (previous == GrandPrixPhase.racing) {
+      emit(state.copyWith(phase: GrandPrixPhase.racing));
+    } else {
+      emit(
+        state.copyWith(
+          phase: GrandPrixPhase.grid,
+          lightsOn: 0,
+          lightsOut: false,
+          launchGrade: null,
+        ),
+      );
+      if (state.stats.coachSeen) beginLights(reducedMotion: reducedMotion);
+    }
   }
 
   // -- race lifecycle -------------------------------------------------------
@@ -84,6 +140,7 @@ class GrandPrixCubit extends Cubit<GrandPrixState> {
   /// single source the Flame game rebuilds the whole field from.
   void buildRace(int playerLevel) {
     _cancelTimers();
+    _phaseBeforePause = null;
     final setup = RaceSetup(
       circuit: grandPrixCircuit(state.stats.lastCircuit),
       playerLivery: state.stats.lastLivery,
@@ -195,9 +252,7 @@ class GrandPrixCubit extends Cubit<GrandPrixState> {
 
   void onOvertake(OvertakeEvent event) {
     if (state.phase != GrandPrixPhase.racing) return;
-    emit(
-      state.copyWith(lastOvertake: event, eventTick: state.eventTick + 1),
-    );
+    emit(state.copyWith(lastOvertake: event, eventTick: state.eventTick + 1));
   }
 
   Future<void> onRaceFinished(PlayerRaceOutcome outcome) async {
@@ -206,8 +261,22 @@ class GrandPrixCubit extends Cubit<GrandPrixState> {
     final circuitId = setup.circuit.id;
     final laps = setup.laps;
     // A DNF sets no lap and can never be a personal best.
-    final personalBest = !outcome.dnf &&
-        state.stats.isPersonalBest(circuitId, outcome.lapTimeMs, laps: laps);
+    final personalBest =
+        !outcome.dnf &&
+        state.stats.isPersonalBest(
+          circuitId,
+          outcome.lapTimeMs,
+          laps: laps,
+          rulesetVersion: setup.rulesetVersion,
+        );
+    final mastery = <GrandPrixMastery>[
+      if (!outcome.dnf && outcome.cleanRace && outcome.recoveries == 0)
+        GrandPrixMastery.cleanFinish,
+      if (!outcome.dnf && outcome.cleanOvertakes >= 3)
+        GrandPrixMastery.racecraft,
+      if (!outcome.dnf && outcome.position <= 3) GrandPrixMastery.podium,
+    ];
+    final ownedMastery = state.stats.masteryFor(circuitId);
     final result = GrandPrixResult(
       position: outcome.position,
       fieldSize: kFieldSize,
@@ -224,12 +293,22 @@ class GrandPrixCubit extends Cubit<GrandPrixState> {
       laps: laps,
       bestOvertakeName: outcome.bestOvertakeName,
       retired: outcome.dnf,
+      rulesetVersion: setup.rulesetVersion,
+      lapTimesMs: List.unmodifiable(outcome.lapTimesMs),
+      cleanOvertakes: outcome.cleanOvertakes,
+      cleanRace: outcome.cleanRace,
+      recoveries: outcome.recoveries,
+      newMastery: List.unmodifiable(
+        mastery.where((stamp) => !ownedMastery.contains(stamp)),
+      ),
     );
     final stats = state.stats.recordResult(
       position: outcome.position,
       lapTimeMs: outcome.lapTimeMs,
       circuit: circuitId,
       laps: laps,
+      rulesetVersion: setup.rulesetVersion,
+      mastery: mastery,
     );
     emit(
       state.copyWith(
@@ -239,7 +318,7 @@ class GrandPrixCubit extends Cubit<GrandPrixState> {
         playerPosition: outcome.position,
       ),
     );
-    await _storage.saveGrandPrixStats(stats);
+    await _saveStats(stats);
   }
 
   /// The race screen calls this after its finish beat to raise the overlay.
@@ -251,6 +330,7 @@ class GrandPrixCubit extends Cubit<GrandPrixState> {
   /// Leaving mid-race discards the attempt — no stats, no reward (spec).
   void abandonRace() {
     _cancelTimers();
+    _phaseBeforePause = null;
     emit(
       state.copyWith(
         phase: GrandPrixPhase.idle,

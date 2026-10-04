@@ -154,7 +154,9 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
                         rowHeight:
                             catalog[index].kind == TrendingTileKind.match &&
                                 catalog[index].span == CyberBentoSpan.wide
-                            ? _kScoreboardRowHeight
+                            ? catalog[index].sport == Sport.cricket
+                                  ? _kCricketScoreboardRowHeight
+                                  : _kScoreboardRowHeight
                             : null,
                         child: StaggeredCardEntrance(
                           key: ValueKey(catalog[index].id),
@@ -271,6 +273,16 @@ class _TrendingMatchCard extends StatelessWidget {
     final module = sportModuleFor(match.sport);
     final live = match.status == MatchStatus.live;
     final finished = match.status == MatchStatus.finished;
+    if (match.sport == Sport.cricket) {
+      return _CricketTrendingMatchCard(
+        match: match,
+        leagueLabel: leagueLabel,
+        volumeOz: volumeOz,
+        potentialXp: potentialXp,
+        isFavorite: isFavorite,
+        onTap: onTap,
+      );
+    }
     final centerLabel = live
         ? '${match.liveMinute ?? 0}′'
         : finished
@@ -380,6 +392,232 @@ class _TrendingMatchCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Cricket has two innings, not one shared scoreline. Keep each score and its
+/// overs with its team, then give the outcome its own beat below the innings.
+class _CricketTrendingMatchCard extends StatelessWidget {
+  const _CricketTrendingMatchCard({
+    required this.match,
+    required this.leagueLabel,
+    required this.volumeOz,
+    required this.potentialXp,
+    required this.isFavorite,
+    required this.onTap,
+  });
+
+  final SportMatch match;
+  final String leagueLabel;
+  final int volumeOz;
+  final int potentialXp;
+  final bool isFavorite;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final live = match.status == MatchStatus.live;
+    final finished = match.status == MatchStatus.finished;
+    final result = (match.resultLine ?? match.cricketDetails?.result ?? '')
+        .trim();
+    final status = live
+        ? 'LIVE'
+        : isFavorite
+        ? 'YOUR CLUB'
+        : finished
+        ? 'FINISHED'
+        : 'UPCOMING';
+    final footer = live
+        ? 'IN PLAY'
+        : finished
+        ? 'FULL TIME'
+        : '+${potentialXp > 0 ? potentialXp : 50} XP MISSION';
+    final home = _cricketInningsDisplay(match, match.home);
+    final away = _cricketInningsDisplay(match, match.away);
+
+    return _TrendSignalShell(
+      semanticsLabel:
+          '${match.home.name} ${home.score}, ${match.away.name} ${away.score}'
+          '${result.isEmpty ? '' : ', $result'}',
+      accent: live ? Cyber.success : Cyber.cyan,
+      tag: status,
+      live: live,
+      scoreboard: true,
+      onTap: onTap,
+      child: Column(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 25, 14, 7),
+              child: Column(
+                children: [
+                  Text(
+                    leagueLabel.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Cyber.label(
+                      10,
+                      color: Cyber.muted,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  _CricketTrendingTeamRow(
+                    match: match,
+                    team: match.home,
+                    innings: home,
+                  ),
+                  const SizedBox(height: 6),
+                  _CricketTrendingTeamRow(
+                    match: match,
+                    team: match.away,
+                    innings: away,
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+                    decoration: BoxDecoration(
+                      color: Cyber.bg.withValues(alpha: 0.4),
+                      border: Border(
+                        left: BorderSide(
+                          color: live ? Cyber.success : Cyber.cyan,
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      result.isNotEmpty
+                          ? result
+                          : live
+                          ? 'MATCH IN PROGRESS'
+                          : finished
+                          ? 'FINAL SCORE'
+                          : '${_shortDate(match.kickoff)} · ${_kickoffTime(match.kickoff)}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Cyber.bodyFor(
+                        context,
+                        11,
+                        color: result.isNotEmpty
+                            ? AppTheme.textContrast
+                            : Cyber.muted,
+                        weight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          CyberTelemetryFooter(
+            key: ValueKey('trending-match-footer-${match.id}'),
+            leading: footer,
+            trailing: 'VOL ${formatOzCompact(volumeOz)} OZ',
+            leadingColor: live ? Cyber.success : Cyber.cyan,
+            leadingIcon: Icons.sports_cricket,
+            leadingIconColor: sportModuleFor(Sport.cricket).accent,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+typedef _CricketInningsDisplay = ({String score, String? context});
+
+_CricketInningsDisplay _cricketInningsDisplay(
+  SportMatch match,
+  SportTeam team,
+) {
+  final raw = team.id == match.home.id ? match.homeScore : match.awayScore;
+  final innings = match.cricketDetails?.innings
+      .where((value) => value.teamId == team.id)
+      .firstOrNull;
+  final value = raw?.trim().isNotEmpty == true
+      ? raw!.trim()
+      : innings?.score.trim();
+  if (value == null || value.isEmpty) return (score: '—', context: null);
+  final contextStart = value.indexOf('(');
+  final score = contextStart < 0
+      ? value
+      : value.substring(0, contextStart).trim();
+  final context = contextStart < 0
+      ? innings == null
+            ? null
+            : '${innings.overs} OV'
+      : value.substring(contextStart).trim();
+  return (score: score, context: context);
+}
+
+class _CricketTrendingTeamRow extends StatelessWidget {
+  const _CricketTrendingTeamRow({
+    required this.match,
+    required this.team,
+    required this.innings,
+  });
+
+  final SportMatch match;
+  final SportTeam team;
+  final _CricketInningsDisplay innings;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            TeamLogo(
+              team: team,
+              width: 32,
+              height: 32,
+              sport: Sport.cricket,
+              competition: match.leagueId,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                team.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.bodyFor(
+                  context,
+                  13,
+                  color: AppTheme.textContrast,
+                  weight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              innings.score,
+              maxLines: 1,
+              style: Cyber.display(
+                18,
+                color: AppTheme.textContrast,
+                letterSpacing: 0,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ],
+        ),
+        if (innings.context != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              innings.context!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: Cyber.label(
+                9,
+                color: Cyber.muted,
+                letterSpacing: 0,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -1325,6 +1563,7 @@ const _scoreboardNotchDepth = 16.0;
 
 /// Wide live-scoreboard cards are a strip, not a square cell — shorter row.
 const _kScoreboardRowHeight = 148.0;
+const _kCricketScoreboardRowHeight = 224.0;
 
 Path _trendSignalPath(Size size, {required bool scoreboard}) {
   const cut = 12.0;

@@ -60,22 +60,26 @@ class _GrandPrixResultState extends State<GrandPrixResultOverlay>
   );
 
   bool _showLevelUp = false;
+  bool _revealStarted = false;
 
   @override
   void initState() {
     super.initState();
-    if (WidgetsBinding
-        .instance
-        .platformDispatcher
-        .accessibilityFeatures
-        .disableAnimations) {
+    _seq.addStatusListener((status) {
+      if (status == AnimationStatus.completed) _maybeLevelUp();
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_revealStarted) return;
+    _revealStarted = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
       _seq.value = 1;
       _maybeLevelUp();
     } else {
       _seq.forward();
-      _seq.addStatusListener((status) {
-        if (status == AnimationStatus.completed) _maybeLevelUp();
-      });
     }
   }
 
@@ -162,6 +166,39 @@ class _GrandPrixResultState extends State<GrandPrixResultOverlay>
                                 opacity: _statRows,
                                 child: _RaceStats(result: result),
                               ),
+                              if (result.newMastery.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                FadeTransition(
+                                  opacity: _xpPanel,
+                                  child: CyberPanel(
+                                    accent: Cyber.gold,
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          'CIRCUIT MASTERY EARNED',
+                                          style: Cyber.label(
+                                            10,
+                                            color: Cyber.gold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Wrap(
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          children: [
+                                            for (final stamp
+                                                in result.newMastery)
+                                              CyberChip(
+                                                label: stamp.label,
+                                                color: Cyber.gold,
+                                              ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: 16),
                               FadeTransition(
                                 opacity: _xpPanel,
@@ -284,26 +321,30 @@ class _PositionReadout extends StatelessWidget {
         : ('HELD POSITION', Cyber.muted);
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(
-              'P${result.position}',
-              style: Cyber.display(
-                64,
-                color: Cyber.cyan,
-              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-            ),
-            Text(
-              '/${result.fieldSize}',
-              style: Cyber.display(
-                28,
-                color: Cyber.muted,
-              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-            ),
-          ],
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                'P${result.position}',
+                style: Cyber.display(
+                  64,
+                  color: Cyber.cyan,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+              ),
+              Text(
+                '/${result.fieldSize}',
+                style: Cyber.display(
+                  28,
+                  color: Cyber.muted,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -344,15 +385,50 @@ class _RaceStats extends StatelessWidget {
               children: [
                 Text(
                   formatLapTime(result.lapTimeMs),
-                  style: Cyber.display(13, color: Colors.white).copyWith(
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+                  style: Cyber.display(13, color: AppTheme.textPrimary)
+                      .copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                 ),
                 if (result.personalBest) ...[
                   const SizedBox(width: 8),
                   const CyberChip(label: 'PB', color: Cyber.gold),
                 ],
               ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (result.bestLapTimeMs != null) ...[
+            _StatRow(
+              label: 'BEST SPLIT',
+              valueWidget: Text(
+                formatLapTime(result.bestLapTimeMs),
+                style: Cyber.display(12, color: Cyber.cyan),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+          _StatRow(
+            label: 'CLEAN PASSES',
+            valueWidget: Text(
+              '${result.cleanOvertakes}',
+              style: Cyber.display(12, color: Cyber.cyan),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _StatRow(
+            label: 'RACECRAFT',
+            valueWidget: CyberChip(
+              label: result.retired
+                  ? 'DNF'
+                  : result.recoveries > 0
+                  ? '${result.recoveries} RECOVERIES'
+                  : result.cleanRace
+                  ? 'CLEAN FINISH'
+                  : 'CONTACT',
+              color: result.cleanRace && !result.retired
+                  ? Cyber.success
+                  : Cyber.muted,
             ),
           ),
           const SizedBox(height: 10),
@@ -390,8 +466,14 @@ class _StatRow extends StatelessWidget {
           label,
           style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.6),
         ),
-        const Spacer(),
-        valueWidget,
+        const SizedBox(width: 12),
+        Expanded(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: valueWidget,
+          ),
+        ),
       ],
     );
   }
@@ -425,13 +507,9 @@ class _XpPanel extends StatelessWidget {
         children: [
           Text(
             '+$shownXp XP',
-            style: const TextStyle(
-              fontFamily: Cyber.displayFont,
-              fontSize: 26,
+            style: Cyber.display(26, color: Cyber.f1Red).copyWith(
               fontWeight: FontWeight.w900,
-              letterSpacing: 1,
-              color: Cyber.f1Red,
-              fontFeatures: [FontFeature.tabularFigures()],
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
           const SizedBox(height: 12),
@@ -467,6 +545,7 @@ class _Dock extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
+            flex: 2,
             child: CyberCtaButton(
               label: 'EXIT',
               onPressed: () {
@@ -477,6 +556,7 @@ class _Dock extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
+            flex: 3,
             child: CyberCtaButton(
               label: 'RACE AGAIN',
               primary: true,

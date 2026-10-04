@@ -900,6 +900,12 @@ class EspnScoreService {
     final String statusNote = (statusText == 'In Progress' && clock != null)
         ? clock
         : statusText;
+    // Cricket's final margin lives in the competition status summary (for
+    // example "England won by 125 runs"), not in either innings score.
+    String? cricketResult;
+    if (fixture.sport == Sport.cricket && newStatus == MatchStatus.finished) {
+      cricketResult = comp['status']?['summary']?.toString().trim();
+    }
 
     final details = comp['details'] as List? ?? [];
     List<MatchEvent> timelineEvents = [];
@@ -965,6 +971,14 @@ class EspnScoreService {
           .timeout(_fetchTimeout);
       if (summaryRes.statusCode == 200) {
         final summaryData = json.decode(summaryRes.body);
+        if (fixture.sport == Sport.cricket &&
+            newStatus == MatchStatus.finished &&
+            (cricketResult == null || cricketResult.isEmpty)) {
+          cricketResult =
+              summaryData['header']?['competitions']?[0]?['status']?['summary']
+                  ?.toString()
+                  .trim();
+        }
         final rosters = summaryData['rosters'] as List?;
         if (rosters != null && rosters.length >= 2) {
           // rosters usually has home at index 0 or 1 based on homeAway
@@ -1066,6 +1080,9 @@ class EspnScoreService {
       status: newStatus,
       homeScore: homeScore,
       awayScore: awayScore,
+      resultLine: cricketResult == null || cricketResult.isEmpty
+          ? fixture.resultLine
+          : cricketResult,
       liveStatusNote: statusNote,
       timelineEvents: timelineEvents,
       homeLineup:

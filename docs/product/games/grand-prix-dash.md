@@ -1,486 +1,263 @@
 # Grand Prix Dash
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
-> **Scope:** Racing starter pack, pit deck, circuits, launch, race engine, rewards, and career
-
-Grand Prix Dash is StatOz's one-lap top-down F1-style arcade racer. The user chooses a circuit and livery, launches from the grid, races through a 20-car field, manages speed through corners, uses slipstream on straights, and earns XP based on finishing position.
+> **Last verified:** 2026-10-04
+> **Scope:** Racing starter pack, pit deck, five circuits, driving, race presentation, mastery, rewards, and career
 
 ## Product Purpose
 
-Grand Prix Dash gives the F1 section a skill-first game mode with instant readability and repeat-session mastery.
-
-It is intentionally deck-free:
-
-- no starter-pack gate
-- no squad or card requirements
-- car livery is cosmetic
-- player level affects CPU strength rather than user equipment
-
-The mode creates progression through local racing stats, circuit personal bests, and shared XP rewards. It does not award coins.
+Grand Prix Dash is a top-down F1-style arcade racer: launch into a 20-car field,
+brake and steer through bends, build a tow, then spend ERS energy to attack.
+Circuit personal bests, three mastery stamps per circuit, and shared Grand Prix
+XP give players reasons to improve and race again.
 
 ## Where It Lives
 
-Grand Prix Dash is opened from the **Games** tab's F1 section.
+**Sports → GAMES → F1 → Grand Prix Dash** opens the racing hub. The shared
+sport/game unlock rules still apply. First entry uses the racing starter pack;
+the Pit Deck must equip an owned driver and owned livery before START RACE.
+Grid Line is the free default livery; six other liveries are cosmetic unlocks.
+Driver ownership remains an entry requirement; driving performance is not
+calculated from driver-card stats. CPU difficulty follows Grand Prix track level.
 
-The app-level entry pushes `GrandPrixTabContent`, which creates `GrandPrixCubit`, loads persisted stats, and shows the lobby. The race itself is pushed as a route so the lobby Cubit survives across race attempts.
-
-## Entry Requirements
-
-Grand Prix Dash has no deck requirement and no starter-pack gate.
-
-The user can start immediately once the lobby stats have loaded. The current player level is read when a race is built so CPU smartness can scale with progression.
+The lobby retains the circuit picker, 1/3/5-lap distance picker, START RACE,
+Pit Deck, Match History/career, and game leaderboard entry. A mastery panel
+shows earned stamps and the next unearned goal for the selected circuit.
+The same car painter supplies racing cars and livery previews.
 
 ## Player Flow
-1. User opens **Games -> F1 -> Grand Prix Dash**.
-2. Lobby loads persisted racing stats.
-3. User chooses a circuit and team livery, or keeps the last-used choices.
-4. User taps **START RACE**.
-5. Cubit builds a seeded race setup with player level, selected circuit, selected livery, random start position, and random simulation seed.
-6. Race screen opens on the grid.
-7. After a short staging beat, the five-lights start sequence begins.
-8. User holds **ACCEL** after lights out to grade launch reaction.
-9. Race begins; Flame advances the pure engine at fixed substeps.
-10. User holds steering, throttle, and brake controls to complete the lap.
-11. HUD updates speed, lap progress, position, slipstream, stuck warnings, and overtake toasts.
-12. When the player crosses the line or retires, the Cubit records result and stats.
-13. Race screen dispatches shared XP once through `GameBloc`.
-14. Result overlay shows verdict, position, lap time, launch, MVP move, XP, and CTAs.
-15. User chooses **RACE AGAIN** or **EXIT**.
 
-Leaving during grid, lights, or racing abandons the attempt. Abandoned races do not save stats and do not award XP.
+1. Claim the racing starter pack if needed and equip the Pit Deck.
+2. Pick a circuit and 1, 3, or 5 laps. Last selections persist.
+3. START RACE seeds a fresh 20-car grid; the player starts randomly at P8–P16.
+4. First race shows a dismissible coach covering steering, lights, braking,
+   tow and ERS. The saved coach acknowledgement skips it on later races.
+5. After about 1.2 seconds of staging, five lamps illuminate one second apart.
+   Following a random 200–1500 ms hold, they go dark.
+6. Hold ACCEL after lights-out to earn a launch grade. An early press gets a
+   jump-start penalty; no press within two seconds gives a slow launch.
+7. Race with analogue steering, throttle/brake and ERS. Follow braking cues,
+   manage grip, carry speed through clean exits and pass rivals.
+8. Pause explicitly or by backgrounding/focus loss. Resume uses a 3–2–1
+   countdown; platform reduced motion resumes immediately.
+9. Cross the final line or retire. The race settles shared XP exactly once.
+10. The result reveal shows position, places gained, race time/PB, best lap
+    split, clean passes, launch, MVP pass, new mastery stamps and XP.
+    RACE AGAIN returns to a new seeded attempt; EXIT returns to the lobby.
+
+Leaving an unfinished race, including from pause, abandons it without race
+stats or XP. In-progress racing is session-only and does not survive app restart.
 
 ## Mechanics and Rules
-| Rule | Value |
-|------|-------|
-| Race length | 1 lap |
-| Field size | 20 cars |
-| Player start slot | Random P8-P16 |
-| Camera | Top-down pseudo-scroller |
-| Physics model | 1D lap distance plus lateral offset |
-| Controls | Left, right, brake, accelerate |
-| Finish state | Classified position or DNF |
-| Reward type | XP only |
 
-## Circuits
-
-Grand Prix Dash ships with five generic circuit archetypes:
-
-| Circuit | Character | Difficulty | Product Behavior |
-|---------|-----------|------------|------------------|
-| Harbour Street | Street | 4 stars | Slow corners, punishing walls, hard passing |
-| Desert Mile | Speedway | 2 stars | Long straights, heavy slipstream, many overtakes |
-| Emerald Park | Balanced | 3 stars | Classic mix of straights and corners |
-| Mountain Pass | Technical | 4 stars | Chicanes and braking precision |
-| Coastal Sprint | Flowing | 3 stars | Fast sweepers and one major stop |
-
-Each circuit is a list of straights, corners, and chicanes. Sections define length, corner direction, safe speed, wall threshold, and visual bend. The engine uses safe speed and section type for physics; the renderer uses bend to draw the road.
-
-## Livery Selection
-
-The lobby offers six cosmetic liveries:
-
-- Scarlet
-- Silver Arrow
-- Papaya
-- Midnight
-- Racing Green
-- Sky Blue
-
-Each livery has a primary body color and accent color. These are content colors for cars only; surrounding UI uses shared Cyber tokens.
-
-The selected circuit and livery are persisted as part of `GrandPrixStats`, so returning users can immediately start with their last setup.
-
-## Start And Launch Mechanics
-
-A race begins in the `grid` phase. After the race screen mounts, it waits about 1.2s, then begins the lights sequence.
-
-### Five-Lights Sequence
-
-Without reduced motion:
-
-- lamps 1 through 5 light at one-second intervals
-- after all five are lit, lights-out waits a random hold between 200ms and 1500ms
-- if the user presses throttle before lights out, the launch is a jump start
-- if the user does not press throttle for 2 seconds after lights out, the launch is slow
-
-With reduced motion enabled:
-
-- the reaction test is skipped
-- the race starts with a fixed `good` launch
-
-### Launch Grades
-
-| Reaction Time | Grade |
-|---------------|-------|
-| `< 150ms` | Perfect |
-| `< 300ms` | Great |
-| `< 500ms` | Good |
-| otherwise | Slow |
-| throttle before lights out | Jump |
-
-### Launch Boosts
-
-| Grade | Initial Speed | Acceleration Factor | Boost Duration |
-|-------|---------------|---------------------|----------------|
-| Perfect | 14 m/s | 1.50x | 3.0s |
-| Great | 10 m/s | 1.35x | 2.5s |
-| Good | 7 m/s | 1.20x | 2.0s |
-| Slow | 2 m/s | 1.00x | 0s |
-| Jump | 0 m/s | 1.00x | 0s plus throttle cut |
-
-A jump start applies a two-second throttle cut.
-
-## Driving Mechanics
-
-The simulation tracks each car as:
-
-- distance along the lap
-- lateral offset from road center
-- speed
-- current section
-- racing/spinning/finished state
-- launch timers
-- slipstream state
-
-### Speed And Control
-
-Core tuning:
-
-| Parameter | Value |
-|-----------|-------|
-| Top speed | 88 m/s |
-| Acceleration | 26 m/s^2 |
-| Coasting deceleration | 10 m/s^2 |
-| Brake deceleration | 44 m/s^2 |
-| Steering rate | 7.5 lateral m/s |
-
-Holding throttle accelerates toward effective top speed. Holding brake sharply reduces speed. Steering moves the car laterally while the circuit bend shifts the road centerline under the car, requiring the user to steer into corners.
-
-### Corners
-
-Corners and chicanes define a safe speed. If the car enters above safe speed, excess speed is scrubbed over time. Overspeed does not directly throw the car sideways; loss of control happens when the car is steered or drifted into grass or wall.
-
-### Grass And Walls
-
-The drivable asphalt has a half-width of 4.5m. The wall clamp is at 6.5m.
-
-When off asphalt:
-
-- top speed is reduced to 55%
-- direct grass drag is applied
-- the car can bog down and become stuck
-
-When contacting the wall:
-
-- speed is scrubbed
-- in corners, a fresh high-speed wall hit can trigger a spin
-- spin lasts 0.8s and clamps speed to a crawl multiplier
-
-### Stuck And Retirement
-
-If the player's speed stays below 14 m/s for 10 seconds, the race ends as a DNF. The HUD warns after the player has been stuck for 2.5s and counts down to retirement.
-
-### Slipstream
-
-Slipstream is available on straights when another car is:
-
-- 4m to 28m ahead
-- laterally aligned within 1.8m
-
-Slipstream increases effective top speed by 8%. The HUD displays a `TOW` chip while active.
-
-### Contact
-
-Contact is a downside, not an attack weapon.
-
-When cars overlap longitudinally and laterally:
-
-- rear car loses speed
-- front car loses some speed
-- both cars are nudged apart laterally
-- heavy closing speed can spin the rear car
-- player contact spawns amber sparks when reduced motion is off
-
-CPU-to-CPU contact is softened to avoid slow trains.
-
-## CPU Opponent Behavior
-
-CPU field strength scales with player level:
-
-```dart
-cpuSmartness(level) = min(1.0, level / 12)
-```
-
-Each CPU also receives seeded variation:
-
-- strength spread
-- pace jitter
-- corner-entry noise
-
-CPU drivers:
-
-- launch from sampled reaction times
-- brake for upcoming corners using stopping distance
-- use racing-line lateral targets
-- steer to avoid slower cars ahead
-- attempt passes on straights
-- sometimes defend against attackers behind
-
-Weaker CPUs brake later and enter corners hotter. Stronger CPUs launch better, brake more accurately, and defend more often.
-
-## Screens And UI
-
-### 1. Grand Prix Lobby
-
-The lobby is a cyber-styled full-screen route with a constrained 420px content column.
-
-Primary UI:
-
-- `ReactHeaderBar` with title context and player level badge
-- **PIT LANE OPEN** status strip
-- animated racing emblem
-- title `GRAND PRIX DASH`
-- subtitle `ONE LAP / 20 CARS / LIGHTS OUT`
-- record chip showing rookie season, races in, or race wins
-- record panel with races, wins, podiums, best position, and current streak
-- horizontal circuit picker
-- livery swatches
-- **START RACE** CTA
-
-Animation and feedback:
-
-- animated Cyber background
-- staggered slide/fade content entrance
-- racing emblem spins and pulses with magenta glow
-- selected livery animates border state
-- circuit selection and livery taps trigger haptic selection and UI tap sound
-- start race uses play-match sound
-
-Working behavior:
-
-- stats load asynchronously; loading state shows a cyan progress indicator
-- circuit picker opens near the last selected circuit
-- circuit cards show character, difficulty stars, and personal best lap
-- livery picker persists selection immediately
-- start builds a fresh `RaceSetup` and pushes `GrandPrixRaceScreen`
-
-### 2. Race Screen: Grid Phase
-
-The race screen is a full-bleed Flame scroller with Flutter HUD layers.
-
-During grid phase:
-
-- cars sit in staggered two-wide grid slots behind the start line
-- top HUD is already visible
-- lights rig shows five unlit lamps and `ON THE GRID`
-- controls are visible
-- race simulation is not yet running
-
-After about 1.2s, the Cubit starts lights.
-
-### 3. Race Screen: Lights Phase
-
-The lights rig displays five circular lamps.
-
-UI states:
-
-- lamps turn red one by one
-- message reads `WAIT FOR LIGHTS OUT...`
-- when lights go out, lamps clear and message reads `GO GO GO!`
-
-Working behavior:
-
-- pressing **ACCEL** before lights out immediately grades `jump`
-- pressing **ACCEL** after lights out grades reaction
-- no press within 2 seconds grades `slow`
-- phase changes to `racing`
-
-Animation and feedback:
-
-- lamps use animated fill/border/glow
-- launch grade flash animates after race start
-- race-start sound and haptics fire when racing begins
-
-### 4. Race Screen: Racing Phase
-
-Top HUD:
-
-- close button
-- current player position, e.g. `P7/20`
-- live speed in KPH
-- lap progress bar
-- `TOW` chip while slipstreaming
-
-Controls:
-
-- left and right hold pads
-- **BRAKE** hold pad
-- **ACCEL** hold pad
-- raw pointer listeners support multi-touch, so steering and throttle can be held together
-- pressed controls fill with accent color instead of glowing
-
-Track renderer:
-
-- grass corridor
-- asphalt band
-- walls
-- cyan edge lines
-- center dashes every 12m
-- red/white kerbs on corner sections
-- amber braking boards 60m and 110m before braking zones
-- checker start/finish line
-
-Car renderer:
-
-- top-down F1 silhouettes with wheels, wings, body, cockpit, and livery colors
-- player car has accent glow
-- spinning cars show danger ring
-
-Live events:
-
-- overtake toast appears near top when the player passes a car
-- wall contact spawns red sparks
-- car contact spawns amber sparks
-- stuck warning appears after 2.5s below stuck speed
-
-Working behavior:
-
-- the Flame game advances the pure engine at 1/120s fixed substeps
-- high-frequency HUD values read from `ValueNotifier`s, not BLoC emissions
-- Cubit only receives coarse changes: position changes, overtakes, finish, and retirement
-
-### 5. Race Finish Beat
-
-When the player crosses the line:
-
-- Flame stops running the simulation
-- Cubit records result and lifetime stats
-- race screen dispatches `GrandPrixFinished` once
-- win/podium can play match-win sound; lower finishes use banner-slam style feedback
-- after about 900ms, Cubit moves from `finished` to `result`
-
-When the player is stuck too long:
-
-- race ends as DNF
-- position is classified as P20
-- lap time is 0
-- personal best cannot be set
-- result overlay displays retired state
-
-### 6. Result Overlay
-
-The result overlay is a full-screen cinematic over the race screen.
-
-Content sequence:
-
-1. verdict banner: **WIN**, **PODIUM**, **POINTS**, **FINISHED**, or **RETIRED**
-2. circuit name
-3. giant finishing position or DNF
-4. places gained/lost from grid slot
-5. race stat panel with lap time, PB chip, launch grade, and MVP move when available
-6. XP count-up and level-progress bar
-7. persistent bottom dock with **EXIT** and **RACE AGAIN**
-
-Animation and feedback:
-
-- single 2.4s sequence controller stages banner, position, stat rows, and XP panel
-- position uses ease-out-back scale
-- XP count rises with sequence progress
-- if animations are disabled, sequence jumps to final state
-- after sequence completion, shared level-up celebration appears if pending
-
-Working behavior:
-
-- **EXIT** pops the race route
-- **RACE AGAIN** pops the current race route and immediately builds a new race from lobby state
-- result overlay reads `GameBloc` progression after XP dispatch
+| Rule | Behavior |
+|---|---|
+| Field | 20 cars; random player grid slot P8–P16 |
+| Distance | Lobby offers 1, 3, or 5 laps |
+| Simulation | Deterministic seeded engine at 120 Hz; render interpolation |
+| Camera | Top-down scrolling ribbon, anchored to the centreline under the player |
+| Controls | Drag steering pad + hold BRAKE, ACCEL and ERS; optional classic left/right pads |
+| Keyboard | Arrows or WASD; Space deploys ERS; Escape pauses |
+| Speed | Base maximum 88 m/s, about 317 KPH; tow/ERS can exceed it |
+| Acceleration / brake / coast | 26 / 44 / 10 m/s² before contextual modifiers |
+| Track / wall | Asphalt half-width 4.5 m; walls at ±6.5 m |
+| Stuck | Below 14 m/s for 10 seconds retires the player |
+| Recovery | Available after 2.5 stuck seconds; stationary for 3 seconds |
+| Result | Classified finish or P20 DNF; a DNF has no PB |
+
+### Launch
+
+| Grade | Reaction | Initial speed | Acceleration boost |
+|---|---|---|---|
+| Perfect | <150 ms | 14 m/s | ×1.50 for 3 s |
+| Great | <300 ms | 10 m/s | ×1.35 for 2.5 s |
+| Good | <500 ms | 7 m/s | ×1.20 for 2 s |
+| Slow | Otherwise | 2 m/s | None |
+| Jump | Before lights-out | 0 | Two-second throttle cut |
+
+Platform reduced motion bypasses the reaction test and supplies a Good launch.
+Pausing during the grid/lights sequence cancels its timers and restarts the
+start sequence on resume. Pausing an active race retains its field and launch;
+resume never reapplies the launch boost.
+
+### Handling, grip and recovery
+
+Steering angle eases toward the input. Lateral velocity follows steering,
+speed and grip, and heading/yaw follow the movement. Faster cars have less
+steering authority; braking/coasting slightly improve rotation. Stationary
+cars cannot strafe. Kerbs and grass reduce grip; grass also adds drag.
+On straights, lateral movement scales with forward speed for both the player
+and rivals, avoiding abrupt sideways movement while pulling away or braking.
+
+Curvature requires steering into a bend. The same cached geometry drives the
+engine, road, camera, route ribbon, rubber racing line and CPU line targets.
+Overspeed lowers grip and scrubs speed without an instant sideways shove or
+an automatic spin. Spins come from heavy contact or a fast corner wall impact.
+The camera centreline anchor does not lag through corners.
+
+Contact slows both cars and separates them; a third car in another lane cannot
+hide an overlapping contact. Recovery preserves distance and energy, costs
+three seconds while rivals continue, clears launch bonuses, and invalidates
+a clean finish. It selects a clear rejoin lane and supplies one second of
+collision clearance. It never advances the player along the track.
+
+### Tow and ERS
+
+An aligned rival 4–28 m ahead on a straight builds tow gradually. Alignment
+must be within 1.8 m; tow fades after pulling out and grants up to 8% top speed.
+
+Hold ERS while accelerating above 15 m/s on asphalt, with no braking or spin,
+to deploy. Energy drains at 23% per second; deployment adds up to 8% top speed
+and ×1.25 acceleration. Above 12 m/s on asphalt, braking recharges at 12% per
+second of brake input and lifting adds 2.5% per second. Standing still cannot
+farm energy. The HUD shows charge, deployment and tow strength.
+
+### Rivals and timing
+
+CPU rivals receive seeded patient, balanced or aggressive racecraft, varied
+pace and corner entry, braking lookahead, shared racing-line targets, passing
+lane clearance and occasional defence. They hold their grid/exit lane on
+straights, make gradual speed-dependent lane changes to pass, retain the new
+lane after a pass and ease toward the racing line near a bend. Defence requires
+a genuinely closing attacker; longer decision cooldowns prevent continual
+lane switching. Rivals also manage ERS.
+Traffic braking lookahead includes closing speed and following clearance so
+stationary/jump-starting cars do not cause unnecessary contact spins on launch.
+
+The HUD shows position, KPH, gear, current lap/progress, energy, tow/clean
+passes, grip warnings and a nearest-ahead rival gap marked **EST.** The compact
+left card omits direction arrows, corner distance and suggested speed; braking
+boards and the road itself communicate the approaching bend. The gap is a distance/speed
+estimate, not a timing-line measurement. The small **ROUTE** display is a
+schematic of the actual scrolling ribbon, not a closed real-world circuit map.
+
+Lap splits are recorded at interpolated crossings; the first split includes
+travel from the starting grid. Intermediate laps and improved splits trigger
+feedback. A clean pass requires staying ahead for one second with no recent
+contact; each distinct rival counts once per race. Clean corner exits trigger
+a short line-held moment. These actions do not award extra XP.
+
+## Circuits and Presentation
+
+| Circuit | Driving character | Trackside environment |
+|---|---|---|
+| Harbour Street | Slow corners, tight passing | Buildings, lit windows, lamps and waterfront |
+| Desert Mile | Long straights, tow battles | Dunes, rocks and track gantries |
+| Emerald Park | Balanced straights and bends | Trees, grass and grandstands |
+| Mountain Pass | Technical braking and chicanes | Rock faces and retaining barriers |
+| Coastal Sprint | Fast sweepers and a major stop | Palms, cliffs, shoreline and boats |
+
+The procedural renderer uses theme tokens and cached scenery pictures.
+Textured asphalt, rubber line, kerbs, braking boards and checker markings
+remain anchored in track space. Cars turn with track tangent and heading;
+front wheels steer, body highlights define the shape, and ERS/braking have
+distinct visual signals. Bounded tyre marks, smoke, sparks and speed streaks
+respond to braking, grip, spins, impacts, tow and deployment. A subtle speed
+zoom expands lookahead; contact shake is brief and impact-only.
+The wide-lane scroller projection limits ordinary straight-line body tilt to
+12 degrees so lane changes do not make cars look sideways; bends permit a
+larger heading and genuine contact spins keep their separate animation.
 
 ## Rewards and Progression
-Grand Prix Dash awards XP only. It never subtracts XP and never pays coins.
 
-| Finish Position | XP |
-|-----------------|----|
-| P1 | +26 |
-| P2 | +22 |
-| P3 | +18 |
-| P4-P6 | +12 |
-| P7-P10 | +8 |
-| P11-P20 | +4 |
+Grand Prix awards Grand Prix-track XP only. It never subtracts XP and never
+awards coins for race completion or circuit mastery.
 
-Personal best bonus:
+| Finish | Base XP |
+|---|---|
+| P1 | 26 |
+| P2 | 22 |
+| P3 | 18 |
+| P4–P6 | 12 |
+| P7–P10 | 8 |
+| P11–P20, including retirement | 4 |
 
-| Condition | XP |
-|-----------|----|
-| New circuit personal best | +3 |
+Distance multiplies finish XP by ×1 / ×2 / ×3 for 1 / 3 / 5 laps. A new
+current-ruleset circuit/distance PB adds 3 XP after that multiplier.
+Shared history, quests, achievements and level progression keep their
+existing settlement path. Duplicate finish callbacks cannot settle twice.
 
-The race screen dispatches `GrandPrixFinished` with position, field size, circuit name, lap time, verdict label, and XP.
+Three persistent mastery stamps are available **per circuit**, across distances:
 
-## Persistence
+- **CLEAN FINISH:** finish without car/wall contact or recovery.
+- **RACECRAFT:** finish with at least three distinct clean passes.
+- **PODIUM:** finish in the top three.
 
-`GrandPrixStats` persists:
-
-- races
-- wins
-- podiums
-- best finishing position
-- current win streak
-- best win streak
-- best lap per circuit
-- last selected circuit
-- last selected livery
-
-Stats are saved through `SecureGameStorage`.
-
-Personal bests are tracked per circuit by `GrandPrixCircuitId.name`. A DNF has no lap time and does not set a personal best.
-
-## Current Product Notes
-
-- Grand Prix Dash is deck-free and cosmetic-livery-only.
-- The mode is XP-only; no coin payout is defined.
-- In-progress races are discarded on exit.
-- The result records local racing stats and shared XP, but no separate race-history archive is currently documented.
-- Reduced-motion users bypass the reaction test and receive a good launch.
-
-## Implementation References
-| Concern | Source |
-|---------|--------|
-| Domain enums, circuits, results, persisted stats | [`lib/models/grand_prix.dart`](../../../lib/models/grand_prix.dart) |
-| Circuit catalog | [`lib/data/grand_prix_circuits.dart`](../../../lib/data/grand_prix_circuits.dart) |
-| Livery catalog | [`lib/data/grand_prix_liveries.dart`](../../../lib/data/grand_prix_liveries.dart) |
-| CPU driver name generation | [`lib/data/grand_prix_drivers.dart`](../../../lib/data/grand_prix_drivers.dart) |
-| Pure race engine and physics | [`lib/games/grand_prix/grand_prix_engine.dart`](../../../lib/games/grand_prix/grand_prix_engine.dart) |
-| Flame renderer and live loop | [`lib/games/grand_prix/grand_prix_game.dart`](../../../lib/games/grand_prix/grand_prix_game.dart) |
-| Cubit lifecycle and persistence | [`lib/blocs/grand_prix/grand_prix_cubit.dart`](../../../lib/blocs/grand_prix/grand_prix_cubit.dart) |
-| Grand Prix state | [`lib/blocs/grand_prix/grand_prix_state.dart`](../../../lib/blocs/grand_prix/grand_prix_state.dart) |
-| Hub/tab entry | [`lib/screens/grand_prix/grand_prix_hub.dart`](../../../lib/screens/grand_prix/grand_prix_hub.dart) |
-| Lobby UI | [`lib/screens/grand_prix/grand_prix_lobby_screen.dart`](../../../lib/screens/grand_prix/grand_prix_lobby_screen.dart) |
-| Race screen, lights, HUD, finish bridge | [`lib/screens/grand_prix/grand_prix_race_screen.dart`](../../../lib/screens/grand_prix/grand_prix_race_screen.dart) |
-| Control pad | [`lib/screens/grand_prix/widgets/grand_prix_controls.dart`](../../../lib/screens/grand_prix/widgets/grand_prix_controls.dart) |
-| Result overlay | [`lib/screens/grand_prix/widgets/grand_prix_result.dart`](../../../lib/screens/grand_prix/widgets/grand_prix_result.dart) |
-| XP formula | [`lib/models/progression.dart`](../../../lib/models/progression.dart) |
-
-## Tests
-
-- [`test/grand_prix_engine_test.dart`](../../../test/grand_prix_engine_test.dart)
-- [`test/grand_prix_cubit_test.dart`](../../../test/grand_prix_cubit_test.dart)
-- [`test/grand_prix_stats_test.dart`](../../../test/grand_prix_stats_test.dart)
-- [`test/progression_economy_test.dart`](../../../test/progression_economy_test.dart)
+New stamps appear once in the existing result sequence. Repeats retain the
+stamp without another reveal. Retirement earns no stamps. Mastery is a
+skill goal, without a new currency, card-stat bonus or XP payout.
 
 ## Gratification and Feedback
 
-Starter-pack and livery reveals, five-light tension, launch grades, speed/corner
-feedback, finish beat, podium/result treatment, XP count-up, and level progress
-form the race's payoff arc.
+The five-light start, graded launch flash, overtake audio, clean-pass/clean-exit
+moments, lap beats, finish stinger and staged 2.4-second result reveal provide
+the payoff arc. The result reuses the XP count-up, quest receipt, level bar
+and shared level-up celebration. Standard HUD panels stay calm; player/live
+signals and primary CTAs carry the scarce glow.
+
+Race audio layers original engine low/high bands, wind and tyre scrub using
+RPM, load, speed and grip. Engine bands crossfade without relying on platform
+pitch shifting. The shared controller owns global mute and lifecycle behavior;
+route ownership prevents a disposed race from stopping its retry's audio.
+Pause stops racing layers; resume restarts them. Audio assets are generated
+selectively and listed in the audio catalogue/manifest.
+
+Pause exposes saved classic-controls, haptics and reduced-effects preferences
+alongside shared mute. Reduced effects/platform reduced motion suppress
+particles, marks, shake and speed zoom. Platform reduced motion also bypasses
+start reaction and resume countdown and skips the animated result sequence.
+Position, warning text, energy, cues and results remain readable.
 
 ## Visible States
 
-Starter/deck gate, circuit/livery selection, grid, lights, racing, contact,
-retirement, finish, result, personal-best, and career states are represented.
+Loading and Pit Deck gate; circuit/distance/mastery lobby; first-race coach;
+grid/lights; launch; racing/tow/deploy/grip/contact; lap/clean-action moments;
+stuck/recovering/rejoin; paused/resume countdown; finish/DNF; result/PB/new
+mastery; career/history.
+
+## Persistence
+
+`GrandPrixStats` saves races, wins, podiums, best position, win streaks,
+personal bests, last circuit/livery/distance, per-circuit mastery, control
+layout, haptics, reduced effects and coach acknowledgement through
+`SecureGameStorage`. Saves are ordered so a slow preference write cannot
+overwrite a more recent finish.
+
+Ruleset **v2** uses separate PB keys, e.g. `v2:emeraldPark` and
+`v2:emeraldPark@3L`. Older unprefixed records remain stored/readable through
+the legacy lookup; career totals and equipped livery are preserved. Current
+HUD/lobby PB competition uses v2 only because handling changed. Existing
+shared match history remains readable. No unfinished race is persisted.
 
 ## Planned Scope and Current Limitations
 
-- **BUILT:** Local race engine, three circuits, CPU rivals, pit deck/livery
-  progression, race rewards, and persisted career.
-- **PLANNED:** Online races and server leaderboards are not implemented. Current
-  CPU competition and career state are local.
+- **BUILT:** Five local circuits, 1/3/5 laps, 20 seeded rivals, refined top-down
+  handling, ERS/tow, coach/pause/recovery, original scenery/effects/audio,
+  circuit mastery and versioned PBs.
+- **PROTOTYPE:** Competition and the existing leaderboard roster are local.
+- **PLANNED:** Online races/server competition remain future scope.
+- This is a scrolling arcade racer, not a full 3D or wheel-physics simulation.
+  Frame-rate equivalence is verified in the pure engine; sustained mobile GPU
+  performance and subjective speaker/haptic feel still need device playtesting.
+
+## Implementation References
+
+- [Domain and records](../../../lib/models/grand_prix.dart), [circuits](../../../lib/data/grand_prix_circuits.dart)
+- [Engine](../../../lib/games/grand_prix/grand_prix_engine.dart), [shared geometry](../../../lib/games/grand_prix/grand_prix_track.dart), [fixed clock](../../../lib/games/grand_prix/grand_prix_simulation_clock.dart)
+- [Renderer](../../../lib/games/grand_prix/grand_prix_game.dart), [scenery](../../../lib/games/grand_prix/grand_prix_scenery.dart), [car painter](../../../lib/games/grand_prix/grand_prix_car_painter.dart)
+- [Cubit](../../../lib/blocs/grand_prix/grand_prix_cubit.dart), [lobby](../../../lib/screens/grand_prix/grand_prix_lobby_screen.dart), [race screen](../../../lib/screens/grand_prix/grand_prix_race_screen.dart)
+- [HUD](../../../lib/screens/grand_prix/widgets/grand_prix_driving_hud.dart), [controls](../../../lib/screens/grand_prix/widgets/grand_prix_controls.dart), [feedback/pause](../../../lib/screens/grand_prix/widgets/grand_prix_race_feedback.dart), [result](../../../lib/screens/grand_prix/widgets/grand_prix_result.dart)
+- [Audio](../../../lib/utils/sound_effects.dart), [audio generator](../../../tool/audio/build_audio.py), [asset catalogue](../../audio/CUE_CATALOG.md)
+- [Production-screen preview](../../../tool/grand_prix_preview.dart)
+
+## Tests
+
+- [Engine regressions](../../../test/grand_prix_engine_test.dart)
+- [Refinement, frame rates, recovery and 15 circuit/distance combinations](../../../test/grand_prix_refinement_test.dart)
+- [Three-pointer controls](../../../test/grand_prix_controls_test.dart)
+- [Keyboard, small-screen HUD and accessible pause/results](../../../test/grand_prix_presentation_test.dart)
+- [Pause, settlement and mastery](../../../test/grand_prix_cubit_test.dart)
+- [Migration and preferences](../../../test/grand_prix_stats_test.dart)
+- [Audio ownership/lifecycle](../../../test/audio_controller_test.dart), [audio mappings](../../../test/game_audio_mappings_test.dart)
+- [Economy](../../../test/progression_economy_test.dart)
+- Existing Grand Prix starter-pack, Pit Deck, livery shop and selector tests

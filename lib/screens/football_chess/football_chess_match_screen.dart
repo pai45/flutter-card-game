@@ -47,6 +47,7 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
   bool _xpDispatched = false;
   int _awardedXp = 0;
   bool _walkthroughShown = false;
+  VoidCallback? _cancelWalkthrough;
 
   final _boardKey = GlobalKey();
   final _timerKey = GlobalKey();
@@ -66,6 +67,7 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
 
   @override
   void dispose() {
+    _cancelWalkthrough?.call();
     AudioController.instance.leaveScene(AudioScene.footballChess);
     if (_cubit.state.match?.phase != ChessMatchPhase.fullTime) {
       _cubit.abandonMatch();
@@ -162,7 +164,7 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
   void _showWalkthrough() {
     _cubit.setPaused(true);
     AudioController.instance.setSceneMusicEnabled(false);
-    showSpotlightWalkthrough(
+    _cancelWalkthrough = showSpotlightWalkthrough(
       context,
       keyName: 'football-chess-first',
       steps: [
@@ -208,6 +210,8 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
         ),
       ],
       onComplete: () {
+        _cancelWalkthrough = null;
+        if (!mounted) return;
         _cubit.setPaused(false);
         AudioController.instance.setSceneMusicEnabled(true);
         context.read<GameBloc>().add(
