@@ -22,6 +22,7 @@ import 'sport_signal_painters.dart';
 export 'quest_result_receipt.dart';
 export 'cyber_kit.dart';
 export 'daily_case_lobby.dart';
+export 'cyber_game_launch_card.dart';
 
 /// Applies the arcade body face to a game surface without changing Orbitron
 /// display styles or the app-wide Matches/Pick typography.

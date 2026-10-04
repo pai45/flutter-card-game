@@ -48,7 +48,7 @@ void main() {
 
       bloc.add(HomeSportChosen(Sport.cricket));
       final state = await settle(bloc, (s) => s.unlocks.gated);
-      expect(state.unlocks.isGameUnlocked(ArcadeGame.finalOver), isTrue);
+      expect(state.unlocks.needsSelection(Sport.cricket), isTrue);
       expect(state.unlocks.isGameUnlocked(ArcadeGame.pitchDuel), isFalse);
       await bloc.close();
       expect((await storage.loadUnlockProgress())!.homeSport, Sport.cricket);
@@ -65,38 +65,47 @@ void main() {
     expect((await storage.loadUnlockProgress())!.grandfathered, isTrue);
   });
 
-  test('finishing the quest step unlocks the next game with XP', () async {
-    final bloc = await loaded(SecureGameStorage());
-    bloc.add(HomeSportChosen(Sport.cricket));
-    bloc.add(finalOver('fo-1'));
-    final state = await settle(
-      bloc,
-      (s) => s.unlocks.gated && s.unlocks.reachedFor(Sport.cricket) == 2,
-    );
-    expect(
-      state.xpLedger.where(
-        (e) => e.source == XpTransactionSource.beginnerQuest,
-      ),
-      hasLength(1),
-    );
-    expect(state.unlocks.pendingReveals.single.game, ArcadeGame.cricketQuiz);
-    // A non-football game still counts toward the daily game quests.
-    expect(state.dailyQuests.today.games, 1);
+  test(
+    'finishing the chosen quest step enables another choice with XP',
+    () async {
+      final bloc = await loaded(SecureGameStorage());
+      bloc.add(HomeSportChosen(Sport.cricket));
+      bloc.add(QuestGameSelected(ArcadeGame.finalOver));
+      bloc.add(finalOver('fo-1'));
+      final state = await settle(
+        bloc,
+        (s) => s.unlocks.gated && s.unlocks.reachedFor(Sport.cricket) == 2,
+      );
+      expect(
+        state.xpLedger.where(
+          (e) => e.source == XpTransactionSource.beginnerQuest,
+        ),
+        hasLength(1),
+      );
+      expect(state.unlocks.pendingReveals.single.game, ArcadeGame.finalOver);
+      // A non-football game still counts toward the daily game quests.
+      expect(state.dailyQuests.today.games, 1);
 
-    // A replayed settle (same match id) is a no-op.
-    bloc.add(finalOver('fo-1'));
-    bloc.add(UnlockRevealConsumed());
-    final after = await settle(bloc, (s) => s.unlocks.pendingReveals.isEmpty);
-    expect(after.unlocks.reachedFor(Sport.cricket), 2);
-    await bloc.close();
-  });
+      // A replayed settle (same match id) is a no-op.
+      bloc.add(QuestGameSelected(ArcadeGame.finalOver));
+      bloc.add(finalOver('fo-1'));
+      bloc.add(UnlockRevealConsumed());
+      final after = await settle(bloc, (s) => s.unlocks.pendingReveals.isEmpty);
+      expect(after.unlocks.reachedFor(Sport.cricket), 2);
+      await bloc.close();
+    },
+  );
 
   test('clearing the whole quest pays the sport-unlock Oz once', () async {
     final bloc = await loaded(SecureGameStorage());
     bloc.add(HomeSportChosen(Sport.cricket));
+    bloc.add(QuestGameSelected(ArcadeGame.finalOver));
     bloc.add(finalOver('fo-1'));
+    bloc.add(QuestGameSelected(ArcadeGame.cricketQuiz));
     bloc.add(ArcadeGamePlayed(ArcadeGame.cricketQuiz, sourceId: 'q1'));
+    bloc.add(QuestGameSelected(ArcadeGame.cricketGuessPlayer));
     bloc.add(ArcadeGamePlayed(ArcadeGame.cricketGuessPlayer, sourceId: 'g1'));
+    bloc.add(QuestGameSelected(ArcadeGame.cricketGuessPlayer));
     bloc.add(ArcadeGamePlayed(ArcadeGame.cricketGuessPlayer, sourceId: 'g2'));
     final state = await settle(
       bloc,
@@ -121,7 +130,9 @@ void main() {
     () async {
       final bloc = await loaded(SecureGameStorage());
       bloc.add(HomeSportChosen(Sport.cricket));
+      bloc.add(QuestGameSelected(ArcadeGame.finalOver));
       bloc.add(finalOver('hidden-fo'));
+      bloc.add(QuestGameSelected(ArcadeGame.cricketQuiz));
       bloc.add(ArcadeGamePlayed(ArcadeGame.cricketQuiz, sourceId: 'hidden-q'));
       final hidden = await settle(
         bloc,
@@ -130,6 +141,7 @@ void main() {
       expect(hidden.unlocks.dailyQuestsUnlocked, isFalse);
       expect(hidden.dailyQuests.today.games, 2);
 
+      bloc.add(QuestGameSelected(ArcadeGame.cricketGuessPlayer));
       bloc.add(
         ArcadeGamePlayed(ArcadeGame.cricketGuessPlayer, sourceId: 'hidden-g'),
       );
@@ -148,6 +160,7 @@ void main() {
     final bloc = await loaded(SecureGameStorage());
     bloc.add(HomeSportChosen(Sport.football));
     for (var i = 0; i < 3; i++) {
+      bloc.add(QuestGameSelected(sportGameLadder[Sport.football]![i]));
       bloc.add(
         ArcadeGamePlayed(sportGameLadder[Sport.football]![i], sourceId: 'f$i'),
       );
@@ -157,6 +170,7 @@ void main() {
     expect(graduated.coins, 0);
     expect(graduated.questReceipts['footballQuiz:f2']!.graduated, isTrue);
     for (var i = 3; i < 6; i++) {
+      bloc.add(QuestGameSelected(sportGameLadder[Sport.football]![i]));
       bloc.add(
         ArcadeGamePlayed(sportGameLadder[Sport.football]![i], sourceId: 'f$i'),
       );
@@ -206,7 +220,9 @@ void main() {
     () async {
       final bloc = await loaded(SecureGameStorage());
       bloc.add(HomeSportChosen(Sport.cricket));
+      bloc.add(QuestGameSelected(ArcadeGame.finalOver));
       bloc.add(finalOver('fo-1'));
+      bloc.add(QuestGameSelected(ArcadeGame.cricketQuiz));
       await settle(bloc, (s) => s.unlocks.hasRookieTicket(Sport.cricket));
       bloc.add(RookieTicketUsed(Sport.cricket));
       final state = await settle(

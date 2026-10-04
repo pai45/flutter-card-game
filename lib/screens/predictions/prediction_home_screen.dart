@@ -21,7 +21,6 @@ import '../../models/streak.dart';
 import '../../models/unlock_progress.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
-import '../../widgets/cyber/sport_signal_painters.dart';
 import '../../widgets/cyber/sport_underline_tabs.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/staggered_card_entrance.dart';
@@ -1161,7 +1160,7 @@ class _NewGamesReleaseScreen extends StatelessWidget {
                         description:
                             'A tactical card match where every round asks you to pick the right player, choose the right action, and outscore your rival across changing match scenarios.',
                         icon: Icons.sports_soccer,
-                        accent: Cyber.cyan,
+                        accent: AppTheme.gamePitchDuel,
                         ctaLabel: 'PLAY PITCH DUEL',
                         ctaKey: const ValueKey('new-games-page-pitch-duel-cta'),
                         onTap: () => _launchGame(context, onOpenGame),
@@ -1172,7 +1171,7 @@ class _NewGamesReleaseScreen extends StatelessWidget {
                         description:
                             'A fast shootout mode made for instant tension. Aim your kicks, read the keeper, and hold your nerve through sudden swings from the penalty spot.',
                         icon: Icons.gps_fixed,
-                        accent: Cyber.lime,
+                        accent: AppTheme.gamePenalty,
                         ctaLabel: 'PLAY SHOOTOUT',
                         ctaKey: const ValueKey(
                           'new-games-page-penalty-shootout-cta',
@@ -2070,10 +2069,16 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         widget.questTile,
         const SizedBox(height: 14),
         CyberBentoGrid(
+          minRowHeight:
+              208 +
+              (MediaQuery.textScalerOf(context).scale(13) - 13).clamp(0, 32) *
+                  6,
           tiles: [
             for (var index = 0; index < catalog.length; index++)
               CyberBentoTile(
-                span: catalog[index].span,
+                span: MediaQuery.textScalerOf(context).scale(10) > 12
+                    ? CyberBentoSpan.wide
+                    : catalog[index].span,
                 child: StaggeredCardEntrance(
                   key: ValueKey(catalog[index].id),
                   index: index,
@@ -2098,13 +2103,11 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         subtitle: 'TACTICAL CARD GAME',
         badgeLabel: 'FEATURED // TACTICAL',
         ctaLabel: 'ENTER THE DUEL',
-        accent: Cyber.cyan,
+        accent: AppTheme.gamePitchDuel,
         streak: streaks.pitch,
         layout: GameHeroLayout.portrait,
-        emphasis: true,
-        tightContent: true,
-        largeType: true,
-        background: const CustomPaint(painter: _PitchDuelMiniTacticsPainter()),
+
+        art: CyberGameArt.tactics,
         onTap: widget.onOpenGame,
       ),
       'penalty-shootout' => _ArcadeHeroGameTile(
@@ -2114,15 +2117,11 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         subtitle: 'SUDDEN-DEATH SPOT KICKS',
         badgeLabel: 'SUDDEN DEATH',
         ctaLabel: 'TAKE THE SHOT',
-        accent: sportModuleFor(Sport.football).accent,
+        accent: AppTheme.gamePenalty,
         streak: streaks.penalty,
         layout: GameHeroLayout.portrait,
-        emphasis: false,
-        tightContent: true,
-        largeType: true,
-        background: const CustomPaint(
-          painter: _PenaltyShootoutMiniGoalPainter(),
-        ),
+
+        art: CyberGameArt.penalty,
         onTap: widget.onOpenShootout,
       ),
       'football-chess' => _ArcadeHeroGameTile(
@@ -2132,44 +2131,34 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         subtitle: 'TACTICAL SQUAD DUEL',
         badgeLabel: 'FEATURED // 5V5',
         ctaLabel: 'MAKE YOUR MOVE',
-        accent: sportModuleFor(Sport.football).accent,
+        accent: AppTheme.gameFootballChess,
         layout: GameHeroLayout.portrait,
-        emphasis: false,
-        tightContent: true,
-        largeType: true,
-        background: const CustomPaint(
-          painter: _FootballChessMiniBoardPainter(),
-        ),
+
+        art: CyberGameArt.chess,
         onTap: widget.onOpenFootballChess,
       ),
       'football-quiz' => _QuickGameTile(
         title: 'FOOTBALL QUIZ',
         subtitle: 'TRIVIA GAUNTLET',
-        icon: Icons.quiz_rounded,
-        accent: Cyber.violet,
-        emphasis: false,
-        tightContent: true,
-        largeType: true,
+        art: CyberGameArt.quiz,
+        accent: AppTheme.gameFootballQuiz,
+
         onTap: () => widget.onOpenQuiz(Sport.football),
       ),
       'football-bingo' => _QuickGameTile(
         title: 'FOOTBALL BINGO',
         subtitle: 'BUILD A WINNING GRID',
-        icon: Icons.grid_view_rounded,
-        accent: Cyber.cyan,
-        emphasis: false,
-        tightContent: true,
-        largeType: true,
+        art: CyberGameArt.bingo,
+        accent: AppTheme.gameFootballBingo,
+
         onTap: widget.onOpenFootballBingo,
       ),
       'guess-player' => _QuickGameTile(
         title: 'GUESS THE PLAYER',
         subtitle: 'DAILY FOOTBALL MYSTERY',
-        icon: Icons.person_search_rounded,
-        accent: Cyber.lime,
-        emphasis: false,
-        tightContent: true,
-        largeType: true,
+        art: CyberGameArt.player,
+        accent: AppTheme.gameFootballMystery,
+
         onTap: widget.onOpenGuessPlayer,
       ),
       'final-over' => _ArcadeHeroGameTile(
@@ -2178,11 +2167,9 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         subtitle: 'SIX-BALL CRICKET CHASE',
         badgeLabel: 'FEATURED // SIX BALLS',
         ctaLabel: 'START THE CHASE',
-        accent: sportModuleFor(Sport.cricket).accent,
-        emphasis: false,
-        tightContent: true,
-        largeType: true,
-        background: const CustomPaint(painter: _FinalOverMiniPitchPainter()),
+        accent: AppTheme.gameFinalOver,
+
+        art: CyberGameArt.cricket,
         onTap: widget.onOpenFinalOver,
       ),
       'hoop-duel' => _ArcadeHeroGameTile(
@@ -2191,11 +2178,9 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         subtitle: 'STREET 1-ON-1',
         badgeLabel: 'FEATURED // STREET',
         ctaLabel: 'HIT THE COURT',
-        accent: Cyber.gold,
-        emphasis: false,
-        tightContent: true,
-        largeType: true,
-        background: const CustomPaint(painter: _HoopDuelMiniCourtPainter()),
+        accent: AppTheme.gameHoopDuel,
+
+        art: CyberGameArt.basketball,
         onTap: widget.onOpenBasketball,
       ),
       'grand-prix-dash' => _ArcadeHeroGameTile(
@@ -2205,11 +2190,9 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         subtitle: 'ONE-LAP ARCADE RACER',
         badgeLabel: 'FEATURED // RACE',
         ctaLabel: 'RACE NOW',
-        accent: Cyber.f1Red,
-        emphasis: false,
-        tightContent: true,
-        largeType: true,
-        background: const CustomPaint(painter: F1MysterySignalPainter()),
+        accent: AppTheme.gameGrandPrix,
+
+        art: CyberGameArt.racing,
         onTap: widget.onOpenGrandPrix,
       ),
       'tennis-rally' => _ArcadeHeroGameTile(
@@ -2218,11 +2201,9 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         subtitle: '2D ARCADE SETS // 5 MODES',
         badgeLabel: 'FEATURED // NEW',
         ctaLabel: 'STEP ON COURT',
-        accent: Cyber.lime,
-        emphasis: false,
-        tightContent: true,
-        largeType: true,
-        background: const CustomPaint(painter: TennisMysterySignalPainter()),
+        accent: AppTheme.gameTennisRally,
+
+        art: CyberGameArt.tennis,
         onTap: widget.onOpenTennisRally,
       ),
       _ => _TrendingGameUnavailable(id: config.sourceId),
@@ -2339,17 +2320,16 @@ class _GamesTabState extends State<_GamesTab> {
     );
   }
 
-  /// Lock treatment for a tile: null when open, NEXT UNLOCK for the game the
-  /// current quest step opens, QUEST STEP n for the rest.
+  /// Completed/active games are open; unfinished games offer selection or
+  /// explain that the current mission must clear first.
   _GameLock? _lockFor(ArcadeGame game) {
     final unlocks = widget.unlocks;
     if (unlocks.isGameUnlocked(game)) return null;
-    final next = game.ladderIndex == unlocks.reachedFor(game.sport);
     return _GameLock(
-      label: next
-          ? 'NEXT UNLOCK'
-          : 'AFTER ${sportGameLadder[game.sport]![game.ladderIndex - 1].title}',
-      next: next,
+      label: unlocks.needsSelection(game.sport)
+          ? 'CHOOSE AS YOUR MISSION'
+          : 'FINISH CURRENT MISSION',
+      next: false,
     );
   }
 
@@ -2402,8 +2382,8 @@ class _GamesTabState extends State<_GamesTab> {
               lock: _lockFor(ArcadeGame.tennisQuiz),
               title: 'TENNIS QUIZ',
               subtitle: 'TRIVIA GAUNTLET',
-              icon: Icons.quiz_rounded,
-              accent: Cyber.violet,
+              art: CyberGameArt.quiz,
+              accent: AppTheme.gameTennisQuiz,
               onTap: () => widget.onOpenQuiz(Sport.tennis),
             ),
             _QuickGameEntry(
@@ -2411,8 +2391,8 @@ class _GamesTabState extends State<_GamesTab> {
               lock: _lockFor(ArcadeGame.guessWinner),
               title: 'GUESS THE WINNER',
               subtitle: 'DAILY MYSTERY',
-              icon: Icons.person_search_rounded,
-              accent: Cyber.cyan,
+              art: CyberGameArt.winner,
+              accent: AppTheme.gameWinnerMystery,
               onTap: widget.onOpenTennisGuessWinner,
             ),
           ],
@@ -2436,8 +2416,8 @@ class _GamesTabState extends State<_GamesTab> {
             subtitle: 'STREET 1-ON-1 ARCADE HOOPS',
             badgeLabel: 'FEATURED // STREET',
             ctaLabel: 'HIT THE COURT',
-            accent: Cyber.gold,
-            background: const CustomPaint(painter: _HoopDuelMiniCourtPainter()),
+            accent: AppTheme.gameHoopDuel,
+            art: CyberGameArt.basketball,
             onTap: widget.onOpenBasketball,
           ),
         ),
@@ -2453,8 +2433,8 @@ class _GamesTabState extends State<_GamesTab> {
               lock: _lockFor(ArcadeGame.basketballQuiz),
               title: 'BASKETBALL QUIZ',
               subtitle: 'TRIVIA GAUNTLET',
-              icon: Icons.quiz_rounded,
-              accent: Cyber.violet,
+              art: CyberGameArt.quiz,
+              accent: AppTheme.gameBasketballQuiz,
               onTap: () => widget.onOpenQuiz(Sport.basketball),
             ),
             _QuickGameEntry(
@@ -2462,8 +2442,8 @@ class _GamesTabState extends State<_GamesTab> {
               lock: _lockFor(ArcadeGame.basketballGuessPlayer),
               title: 'GUESS THE PLAYER',
               subtitle: 'DAILY BASKETBALL MYSTERY',
-              icon: Icons.person_search_rounded,
-              accent: Cyber.pink,
+              art: CyberGameArt.player,
+              accent: AppTheme.gameBasketballMystery,
               onTap: widget.onOpenBasketballGuessPlayer,
             ),
           ],
@@ -2487,10 +2467,8 @@ class _GamesTabState extends State<_GamesTab> {
             subtitle: 'SIX-BALL CRICKET CHASE',
             badgeLabel: 'FEATURED // SIX BALLS',
             ctaLabel: 'START THE CHASE',
-            accent: sportModuleFor(Sport.cricket).accent,
-            background: const CustomPaint(
-              painter: _FinalOverMiniPitchPainter(),
-            ),
+            accent: AppTheme.gameFinalOver,
+            art: CyberGameArt.cricket,
             onTap: widget.onOpenFinalOver,
           ),
         ),
@@ -2506,8 +2484,8 @@ class _GamesTabState extends State<_GamesTab> {
               lock: _lockFor(ArcadeGame.cricketQuiz),
               title: 'CRICKET QUIZ',
               subtitle: 'TRIVIA GAUNTLET',
-              icon: Icons.quiz_rounded,
-              accent: Cyber.violet,
+              art: CyberGameArt.quiz,
+              accent: AppTheme.gameCricketQuiz,
               onTap: () => widget.onOpenQuiz(Sport.cricket),
             ),
             _QuickGameEntry(
@@ -2515,8 +2493,8 @@ class _GamesTabState extends State<_GamesTab> {
               lock: _lockFor(ArcadeGame.cricketGuessPlayer),
               title: 'GUESS THE PLAYER',
               subtitle: 'DAILY CRICKET MYSTERY',
-              icon: Icons.person_search_rounded,
-              accent: Cyber.pink,
+              art: CyberGameArt.player,
+              accent: AppTheme.gameCricketMystery,
               onTap: widget.onOpenCricketGuessPlayer,
             ),
           ],
@@ -2543,11 +2521,9 @@ class _GamesTabState extends State<_GamesTab> {
             subtitle: 'TACTICAL CARD GAME',
             badgeLabel: 'FEATURED // TACTICAL',
             ctaLabel: 'ENTER THE DUEL',
-            accent: Cyber.cyan,
+            accent: AppTheme.gamePitchDuel,
             streak: streaks.pitch,
-            background: const CustomPaint(
-              painter: _PitchDuelMiniTacticsPainter(),
-            ),
+            art: CyberGameArt.tactics,
             onTap: widget.onOpenGame,
           ),
         ),
@@ -2563,11 +2539,9 @@ class _GamesTabState extends State<_GamesTab> {
             subtitle: 'SUDDEN-DEATH SPOT KICKS',
             badgeLabel: 'FEATURED // SUDDEN DEATH',
             ctaLabel: 'TAKE THE SHOT',
-            accent: sportModuleFor(Sport.football).accent,
+            accent: AppTheme.gamePenalty,
             streak: streaks.penalty,
-            background: const CustomPaint(
-              painter: _PenaltyShootoutMiniGoalPainter(),
-            ),
+            art: CyberGameArt.penalty,
             onTap: widget.onOpenShootout,
           ),
         ),
@@ -2583,10 +2557,8 @@ class _GamesTabState extends State<_GamesTab> {
             subtitle: 'TACTICAL SQUAD DUEL',
             badgeLabel: 'FEATURED // 5V5',
             ctaLabel: 'MAKE YOUR MOVE',
-            accent: sportModuleFor(Sport.football).accent,
-            background: const CustomPaint(
-              painter: _FootballChessMiniBoardPainter(),
-            ),
+            accent: AppTheme.gameFootballChess,
+            art: CyberGameArt.chess,
             onTap: widget.onOpenFootballChess,
           ),
         ),
@@ -2602,8 +2574,8 @@ class _GamesTabState extends State<_GamesTab> {
               lock: _lockFor(ArcadeGame.footballQuiz),
               title: 'FOOTBALL QUIZ',
               subtitle: 'TRIVIA GAUNTLET',
-              icon: Icons.quiz_rounded,
-              accent: Cyber.violet,
+              art: CyberGameArt.quiz,
+              accent: AppTheme.gameFootballQuiz,
               onTap: () => widget.onOpenQuiz(Sport.football),
             ),
             _QuickGameEntry(
@@ -2611,8 +2583,8 @@ class _GamesTabState extends State<_GamesTab> {
               lock: _lockFor(ArcadeGame.footballBingo),
               title: 'FOOTBALL BINGO',
               subtitle: 'COUNTRY x CLUB GRID',
-              icon: Icons.grid_view_rounded,
-              accent: Cyber.amber,
+              art: CyberGameArt.bingo,
+              accent: AppTheme.gameFootballBingo,
               onTap: widget.onOpenFootballBingo,
             ),
             _QuickGameEntry(
@@ -2620,8 +2592,8 @@ class _GamesTabState extends State<_GamesTab> {
               lock: _lockFor(ArcadeGame.footballGuessPlayer),
               title: 'GUESS THE PLAYER',
               subtitle: 'DAILY FOOTBALL MYSTERY',
-              icon: Icons.person_search_rounded,
-              accent: Cyber.pink,
+              art: CyberGameArt.player,
+              accent: AppTheme.gameFootballMystery,
               onTap: widget.onOpenGuessPlayer,
             ),
           ],
@@ -2645,8 +2617,8 @@ class _GamesTabState extends State<_GamesTab> {
             subtitle: 'ONE-LAP ARCADE RACER',
             badgeLabel: 'FEATURED // RACE',
             ctaLabel: 'RACE NOW',
-            accent: Cyber.f1Red,
-            background: const CustomPaint(painter: F1MysterySignalPainter()),
+            accent: AppTheme.gameGrandPrix,
+            art: CyberGameArt.racing,
             onTap: widget.onOpenGrandPrix,
           ),
         ),
@@ -2662,8 +2634,8 @@ class _GamesTabState extends State<_GamesTab> {
               lock: _lockFor(ArcadeGame.motorsportQuiz),
               title: 'MOTORSPORT QUIZ',
               subtitle: 'TRIVIA GAUNTLET',
-              icon: Icons.quiz_rounded,
-              accent: Cyber.violet,
+              art: CyberGameArt.quiz,
+              accent: AppTheme.gameMotorsportQuiz,
               onTap: () => widget.onOpenQuiz(Sport.motorsport),
             ),
             _QuickGameEntry(
@@ -2671,8 +2643,8 @@ class _GamesTabState extends State<_GamesTab> {
               lock: _lockFor(ArcadeGame.guessDriver),
               title: 'GUESS THE DRIVER',
               subtitle: 'DAILY F1 MYSTERY',
-              icon: Icons.person_search_rounded,
-              accent: Cyber.pink,
+              art: CyberGameArt.driver,
+              accent: AppTheme.gameDriverMystery,
               onTap: widget.onOpenF1GuessDriver,
             ),
           ],
@@ -2696,8 +2668,8 @@ class _TennisRallyGameTile extends StatelessWidget {
       subtitle: '2D ARCADE SETS // 5 MODES',
       badgeLabel: 'FEATURED // NEW',
       ctaLabel: 'STEP ON COURT',
-      accent: Cyber.lime,
-      background: const CustomPaint(painter: TennisMysterySignalPainter()),
+      accent: AppTheme.gameTennisRally,
+      art: CyberGameArt.tennis,
       onTap: onTap,
       lock: lock,
     );
@@ -2713,725 +2685,56 @@ class _ArcadeHeroGameTile extends StatelessWidget {
     required this.badgeLabel,
     required this.ctaLabel,
     required this.accent,
-    required this.background,
+    required this.art,
     required this.onTap,
     this.titleLines,
     this.streak = 0,
     this.layout = GameHeroLayout.landscape,
-    this.emphasis = true,
-    this.tightContent = false,
-    this.largeType = false,
     this.lock,
     super.key,
   });
 
   final String title;
   final List<String>? titleLines;
-  final _GameLock? lock;
   final String subtitle;
   final String badgeLabel;
   final String ctaLabel;
   final Color accent;
-  final Widget background;
+  final CyberGameArt art;
   final VoidCallback onTap;
   final int streak;
   final GameHeroLayout layout;
-  final bool emphasis;
-  final bool tightContent;
-  final bool largeType;
+  final _GameLock? lock;
 
   @override
-  Widget build(BuildContext context) {
-    final lock = this.lock;
-    return Semantics(
-      button: true,
-      label: lock == null ? '$title, $ctaLabel' : '$title, locked',
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: _LockVeil(
-          lock: lock,
-          bigCut: 14,
-          smallCut: 4,
-          child: CustomPaint(
-            painter: _HudChamferCardPainter(
-              bigCut: 14,
-              smallCut: 4,
-              fillColor: Cyber.panel,
-              borderColor: accent.withValues(alpha: 0.86),
-              // Locked tiles never glow: they are not live.
-              borderGlow: emphasis && lock == null,
-            ),
-            child: ClipPath(
-              clipper: const HudChamferClipper(bigCut: 14, smallCut: 4),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final compact =
-                      layout == GameHeroLayout.landscape &&
-                      constraints.maxWidth < 165;
-                  return SizedBox(
-                    height: 174,
-                    child: layout == GameHeroLayout.portrait
-                        ? _buildPortrait()
-                        : _buildLandscape(compact: compact),
-                  );
-                },
-              ),
-            ),
-          ),
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) => SizedBox(
+      height: constraints.hasBoundedHeight
+          ? constraints.maxHeight
+          : 208 +
+                (MediaQuery.textScalerOf(context).scale(20) - 20).clamp(0, 48) *
+                    2,
+      child: _LockVeil(
+        lock: lock,
+        bigCut: 16,
+        smallCut: 0,
+        child: CyberGameLaunchCard(
+          title: title,
+          titleLines: titleLines,
+          subtitle: subtitle,
+          badge: badgeLabel,
+          action: ctaLabel,
+          accent: accent,
+          art: art,
+          portrait:
+              layout == GameHeroLayout.portrait && constraints.maxWidth < 260,
+          status: streak > 0 ? StreakBadge(value: streak) : null,
+          locked: lock != null,
+          onTap: onTap,
         ),
       ),
-    );
-  }
-
-  Widget _buildLandscape({bool compact = false}) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        background,
-        if (compact)
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Cyber.bg.withValues(alpha: 0.2),
-                  Cyber.bg.withValues(alpha: 0.72),
-                ],
-              ),
-            ),
-          ),
-        Padding(
-          padding: EdgeInsets.all(compact ? 12 : 17),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _HeroBadge(
-                label: badgeLabel,
-                accent: accent,
-                largeType: largeType,
-              ),
-              if (tightContent) const SizedBox(height: 12) else const Spacer(),
-              _HeroTitle(
-                title: title,
-                titleLines: titleLines,
-                streak: streak,
-                square: compact,
-              ),
-              SizedBox(height: compact ? 3 : 5),
-              Text(
-                subtitle,
-                maxLines: compact ? 2 : 1,
-                overflow: TextOverflow.ellipsis,
-                style: Cyber.display(
-                  largeType
-                      ? 10
-                      : compact
-                      ? 6.5
-                      : 8,
-                  color: accent,
-                  letterSpacing: compact ? 0.3 : 0.5,
-                ).copyWith(height: 1.08),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPortrait() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Align(
-          alignment: Alignment.bottomCenter,
-          child: FractionallySizedBox(
-            widthFactor: 1,
-            heightFactor: 0.56,
-            child: background,
-          ),
-        ),
-        Align(
-          alignment: Alignment.topCenter,
-          child: FractionallySizedBox(
-            widthFactor: 1,
-            heightFactor: 0.5,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(13, 14, 13, 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _HeroBadge(
-                    label: badgeLabel,
-                    accent: accent,
-                    largeType: largeType,
-                  ),
-                  SizedBox(height: tightContent ? 8 : 12),
-                  _HeroTitle(
-                    title: title,
-                    titleLines: titleLines,
-                    streak: streak,
-                    compact: true,
-                  ),
-                  SizedBox(height: tightContent ? 4 : 6),
-                  Text(
-                    subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Cyber.display(
-                      largeType ? 10 : 7,
-                      color: accent,
-                      letterSpacing: 0.4,
-                    ).copyWith(height: 1.15),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          left: 13,
-          bottom: 11,
-          child: Text(
-            'TAP // PLAY',
-            style: Cyber.label(
-              largeType ? 10 : 6.5,
-              color: accent.withValues(alpha: 0.84),
-              letterSpacing: 0.6,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _HeroBadge extends StatelessWidget {
-  const _HeroBadge({
-    required this.label,
-    required this.accent,
-    required this.largeType,
-  });
-
-  final String label;
-  final Color accent;
-  final bool largeType;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-      color: accent.withValues(alpha: 0.16),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: Cyber.display(
-          largeType ? 10 : 7,
-          color: accent,
-          letterSpacing: largeType ? 0.3 : 0,
-        ),
-      ),
-    );
-  }
-}
-
-class _HeroTitle extends StatelessWidget {
-  const _HeroTitle({
-    required this.title,
-    required this.titleLines,
-    required this.streak,
-    this.compact = false,
-    this.square = false,
-  });
-
-  final String title;
-  final List<String>? titleLines;
-  final int streak;
-  final bool compact;
-  final bool square;
-
-  TextStyle get _style => Cyber.display(
-    square
-        ? 13
-        : compact
-        ? 15
-        : 20,
-    color: Colors.white,
-    letterSpacing: square
-        ? 0.35
-        : compact
-        ? 0.6
-        : 1,
-  ).copyWith(height: 1.02);
-
-  @override
-  Widget build(BuildContext context) {
-    final lines = titleLines;
-    if (lines == null || lines.isEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (streak > 0) ...[
-            StreakBadge(value: streak, scale: 1.25),
-            const SizedBox(height: 4),
-          ],
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: _style,
-          ),
-        ],
-      );
-    }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final titleWidth = compact || square
-            ? constraints.maxWidth
-            : (constraints.maxWidth * 0.56).clamp(168.0, 214.0);
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (streak > 0) ...[
-              StreakBadge(value: streak, scale: 1.25),
-              const SizedBox(height: 4),
-            ],
-            ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: titleWidth.toDouble()),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final line in lines)
-                    Text(
-                      line,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: _style,
-                    ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _HoopDuelMiniCourtPainter extends CustomPainter {
-  const _HoopDuelMiniCourtPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [Color(0x00101825), Color(0xd12c260d)],
-          stops: [0.36, 1],
-        ).createShader(Offset.zero & size),
-    );
-
-    final court = Path()
-      ..moveTo(size.width * 0.64, size.height * 0.16)
-      ..lineTo(size.width, size.height * 0.16)
-      ..lineTo(size.width, size.height)
-      ..lineTo(size.width * 0.52, size.height)
-      ..close();
-    canvas.drawPath(court, Paint()..color = const Color(0xff665116));
-    final line = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..color = Cyber.gold.withValues(alpha: 0.58);
-    canvas.drawPath(court, line);
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(size.width * 0.79, size.height * 0.73),
-        width: 108,
-        height: 76,
-      ),
-      line,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.82, size.height * 0.16),
-      Offset(size.width * 0.82, size.height * 0.52),
-      line,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.74, size.height * 0.28),
-      Offset(size.width * 0.91, size.height * 0.28),
-      Paint()
-        ..strokeWidth = 3
-        ..color = Colors.white.withValues(alpha: 0.55),
-    );
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(size.width * 0.82, size.height * 0.39),
-        width: 36,
-        height: 10,
-      ),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..color = Cyber.gold,
-    );
-
-    final ball = Offset(size.width * 0.91, size.height * 0.60);
-    canvas.drawCircle(ball, 17, Paint()..color = Cyber.gold);
-    final seam = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4
-      ..color = const Color(0xff17120a).withValues(alpha: 0.78);
-    canvas.drawLine(ball.translate(-17, 0), ball.translate(17, 0), seam);
-    canvas.drawLine(ball.translate(0, -17), ball.translate(0, 17), seam);
-    canvas.drawOval(Rect.fromCenter(center: ball, width: 16, height: 34), seam);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _FinalOverMiniPitchPainter extends CustomPainter {
-  const _FinalOverMiniPitchPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [Color(0x00101825), Color(0xd10b2b39)],
-          stops: [0.36, 1],
-        ).createShader(Offset.zero & size),
-    );
-
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(size.width * 0.79, size.height * 0.55),
-        width: size.width * 0.58,
-        height: size.height * 0.68,
-      ),
-      Paint()..color = const Color(0xff153e36),
-    );
-    final pitch = Path()
-      ..moveTo(size.width * 0.74, size.height * 0.20)
-      ..lineTo(size.width * 0.84, size.height * 0.20)
-      ..lineTo(size.width * 0.96, size.height * 1.02)
-      ..lineTo(size.width * 0.57, size.height * 1.02)
-      ..close();
-    canvas.drawPath(pitch, Paint()..color = const Color(0xff8b7545));
-    canvas.drawPath(
-      pitch,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..color = AppTheme.whiteColor.withValues(alpha: 0.48),
-    );
-    final crease = Paint()
-      ..strokeWidth = 1.3
-      ..color = Colors.white.withValues(alpha: 0.66);
-    canvas.drawLine(
-      Offset(size.width * 0.61, size.height * 0.83),
-      Offset(size.width * 0.93, size.height * 0.83),
-      crease,
-    );
-
-    final wicketX = size.width * 0.80;
-    for (final dx in [-6.0, 0.0, 6.0]) {
-      canvas.drawLine(
-        Offset(wicketX + dx, size.height * 0.28),
-        Offset(wicketX + dx, size.height * 0.48),
-        Paint()
-          ..strokeWidth = 2.2
-          ..strokeCap = StrokeCap.round
-          ..color = AppTheme.whiteColor,
-      );
-    }
-    canvas.drawLine(
-      Offset(wicketX - 7, size.height * 0.30),
-      Offset(wicketX + 7, size.height * 0.30),
-      Paint()
-        ..strokeWidth = 2
-        ..color = AppTheme.whiteColor,
-    );
-
-    final ball = Offset(size.width * 0.88, size.height * 0.65);
-    canvas.drawLine(
-      Offset(size.width * 0.72, size.height * 0.52),
-      ball,
-      Paint()
-        ..strokeWidth = 2
-        ..color = AppTheme.whiteColor.withValues(alpha: 0.28),
-    );
-    canvas.drawCircle(ball, 7, Paint()..color = const Color(0xfff3f6f8));
-    canvas.drawArc(
-      Rect.fromCircle(center: ball, radius: 5),
-      -1.2,
-      2.4,
-      false,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..color = Cyber.danger,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _PitchDuelMiniTacticsPainter extends CustomPainter {
-  const _PitchDuelMiniTacticsPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [Color(0x00101825), Color(0xd10a2a34)],
-          stops: [0.36, 1],
-        ).createShader(Offset.zero & size),
-    );
-
-    final field = Rect.fromLTRB(
-      size.width * 0.57,
-      size.height * 0.10,
-      size.width * 1.03,
-      size.height * 1.02,
-    );
-    canvas.drawRect(field, Paint()..color = const Color(0xff124b43));
-    final line = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2
-      ..color = Colors.white.withValues(alpha: 0.42);
-    canvas.drawRect(field, line);
-    canvas.drawLine(
-      Offset(field.left, field.center.dy),
-      Offset(field.right, field.center.dy),
-      line,
-    );
-    canvas.drawCircle(field.center, 27, line);
-    canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(field.center.dx, field.top),
-        width: 82,
-        height: 52,
-      ),
-      line,
-    );
-
-    final nodes = [
-      Offset(size.width * 0.69, size.height * 0.77),
-      Offset(size.width * 0.86, size.height * 0.58),
-      Offset(size.width * 0.75, size.height * 0.34),
-      Offset(size.width * 0.94, size.height * 0.23),
-    ];
-    final route = Paint()
-      ..strokeWidth = 1.5
-      ..color = Cyber.cyan.withValues(alpha: 0.65);
-    for (var i = 0; i < nodes.length - 1; i++) {
-      canvas.drawLine(nodes[i], nodes[i + 1], route);
-    }
-    for (var i = 0; i < nodes.length; i++) {
-      canvas.drawCircle(
-        nodes[i],
-        7,
-        Paint()..color = i == nodes.length - 1 ? Cyber.gold : Cyber.cyan,
-      );
-      canvas.drawCircle(
-        nodes[i],
-        11,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1
-          ..color = Cyber.cyan.withValues(alpha: 0.34),
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _PenaltyShootoutMiniGoalPainter extends CustomPainter {
-  const _PenaltyShootoutMiniGoalPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [Color(0x00101825), Color(0xd10b2b39)],
-          stops: [0.36, 1],
-        ).createShader(Offset.zero & size),
-    );
-
-    final goal = Rect.fromLTRB(
-      size.width * 0.62,
-      size.height * 0.18,
-      size.width * 0.98,
-      size.height * 0.62,
-    );
-    final frame = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.6
-      ..color = Colors.white.withValues(alpha: 0.60);
-    canvas.drawRect(goal, frame);
-    final net = Paint()
-      ..strokeWidth = 0.8
-      ..color = Cyber.cyan.withValues(alpha: 0.28);
-    for (var i = 1; i < 5; i++) {
-      final x = goal.left + goal.width * i / 5;
-      canvas.drawLine(Offset(x, goal.top), Offset(x, goal.bottom), net);
-    }
-    for (var i = 1; i < 4; i++) {
-      final y = goal.top + goal.height * i / 4;
-      canvas.drawLine(Offset(goal.left, y), Offset(goal.right, y), net);
-    }
-
-    final target = Offset(size.width * 0.86, size.height * 0.34);
-    for (final radius in [24.0, 15.0, 6.0]) {
-      canvas.drawCircle(
-        target,
-        radius,
-        Paint()
-          ..style = radius == 6 ? PaintingStyle.fill : PaintingStyle.stroke
-          ..strokeWidth = 1.4
-          ..color = Cyber.cyan.withValues(alpha: radius == 6 ? 0.92 : 0.55),
-      );
-    }
-
-    final ball = Offset(size.width * 0.74, size.height * 0.79);
-    canvas.drawCircle(ball, 15, Paint()..color = const Color(0xffedf4f6));
-    canvas.drawCircle(ball, 5, Paint()..color = const Color(0xff18202a));
-    for (final offset in const [
-      Offset(-9, -7),
-      Offset(9, -7),
-      Offset(-8, 8),
-      Offset(8, 8),
-    ]) {
-      canvas.drawCircle(
-        ball + offset,
-        3.2,
-        Paint()..color = const Color(0xff18202a),
-      );
-    }
-    canvas.drawLine(
-      ball.translate(10, -12),
-      target.translate(-8, 8),
-      Paint()
-        ..strokeWidth = 2
-        ..color = Cyber.cyan.withValues(alpha: 0.34),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _FootballChessMiniBoardPainter extends CustomPainter {
-  const _FootballChessMiniBoardPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [Color(0x00101825), Color(0xd10b2b39)],
-          stops: [0.36, 1],
-        ).createShader(Offset.zero & size),
-    );
-
-    final board = Rect.fromLTRB(
-      size.width * 0.59,
-      size.height * 0.10,
-      size.width * 1.01,
-      size.height * 1.02,
-    );
-    const cells = 5;
-    final cellWidth = board.width / cells;
-    final cellHeight = board.height / cells;
-    for (var row = 0; row < cells; row++) {
-      for (var column = 0; column < cells; column++) {
-        final rect = Rect.fromLTWH(
-          board.left + column * cellWidth,
-          board.top + row * cellHeight,
-          cellWidth,
-          cellHeight,
-        );
-        canvas.drawRect(
-          rect,
-          Paint()
-            ..color = (row + column).isEven
-                ? Color.alphaBlend(
-                    Cyber.cyan.withValues(alpha: 0.20),
-                    Cyber.panel2,
-                  )
-                : Cyber.panel2,
-        );
-      }
-    }
-    canvas.drawRect(
-      board,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4
-        ..color = Cyber.cyan.withValues(alpha: 0.72),
-    );
-
-    final pieces = [
-      (Offset(size.width * 0.69, size.height * 0.74), Cyber.cyan),
-      (Offset(size.width * 0.84, size.height * 0.74), Cyber.cyan),
-      (Offset(size.width * 0.76, size.height * 0.55), Cyber.cyan),
-      (Offset(size.width * 0.91, size.height * 0.36), AppTheme.whiteColor),
-      (Offset(size.width * 0.69, size.height * 0.27), AppTheme.whiteColor),
-    ];
-    for (final piece in pieces) {
-      canvas.drawCircle(piece.$1, 9, Paint()..color = piece.$2);
-      canvas.drawCircle(
-        piece.$1,
-        13,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1
-          ..color = piece.$2.withValues(alpha: 0.34),
-      );
-    }
-    canvas.drawLine(
-      pieces[2].$1,
-      pieces[3].$1,
-      Paint()
-        ..strokeWidth = 2
-        ..color = Cyber.cyan.withValues(alpha: 0.58),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+    ),
+  );
 }
 
 class _QuickPlayHeader extends StatelessWidget {
@@ -3441,22 +2744,18 @@ class _QuickPlayHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final badgeLabel = '$gameCount FREE GAME${gameCount == 1 ? '' : 'S'}';
+    final badgeLabel = '$gameCount CHALLENGE${gameCount == 1 ? '' : 'S'}';
 
-    return Row(
+    return Wrap(
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 12,
+      runSpacing: 8,
       children: [
         Text(
           'QUICK PLAY',
           style: Cyber.display(11, color: Colors.white, letterSpacing: 1.8),
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Container(
-            height: 1,
-            color: Cyber.cyan.withValues(alpha: 0.28),
-          ),
-        ),
-        const SizedBox(width: 10),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -3478,7 +2777,7 @@ class _QuickGameEntry {
     required this.key,
     required this.title,
     required this.subtitle,
-    required this.icon,
+    required this.art,
     required this.accent,
     required this.onTap,
     this.lock,
@@ -3488,7 +2787,7 @@ class _QuickGameEntry {
   final Key key;
   final String title;
   final String subtitle;
-  final IconData icon;
+  final CyberGameArt art;
   final Color accent;
   final VoidCallback onTap;
 }
@@ -3509,13 +2808,20 @@ class _QuickGamesGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         const gap = 12.0;
-        final wideColumnCount = constraints.maxWidth >= 560 ? 3 : 2;
+        final enlarged = MediaQuery.textScalerOf(context).scale(10) > 12;
+        final wideColumnCount = enlarged
+            ? (constraints.maxWidth / 260).floor().clamp(1, 3)
+            : constraints.maxWidth >= 560
+            ? 3
+            : 2;
         final columnCount = games.length < wideColumnCount
             ? games.length
             : wideColumnCount;
         final cardWidth =
             (constraints.maxWidth - (gap * (columnCount - 1))) / columnCount;
-        final cardHeight = (cardWidth * 0.9).clamp(150.0, 176.0).toDouble();
+        final cardHeight =
+            240.0 +
+            (MediaQuery.textScalerOf(context).scale(13) - 13).clamp(0, 32) * 3;
 
         return Wrap(
           spacing: gap,
@@ -3532,7 +2838,7 @@ class _QuickGamesGrid extends StatelessWidget {
                     key: games[index].key,
                     title: games[index].title,
                     subtitle: games[index].subtitle,
-                    icon: games[index].icon,
+                    art: games[index].art,
                     accent: games[index].accent,
                     onTap: games[index].onTap,
                     lock: games[index].lock,
@@ -3550,169 +2856,42 @@ class _QuickGameTile extends StatelessWidget {
   const _QuickGameTile({
     required this.title,
     required this.subtitle,
-    required this.icon,
+    required this.art,
     required this.accent,
     required this.onTap,
-    this.emphasis = true,
-    this.tightContent = false,
-    this.largeType = false,
     this.lock,
     super.key,
   });
-
   final String title;
   final String subtitle;
-  final IconData icon;
+  final CyberGameArt art;
   final Color accent;
   final VoidCallback onTap;
   final _GameLock? lock;
-  final bool emphasis;
-  final bool tightContent;
-  final bool largeType;
 
-  static const _bigCut = 12.0;
-  static const _smallCut = 3.0;
+  String get _action => switch (art) {
+    CyberGameArt.quiz => 'ENTER QUIZ',
+    CyberGameArt.bingo => 'BUILD GRID',
+    CyberGameArt.winner => 'CALL WINNER',
+    _ => 'CRACK CLUES',
+  };
 
   @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: lock == null ? '$title, free to play' : '$title, locked',
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          child: _LockVeil(
-            lock: lock,
-            bigCut: _bigCut,
-            smallCut: _smallCut,
-            child: CustomPaint(
-              painter: _HudChamferCardPainter(
-                bigCut: _bigCut,
-                smallCut: _smallCut,
-                fillColor: Color.lerp(Cyber.panel, accent, 0.055)!,
-                borderColor: accent.withValues(alpha: 0.84),
-                borderGlow: emphasis && lock == null,
-              ),
-              child: ClipPath(
-                clipper: const HudChamferClipper(
-                  bigCut: _bigCut,
-                  smallCut: _smallCut,
-                ),
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final compact = constraints.maxWidth < 150;
-                    return Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Positioned(
-                          right: -18,
-                          bottom: -8,
-                          child: Icon(
-                            icon,
-                            size: compact ? 72 : 86,
-                            color: accent.withValues(alpha: 0.065),
-                          ),
-                        ),
-                        Positioned(
-                          top: 0,
-                          left: _bigCut,
-                          right: 34,
-                          child: Container(
-                            height: 2,
-                            color: accent.withValues(alpha: 0.82),
-                          ),
-                        ),
-                        Padding(
-                          padding: EdgeInsets.all(compact ? 11 : 13),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  _GameIconBox(
-                                    icon: icon,
-                                    accent: accent,
-                                    size: compact ? 36 : 40,
-                                    iconSize: compact ? 19 : 22,
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 7,
-                                      vertical: 4,
-                                    ),
-                                    color: accent.withValues(alpha: 0.14),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          width: 5,
-                                          height: 5,
-                                          decoration: BoxDecoration(
-                                            color: accent,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 5),
-                                        Text(
-                                          'FREE',
-                                          style: Cyber.display(
-                                            largeType ? 10 : 7,
-                                            color: accent,
-                                            letterSpacing: 0.4,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (tightContent)
-                                const SizedBox(height: 12)
-                              else
-                                const Spacer(),
-                              Text(
-                                title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: Cyber.display(
-                                  compact ? 11.5 : 13.5,
-                                  color: Colors.white,
-                                  letterSpacing: compact ? 0.65 : 0.9,
-                                ).copyWith(height: 1.02),
-                              ),
-                              const SizedBox(height: 5),
-                              Text(
-                                subtitle,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: Cyber.label(
-                                  largeType
-                                      ? 10
-                                      : compact
-                                      ? 6.5
-                                      : 7.5,
-                                  color: accent.withValues(alpha: 0.76),
-                                  letterSpacing: compact ? 0.4 : 0.6,
-                                ).copyWith(height: 1.2),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => _LockVeil(
+    lock: lock,
+    bigCut: 16,
+    smallCut: 0,
+    child: CyberGameLaunchCard(
+      title: title,
+      subtitle: subtitle,
+      badge: 'QUICK PLAY',
+      action: _action,
+      art: art,
+      accent: accent,
+      locked: lock != null,
+      onTap: onTap,
+    ),
+  );
 }
 
 /// Lock state for a GAMES tile (see [_GamesTabState._lockFor]).
@@ -3721,13 +2900,12 @@ class _GameLock {
 
   final String label;
 
-  /// The game the current Beginner's Quest step opens.
+  /// Whether the lock chip should receive an amber highlight.
   final bool next;
 }
 
 /// Dims and desaturates a locked GAMES tile and seals it with a padlock
-/// chip. Flat by design - a locked tile is never live, so it never glows; the
-/// NEXT UNLOCK tile only earns a calm amber chip border.
+/// chip. Locked tiles stay flat; mission selection is the quest card's focus.
 class _LockVeil extends StatelessWidget {
   const _LockVeil({
     required this.lock,
@@ -3792,34 +2970,6 @@ class _LockVeil extends StatelessWidget {
   }
 }
 
-class _GameIconBox extends StatelessWidget {
-  const _GameIconBox({
-    required this.icon,
-    required this.accent,
-    required this.size,
-    required this.iconSize,
-  });
-
-  final IconData icon;
-  final Color accent;
-  final double size;
-  final double iconSize;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Cyber.bg.withValues(alpha: 0.55),
-        border: Border.all(color: accent.withValues(alpha: 0.55)),
-      ),
-      child: Icon(icon, color: accent, size: iconSize),
-    );
-  }
-}
-
 /// Paints a flat fill plus a stroke that traces the full [HudChamferClipper]
 /// outline — including the diagonal cut edges.
 class _HudChamferCardPainter extends CustomPainter {
@@ -3828,14 +2978,12 @@ class _HudChamferCardPainter extends CustomPainter {
     required this.smallCut,
     required this.fillColor,
     required this.borderColor,
-    this.borderGlow = false,
   });
 
   final double bigCut;
   final double smallCut;
   final Color fillColor;
   final Color borderColor;
-  final bool borderGlow;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -3846,17 +2994,6 @@ class _HudChamferCardPainter extends CustomPainter {
     ).buildPath(size);
 
     canvas.drawPath(path, Paint()..color = fillColor);
-
-    if (borderGlow) {
-      canvas.drawPath(
-        path,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2
-          ..color = borderColor.withValues(alpha: 0.22)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
-      );
-    }
 
     canvas.drawPath(
       path,
@@ -3872,6 +3009,5 @@ class _HudChamferCardPainter extends CustomPainter {
       old.bigCut != bigCut ||
       old.smallCut != smallCut ||
       old.fillColor != fillColor ||
-      old.borderColor != borderColor ||
-      old.borderGlow != borderGlow;
+      old.borderColor != borderColor;
 }

@@ -40,6 +40,49 @@ void run(
 }
 
 void main() {
+  test(
+    'smaller cars allow close racing without invisible old-size contact',
+    () {
+      for (final pose in [(6.0, 1.7), (4.8, 0.0)]) {
+        final field = solo();
+        field.player.speed = 45;
+        field.cars.add(
+          CarState(
+            index: 1,
+            isPlayer: false,
+            name: 'RIVAL',
+            livery: GrandPrixLivery.papaya,
+            distance: pose.$1,
+            lateral: pose.$2,
+          )..speed = 45,
+        );
+        final event = GrandPrixEngine(
+          random: Random(77),
+        ).tick(field, const RaceInputs(throttle: true), 1 / 120);
+        expect(event.playerContact, isFalse);
+        expect(field.playerCleanRace, isTrue);
+      }
+      final field = solo();
+      field.player.speed = 45;
+      field.cars.add(
+        CarState(
+          index: 1,
+          isPlayer: false,
+          name: 'RIVAL',
+          livery: GrandPrixLivery.papaya,
+          distance: 3.5,
+          lateral: .8,
+        )..speed = 45,
+      );
+      expect(
+        GrandPrixEngine()
+            .tick(field, const RaceInputs(throttle: true), 1 / 120)
+            .playerContact,
+        isTrue,
+      );
+    },
+  );
+
   test('unobstructed rivals hold their lane throughout a straight', () {
     for (final lane in [-1.8, 1.8]) {
       final field = solo();

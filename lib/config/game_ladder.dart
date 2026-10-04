@@ -37,7 +37,7 @@ enum ArcadeGame {
   final IconData icon;
   final bool isQuiz;
 
-  /// 0-based position on its sport's Beginner's Quest ladder.
+  /// Catalogue position, independent of the player's chosen mission order.
   int get ladderIndex => sportGameLadder[sport]!.indexOf(this);
 
   String get questRequirement => switch (this) {
@@ -55,16 +55,14 @@ enum ArcadeGame {
     _ => 'Finish one match. A loss counts.',
   };
 
-  String get unlockRequirement => ladderIndex == 0
-      ? 'Opens with this sport'
-      : 'Finish ${sportGameLadder[sport]![ladderIndex - 1].title} to unlock';
+  String get unlockRequirement =>
+      'Finish your current mission to choose this game';
 }
 
 /// Every home sport graduates to Daily Quests after three completed missions.
 const beginnerChapterLength = 3;
 
-/// Beginner's Quest order per sport: game N+1 unlocks once game N has been
-/// finished. Quick, low-friction modes come first; the deepest mode is last.
+/// Stable catalogue/display order. Players choose their own mission route.
 const sportGameLadder = <Sport, List<ArcadeGame>>{
   Sport.football: [
     ArcadeGame.pitchDuel,

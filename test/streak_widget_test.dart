@@ -161,7 +161,9 @@ void main() {
   ) async {
     await tester.binding.setSurfaceSize(const Size(320, 852));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    final bloc = QuestHubBloc(UnlockProgress.fresh(Sport.cricket));
+    final bloc = QuestHubBloc(
+      UnlockProgress.fresh(Sport.cricket).selectGame(ArcadeGame.finalOver),
+    );
     final predictionCubit = PredictionCubit(
       MockPredictionRepository(),
       SecureGameStorage(),
@@ -197,10 +199,11 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(const ValueKey('rookie-path-panel')), findsOneWidget);
-    expect(find.text('MISSION LADDER'), findsOneWidget);
+    expect(find.text('YOUR ROUTE'), findsOneWidget);
+    expect(find.text('GAME BOARD'), findsOneWidget);
+    expect(find.text('DAILY +50 OZ'), findsOneWidget);
     expect(find.byKey(const ValueKey('beginner-quest-play')), findsNothing);
     expect(find.text('0 of 3 missions complete'), findsNothing);
-    expect(find.text('DAILY QUESTS LOCKED'), findsOneWidget);
     expect(find.text('TODAY'), findsNothing);
     expect(find.text('KICK OFF'), findsNothing);
     final liveMission = find.byKey(const ValueKey('mission-ticket-finalOver'));
@@ -230,7 +233,9 @@ void main() {
             padding: const EdgeInsets.all(16),
             child: BeginnerQuestCard(
               sport: Sport.football,
-              unlocks: UnlockProgress.fresh(Sport.football),
+              unlocks: UnlockProgress.fresh(
+                Sport.football,
+              ).selectGame(ArcadeGame.pitchDuel),
               onPlay: (_) {},
             ),
           ),
@@ -240,17 +245,76 @@ void main() {
     await tester.pump();
 
     expect(find.text("BEGINNER'S QUEST"), findsOneWidget);
+    expect(find.text('00/06'), findsOneWidget);
+    expect(find.text('0 of 6 missions complete'), findsNothing);
+    expect(find.text('MISSION 01 OF 3  //  ACTIVE'), findsNothing);
     expect(find.text('PLAY NOW'), findsNothing);
     expect(find.text('PLAY PITCH DUEL'), findsNothing);
     expect(find.text('VIEW QUEST'), findsNothing);
     expect(find.text('+40 XP'), findsOneWidget);
     expect(find.text('Finish one match. A loss counts.'), findsOneWidget);
-    expect(find.text('Unlocks PENALTY SHOOTOUT'), findsOneWidget);
+    expect(find.text('CHOOSE NEXT GAME ON CLEAR'), findsOneWidget);
     expect(find.text('STEP 1 OF 6'), findsNothing);
     expect(
       find.text('Finish one run - win or lose - to unlock PENALTY SHOOTOUT.'),
       findsNothing,
     );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('quest card keeps rewards readable across chapter changes', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(393, 852));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    var progress = UnlockProgress.fresh(Sport.football);
+
+    Future<void> showCard() async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: BeginnerQuestCard(
+                sport: Sport.football,
+                unlocks: progress,
+                onPlay: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    }
+
+    await showCard();
+    expect(find.text('00/06'), findsOneWidget);
+    expect(find.text('CHOOSE NEXT GAME ON CLEAR'), findsNothing);
+
+    for (final game in sportGameLadder[Sport.football]!.take(3)) {
+      progress = progress
+          .selectGame(game)
+          .recordPlay(game, 'test-${game.name}')
+          .progress;
+    }
+    progress = progress.selectGame(sportGameLadder[Sport.football]![3]);
+    await showCard();
+    expect(find.text('EXPLORER QUEST'), findsOneWidget);
+    expect(find.text('03/06'), findsOneWidget);
+    expect(find.text('CHOOSE NEXT GAME ON CLEAR'), findsOneWidget);
+
+    for (final game in sportGameLadder[Sport.football]!.skip(3).take(2)) {
+      progress = progress
+          .selectGame(game)
+          .recordPlay(game, 'test-${game.name}')
+          .progress;
+    }
+    progress = progress.selectGame(sportGameLadder[Sport.football]![5]);
+    await showCard();
+    expect(find.text('05/06'), findsOneWidget);
+    expect(find.text('+50 Oz ON CLEAR'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -321,7 +385,7 @@ void main() {
     expect(find.byKey(const ValueKey('quest-list-page')), findsOneWidget);
     expect(find.text('DAILY QUESTS'), findsOneWidget);
     expect(find.text('SPORT QUESTS'), findsOneWidget);
-    expect(find.text('PLAY FINAL OVER'), findsOneWidget);
+    expect(find.text('CHOOSE GAME'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

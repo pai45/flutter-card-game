@@ -61,9 +61,12 @@ preview, then enters profile setup. Completing setup saves the player's identity
 awards an idempotent 1,000 Oz Coin welcome bonus with a reward animation.
 Setup's single-select **home sport** is the only sport open to a new player:
 the other sports sit on the sport strip as padlocked teasers that unlock for 50
-Oz each, and within every sport only the first game is open. The rest unlock by
-playing through that sport's **Beginner's Quest**. The home quest is the
-one-time ROOKIE PATH: it replaces Daily Quest UI until completion while daily
+Oz each. In each unlocked sport, players choose any first game through the
+Games quest-card picker, finish that mission, then choose each subsequent
+unfinished game. Completed games remain available for replay. These choices
+form that sport's **Beginner's Quest**. The home quest is the
+one-time ROOKIE PATH: it replaces Daily Quest UI until three home-sport missions
+are cleared while daily
 activity tracks invisibly. Graduated multi-sport careers receive a combined
 QUESTS list for Daily Quests and remaining sport ladders
 ([Sport and Game Unlocks](systems/sport-and-game-unlocks.md)). Profiles
@@ -89,7 +92,10 @@ Orbitron remains the display/HUD face across both areas.
 
 ## Playable Game Coverage
 
-The current Games tab contains 18 playable entries. The three sport-specific
+The current Games tab contains 18 playable entries. Sport pages and curated
+Trending tiles share [illustrated game launch cards](design/cyber-ui-design-system.md#game-discovery-launch-cards-built)
+with game-specific vector simulations, looping motion, and clear launch rails;
+quest access and streak state still come from their existing systems. The three sport-specific
 Guess the Player entries share one implementation and one product page.
 
 | Sport | Game | Status | Product page |
@@ -123,7 +129,7 @@ Guess the Player entries share one implementation and one product page.
 | Prediction feedback, rewards, daily quests, and planned accuracy streaks | BUILT / PLANNED | [Prediction Gamification](systems/prediction-gamification.md) |
 | Outcome markets, positions, settlement, and payouts | BUILT / PROTOTYPE DATA | [Picks](systems/picks.md) |
 | Per-mode XP tracks and aggregate player level | BUILT | [Progression and Leveling](systems/progression-and-leveling.md) |
-| Home sport, locked sports (50 Oz unlock), per-sport game ladders, and the Beginner's Quest | BUILT | [Sport and Game Unlocks](systems/sport-and-game-unlocks.md) |
+| Home sport, locked sports (50 Oz unlock), player-chosen mission routes, and the Beginner's Quest game picker | BUILT | [Sport and Game Unlocks](systems/sport-and-game-unlocks.md) |
 | Daily activity streaks, streak shields + at-risk state, escalating streak reminder popups, three daily quests + sweep bonus, milestones, and claims | BUILT | [Streaks](systems/streaks.md) |
 | Cross-app badges and unlock celebrations | BUILT | [Achievements](systems/achievements.md) |
 | Cards, decks, packs, starter packs, and daily drops | BUILT | [Collections, Decks, and Packs](systems/collections-decks-and-packs.md) |
@@ -164,8 +170,8 @@ Guess the Player entries share one implementation and one product page.
    CALENDAR, and the road-to-365 MILESTONES. Complete three daily quests for up to 50
    extra Oz Coins; predictions and picks each have a game alternative. The
    Daily Sweep forges a streak shield (bank of 2) that covers a missed day.
-   Before home-sport graduation this is a focused ROOKIE PATH instead; with two
-   unlocked sports after graduation, TODAY becomes the combined QUESTS tab.
+   Before home-sport graduation this is a focused ROOKIE PATH instead; after
+   graduation, managed careers receive the combined QUESTS tab.
 3. Claim the 24-hour daily drop and open packs.
 4. Review XP and Oz Coin histories, achievements, leaderboards, rivals, and
    career statistics.
@@ -185,7 +191,9 @@ reused before new components are introduced, and every meaningful action must
 produce clear feedback or gratification. Sport identity is consistent across
 tabs, onboarding, Trending, collections, shop, and leaderboards: Football is
 cyan, Cricket white, Basketball yellow, Tennis green, and Motorsport red.
-Semantic state, reward, team, and game-mode colors remain separate. Data-dense
+Game discovery cards use dedicated per-game accents for their animated
+schematics, borders and launch rails, consistently across sport pages and
+Trending. Semantic state, reward, team, and game-mode colors remain separate. Data-dense
 surfaces share one language:
 
 Team identity comes from the checked-in competition-scoped palette. Logos use

@@ -378,7 +378,7 @@ class GrandPrixGame extends FlameGame {
       final lateral = _interpolate(car.previousLateral, car.lateral, car);
       final at = worldToScreen(distance, lateral);
       sprite.position = Vector2(at.dx, at.dy);
-      // Slimmer + longer than the old 1.75 block — real F1 proportions.
+      // Shared dimensions shrink both axes while retaining F1 proportions.
       final carW = kCarWidth * pxPerMeterX * 0.68;
       sprite.size = Vector2(carW, carW * 2.05);
       sprite.angle = sprite.car.spinning
@@ -749,7 +749,10 @@ class _CarComponent extends PositionComponent {
         Rect.fromLTWH(-w * 0.25, -h * 0.15, w * 1.5, h * 1.3),
         Paint()
           ..color = _glowColor.withValues(alpha: 0.35)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+          ..maskFilter = const MaskFilter.blur(
+            BlurStyle.normal,
+            8 * kGrandPrixCarScale,
+          ),
       );
     }
 
@@ -776,7 +779,7 @@ class _CarComponent extends PositionComponent {
         w * 0.75,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2
+          ..strokeWidth = 2 * kGrandPrixCarScale
           ..color = Cyber.danger.withValues(alpha: 0.6),
       );
     }
@@ -855,8 +858,8 @@ class _TrackEffectsComponent extends PositionComponent
         for (final side in const [-0.65, 0.65]) {
           _add(
             _RoadEffect(
-              car.distance - 2,
-              car.lateral + side,
+              car.distance - 2 * kGrandPrixCarScale,
+              car.lateral + side * kGrandPrixCarScale,
               Cyber.arenaFloor,
               life: 8,
               mark: true,
@@ -867,7 +870,7 @@ class _TrackEffectsComponent extends PositionComponent
       if (car.spinning || car.grip < 0.78) {
         _add(
           _RoadEffect(
-            car.distance - 3,
+            car.distance - 3 * kGrandPrixCarScale,
             car.lateral,
             Cyber.muted,
             smoke: true,
@@ -899,33 +902,45 @@ class _TrackEffectsComponent extends PositionComponent
         );
       if (effect.mark) {
         paint
-          ..strokeWidth = max(1.5, game.pxPerMeterX * 0.08)
+          ..strokeWidth = max(1, game.pxPerMeterX * 0.08 * kGrandPrixCarScale)
           ..strokeCap = StrokeCap.round;
         canvas.drawLine(
           at,
-          game.worldToScreen(effect.distance - 1.6, effect.lateral),
+          game.worldToScreen(
+            effect.distance - 1.6 * kGrandPrixCarScale,
+            effect.lateral,
+          ),
           paint,
         );
       } else if (effect.smoke) {
-        canvas.drawCircle(at, 4 + effect.age * 12, paint);
+        canvas.drawCircle(
+          at,
+          (4 + effect.age * 12) * kGrandPrixCarScale,
+          paint,
+        );
       } else {
-        canvas.drawCircle(at, 1.8, paint);
+        canvas.drawCircle(at, 1.8 * kGrandPrixCarScale, paint);
       }
     }
     final player = game.field.player;
     if (player.deploying || player.towStrength > 0.3) {
-      final at = game.worldToScreen(player.distance - 4, player.lateral);
+      final at = game.worldToScreen(
+        player.distance - 4 * kGrandPrixCarScale,
+        player.lateral,
+      );
       final paint = Paint()
         ..color = Cyber.cyan.withValues(alpha: player.deploying ? 0.55 : 0.22)
-        ..strokeWidth = 1.5
+        ..strokeWidth = 1.5 * kGrandPrixCarScale
         ..strokeCap = StrokeCap.round;
       for (final side in const [-0.6, 0.6]) {
         canvas.drawLine(
-          at + Offset(side * game.pxPerMeterX, 0),
+          at + Offset(side * kGrandPrixCarScale * game.pxPerMeterX, 0),
           at +
               Offset(
-                side * game.pxPerMeterX,
-                game.pxPerMeterY * (player.deploying ? 11 : 5),
+                side * kGrandPrixCarScale * game.pxPerMeterX,
+                game.pxPerMeterY *
+                    (player.deploying ? 11 : 5) *
+                    kGrandPrixCarScale,
               ),
           paint,
         );

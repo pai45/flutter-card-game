@@ -185,24 +185,50 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<DailyQuestRewardConsumed>(
       (event, emit) => emit(state.copyWith(questRewardCoins: 0)),
     );
-    on<HomeSportChosen>(_onHomeSportChosen);
-    on<SportUnlockPurchased>(_onSportUnlockPurchased);
+    on<HomeSportChosen>(
+      (event, emit) =>
+          _withUnlockMutation(() => _onHomeSportChosen(event, emit)),
+    );
+    on<SportUnlockPurchased>(
+      (event, emit) =>
+          _withUnlockMutation(() => _onSportUnlockPurchased(event, emit)),
+    );
+    on<QuestGameSelected>(
+      (event, emit) => _withUnlockMutation(() async {
+        if (state.loading || !state.unlocks.canSelect(event.game)) {
+          event.result.complete(QuestGameSelectionResult.rejected);
+          return;
+        }
+        final next = state.unlocks.selectGame(event.game);
+        try {
+          await _storage.saveUnlockProgress(next);
+          emit(state.copyWith(unlocks: next));
+          event.result.complete(QuestGameSelectionResult.selected);
+        } catch (_) {
+          event.result.complete(QuestGameSelectionResult.saveFailed);
+        }
+      }),
+    );
     on<ArcadeGamePlayed>(
       (event, emit) =>
           _recordArcadePlay(event.game, event.sourceId, emit, countDaily: true),
     );
-    on<RookieTicketUsed>((event, emit) async {
-      if (!state.unlocks.hasRookieTicket(event.sport)) return;
-      final next = state.unlocks.useRookieTicket(event.sport);
-      emit(state.copyWith(unlocks: next));
-      await _storage.saveUnlockProgress(next);
-    });
-    on<UnlockRevealConsumed>((event, emit) async {
-      if (state.unlocks.pendingReveals.isEmpty) return;
-      final next = state.unlocks.consumeReveal();
-      emit(state.copyWith(unlocks: next));
-      await _storage.saveUnlockProgress(next);
-    });
+    on<RookieTicketUsed>(
+      (event, emit) => _withUnlockMutation(() async {
+        if (!state.unlocks.hasRookieTicket(event.sport)) return;
+        final next = state.unlocks.useRookieTicket(event.sport);
+        emit(state.copyWith(unlocks: next));
+        await _storage.saveUnlockProgress(next);
+      }),
+    );
+    on<UnlockRevealConsumed>(
+      (event, emit) => _withUnlockMutation(() async {
+        if (state.unlocks.pendingReveals.isEmpty) return;
+        final next = state.unlocks.consumeReveal();
+        emit(state.copyWith(unlocks: next));
+        await _storage.saveUnlockProgress(next);
+      }),
+    );
     on<MatchReset>((_, emit) => emit(_resetMatch(state)));
     on<MatchStarted>(_onMatchStarted);
     on<TossChoiceChanged>(
@@ -359,6 +385,19 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _storage.saveUnlockProgress(next);
   }
 
+  Future<void> _unlockMutationTail = Future.value();
+
+  /// Selection and settlements share one queue so a slow save cannot overwrite
+  /// another sport's progress or a consumed celebration.
+  Future<void> _withUnlockMutation(Future<void> Function() action) {
+    final operation = _unlockMutationTail.then((_) => action());
+    _unlockMutationTail = operation.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return operation;
+  }
+
   Future<void> _onSportUnlockPurchased(
     SportUnlockPurchased event,
     Emitter<GameState> emit,
@@ -384,6 +423,16 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   /// modes without their own daily-quest activity, the daily game quests).
   /// Runs after the game's own settle so its result screen is never delayed.
   Future<void> _recordArcadePlay(
+    ArcadeGame game,
+    String sourceId,
+    Emitter<GameState> emit, {
+    required bool countDaily,
+  }) => _withUnlockMutation(
+    () =>
+        _recordSelectedArcadePlay(game, sourceId, emit, countDaily: countDaily),
+  );
+
+  Future<void> _recordSelectedArcadePlay(
     ArcadeGame game,
     String sourceId,
     Emitter<GameState> emit, {
@@ -417,7 +466,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       title: "BEGINNER'S QUEST",
       details: result.questCompleted
           ? '$sportLabel QUEST COMPLETE'
-          : '${result.unlockedGame!.title} UNLOCKED',
+          : '${game.title} MISSION COMPLETE',
     );
     emit(
       state.copyWith(

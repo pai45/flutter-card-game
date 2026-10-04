@@ -96,7 +96,7 @@ void main() {
       );
       expect(
         tester.getTopLeft(guessPlayer).dy,
-        lessThan(tester.getTopLeft(cricketQuiz).dy),
+        moreOrLessEquals(tester.getTopLeft(cricketQuiz).dy),
       );
 
       await tester.tap(finalOver);

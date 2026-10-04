@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 
 import '../../data/grand_prix_liveries.dart';
 import '../../config/theme.dart';
+import 'grand_prix_car_dimensions.dart';
 
 /// Shared top-down F1 car drawing for Grand Prix Dash.
 ///
@@ -298,7 +299,7 @@ class GrandPrixCarPreviewPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final carW = min(size.width, size.height * aspect);
+    final carW = min(size.width, size.height * aspect) * kGrandPrixCarScale;
     final carH = carW / aspect;
     canvas.save();
     canvas.translate((size.width - carW) / 2, (size.height - carH) / 2);

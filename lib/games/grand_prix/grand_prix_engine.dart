@@ -10,8 +10,10 @@ import 'dart:math';
 import '../../models/grand_prix.dart';
 import '../../models/progression.dart' show cpuSmartness;
 import 'grand_prix_track.dart';
+import 'grand_prix_car_dimensions.dart';
 
 export 'grand_prix_track.dart';
+export 'grand_prix_car_dimensions.dart';
 
 // ---------------------------------------------------------------------------
 // Tuning constants (m, m/s, m/s², seconds). All race feel lives here.
@@ -21,8 +23,6 @@ const double kTopSpeed = 88; // ~316 kph
 const double kAccel = 26; // peak acceleration off the line
 const double kCoast = 10; // speed decay with throttle released
 const double kBrake = 44; // braking deceleration
-const double kCarLength = 5.5;
-const double kCarWidth = 2.0;
 
 /// Drivable asphalt half-width (~4 car-widths of total band + margins).
 const double kTrackHalfWidth = 4.5;
@@ -1006,7 +1006,9 @@ class GrandPrixEngine {
       }
       final closing = max(0.0, car.speed - blocker.speed);
       final followingDistance =
-          kCarLength * 2.2 + closing * .3 + closing * closing / (2 * kBrake);
+          max(12.1, kCarLength * 2.2) +
+          closing * .3 +
+          closing * closing / (2 * kBrake);
       if (blocker.distance - car.distance < followingDistance) brake = true;
     } else if (car.decisionTimer <= 0) {
       car.passTarget = 0;
@@ -1057,7 +1059,9 @@ class GrandPrixEngine {
       final closing = max(0.0, car.speed - other.speed);
       final lookahead = max(
         kCarLength * 3,
-        kCarLength * 2.2 + closing * .5 + closing * closing / (2 * kBrake),
+        max(12.1, kCarLength * 2.2) +
+            closing * .5 +
+            closing * closing / (2 * kBrake),
       );
       if (gap <= 0 || gap > lookahead) continue;
       if ((other.lateral - car.lateral).abs() > kCarWidth * 1.3) continue;

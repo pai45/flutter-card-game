@@ -2,7 +2,13 @@ import '../config/game_ladder.dart';
 import '../config/sport_modules.dart';
 import 'sport_match.dart';
 
-enum UnlockRevealKind { game, sport, questComplete, graduation }
+enum UnlockRevealKind {
+  game,
+  sport,
+  questComplete,
+  graduation,
+  missionComplete,
+}
 
 /// A queued "moment" the app root plays once the player is free
 /// (NEW GAME UNLOCKED / SPORT UNLOCKED / BEGINNER'S QUEST COMPLETE).
@@ -18,6 +24,9 @@ class UnlockReveal {
       game = null;
   const UnlockReveal.graduation(ArcadeGame this.game)
     : kind = UnlockRevealKind.graduation,
+      sport = null;
+  const UnlockReveal.missionComplete(ArcadeGame this.game)
+    : kind = UnlockRevealKind.missionComplete,
       sport = null;
 
   final UnlockRevealKind kind;
@@ -50,6 +59,8 @@ class UnlockReveal {
       UnlockRevealKind.graduation when game != null => UnlockReveal.graduation(
         game,
       ),
+      UnlockRevealKind.missionComplete when game != null =>
+        UnlockReveal.missionComplete(game),
       _ => null,
     };
   }
@@ -97,6 +108,8 @@ class UnlockProgress {
     this.homeSport,
     this.unlockedSports = const {},
     this.ladderReached = const {},
+    this.completedGames = const {},
+    this.activeGames = const {},
     this.completedQuests = const {},
     this.processedIds = const {},
     this.rookieTicketsUsed = const {},
@@ -105,19 +118,18 @@ class UnlockProgress {
 
   const UnlockProgress.grandfathered() : this(grandfathered: true);
 
-  /// A brand-new player: only [sport] and its first game are open.
-  factory UnlockProgress.fresh(Sport sport) => UnlockProgress(
-    homeSport: sport,
-    unlockedSports: {sport},
-    ladderReached: {sport: 1},
-  );
+  /// A brand-new player chooses the first mission after entering Games.
+  factory UnlockProgress.fresh(Sport sport) =>
+      UnlockProgress(homeSport: sport, unlockedSports: {sport});
 
   final bool grandfathered;
   final Sport? homeSport;
   final Set<Sport> unlockedSports;
 
-  /// How many games of each sport's ladder are open (at least 1).
+  /// Compatibility input for older in-memory presets. New saves use identities.
   final Map<Sport, int> ladderReached;
+  final Map<Sport, List<ArcadeGame>> completedGames;
+  final Map<Sport, ArcadeGame> activeGames;
   final Set<Sport> completedQuests;
 
   /// `game:sourceId` identities already counted, so replays never double-step.
@@ -166,13 +178,55 @@ class UnlockProgress {
   int reachedFor(Sport sport) {
     final ladder = sportGameLadder[sport]!;
     if (!gated) return ladder.length;
-    return (ladderReached[sport] ?? 1).clamp(1, ladder.length);
+    return (stepsCleared(sport) + 1).clamp(1, ladder.length);
   }
+
+  List<ArcadeGame> completedFor(Sport sport) {
+    final ladder = sportGameLadder[sport]!;
+    if (!gated) return ladder;
+    if (completedQuests.contains(sport)) {
+      return completedGames[sport]?.length == ladder.length
+          ? completedGames[sport]!
+          : ladder;
+    }
+    return completedGames[sport] ??
+        ladder
+            .take(((ladderReached[sport] ?? 1) - 1).clamp(0, ladder.length))
+            .toList();
+  }
+
+  List<ArcadeGame> remainingFor(Sport sport) => [
+    for (final game in sportGameLadder[sport]!)
+      if (!completedFor(sport).contains(game)) game,
+  ];
+
+  bool needsSelection(Sport sport) =>
+      isQuestActive(sport) && currentStep(sport) == null;
+
+  bool canSelect(ArcadeGame game) =>
+      needsSelection(game.sport) && !completedFor(game.sport).contains(game);
+
+  UnlockProgress selectGame(ArcadeGame game) => canSelect(game)
+      ? copyWith(activeGames: {...resolvedActiveGames, game.sport: game})
+      : this;
+
+  Map<Sport, ArcadeGame> get resolvedActiveGames => {
+    for (final sport in Sport.values)
+      if (currentStep(sport) case final ArcadeGame game) sport: game,
+  };
+
+  List<ArcadeGame> routeFor(Sport sport) => [
+    ...completedFor(sport),
+    if (currentStep(sport) case final ArcadeGame game) game,
+    for (final game in remainingFor(sport))
+      if (game != currentStep(sport)) game,
+  ];
 
   bool isGameUnlocked(ArcadeGame game) =>
       !gated ||
       (isSportUnlocked(game.sport) &&
-          game.ladderIndex < reachedFor(game.sport));
+          (completedFor(game.sport).contains(game) ||
+              currentStep(game.sport) == game));
 
   bool isQuestActive(Sport sport) =>
       gated && isSportUnlocked(sport) && !completedQuests.contains(sport);
@@ -180,14 +234,22 @@ class UnlockProgress {
   /// The game the Beginner's Quest currently asks the player to finish.
   ArcadeGame? currentStep(Sport sport) {
     if (!isQuestActive(sport)) return null;
-    return sportGameLadder[sport]![reachedFor(sport) - 1];
+    final active = activeGames[sport];
+    if (active != null) return active;
+    final reached = ladderReached[sport] ?? 1;
+    return reached > 1
+        ? sportGameLadder[sport]![(reached - 1).clamp(
+            0,
+            sportGameLadder[sport]!.length - 1,
+          )]
+        : null;
   }
 
   /// Steps cleared so far on [sport]'s ladder.
   int stepsCleared(Sport sport) {
     final ladder = sportGameLadder[sport]!;
     if (!gated || completedQuests.contains(sport)) return ladder.length;
-    return reachedFor(sport) - 1;
+    return completedFor(sport).length;
   }
 
   /// Sports in hub order: unlocked (home sport first), then locked teasers.
@@ -210,6 +272,8 @@ class UnlockProgress {
     Sport? homeSport,
     Set<Sport>? unlockedSports,
     Map<Sport, int>? ladderReached,
+    Map<Sport, List<ArcadeGame>>? completedGames,
+    Map<Sport, ArcadeGame>? activeGames,
     Set<Sport>? completedQuests,
     Set<String>? processedIds,
     Set<Sport>? rookieTicketsUsed,
@@ -218,7 +282,16 @@ class UnlockProgress {
     grandfathered: grandfathered ?? this.grandfathered,
     homeSport: homeSport ?? this.homeSport,
     unlockedSports: unlockedSports ?? this.unlockedSports,
-    ladderReached: ladderReached ?? this.ladderReached,
+    ladderReached: ladderReached ?? const {},
+    completedGames:
+        completedGames ??
+        {
+          for (final sport in Sport.values)
+            sport: gated
+                ? completedFor(sport)
+                : this.completedGames[sport] ?? const [],
+        },
+    activeGames: activeGames ?? resolvedActiveGames,
     completedQuests: completedQuests ?? this.completedQuests,
     processedIds: processedIds ?? this.processedIds,
     rookieTicketsUsed: rookieTicketsUsed ?? this.rookieTicketsUsed,
@@ -233,7 +306,6 @@ class UnlockProgress {
     return copyWith(
       homeSport: sport,
       unlockedSports: {...unlockedSports, sport},
-      ladderReached: {sport: 1, ...ladderReached},
     );
   }
 
@@ -241,7 +313,6 @@ class UnlockProgress {
     if (isSportUnlocked(sport)) return this;
     return copyWith(
       unlockedSports: {...unlockedSports, sport},
-      ladderReached: {...ladderReached, sport: 1},
       pendingReveals: [...pendingReveals, UnlockReveal.sport(sport)],
     );
   }
@@ -270,25 +341,32 @@ class UnlockProgress {
       return none;
     }
     final ladder = sportGameLadder[game.sport]!;
-    final index = game.ladderIndex;
+    final completed = [...completedFor(game.sport), game];
+    final active = {...resolvedActiveGames}..remove(game.sport);
     final processed = {...processedIds, identity};
     final graduated =
         initialQuestActive &&
         game.sport == homeSport &&
-        index + 1 == beginnerChapterLength;
-    if (index < ladder.length - 1) {
-      final next = ladder[index + 1];
+        completed.length == beginnerChapterLength;
+    if (completed.length < ladder.length) {
       return (
         progress: copyWith(
           processedIds: processed,
-          ladderReached: {...ladderReached, game.sport: index + 2},
+          completedGames: {
+            ...completedGames,
+            for (final sport in Sport.values)
+              sport: sport == game.sport ? completed : completedFor(sport),
+          },
+          activeGames: active,
           pendingReveals: [
             ...pendingReveals,
-            graduated ? UnlockReveal.graduation(next) : UnlockReveal.game(next),
+            graduated
+                ? UnlockReveal.graduation(game)
+                : UnlockReveal.missionComplete(game),
           ],
         ),
         stepCleared: true,
-        unlockedGame: next,
+        unlockedGame: null,
         questCompleted: false,
         graduated: graduated,
       );
@@ -297,6 +375,11 @@ class UnlockProgress {
       progress: copyWith(
         processedIds: processed,
         completedQuests: {...completedQuests, game.sport},
+        completedGames: {
+          for (final sport in Sport.values)
+            sport: sport == game.sport ? completed : completedFor(sport),
+        },
+        activeGames: active,
         pendingReveals: [
           ...pendingReveals,
           UnlockReveal.questComplete(game.sport),
@@ -310,12 +393,16 @@ class UnlockProgress {
   }
 
   Map<String, dynamic> toJson() => {
-    'version': 1,
+    'version': 2,
     'grandfathered': grandfathered,
     if (homeSport != null) 'homeSport': homeSport!.name,
     'unlockedSports': [for (final s in unlockedSports) s.name],
-    'ladderReached': {
-      for (final e in ladderReached.entries) e.key.name: e.value,
+    'completedGames': {
+      for (final sport in unlockedSports)
+        sport.name: [for (final game in completedFor(sport)) game.name],
+    },
+    'activeGames': {
+      for (final e in resolvedActiveGames.entries) e.key.name: e.value.name,
     },
     'completedQuests': [for (final s in completedQuests) s.name],
     'processedIds': processedIds.toList(),
@@ -324,7 +411,7 @@ class UnlockProgress {
   };
 
   factory UnlockProgress.fromJson(Map<String, dynamic> json) {
-    if (json['version'] != 1) {
+    if (json['version'] != 1 && json['version'] != 2) {
       throw const FormatException('Unsupported unlock progress version');
     }
     Sport? sportNamed(Object? name) =>
@@ -332,15 +419,55 @@ class UnlockProgress {
     Set<Sport> sports(Object? raw) => {
       for (final name in (raw as List? ?? const [])) ?sportNamed(name),
     };
+    ArcadeGame? gameNamed(Object? name) =>
+        ArcadeGame.values.where((g) => g.name == name).firstOrNull;
+    final completedQuests = sports(json['completedQuests']);
+    final completed = <Sport, List<ArcadeGame>>{};
+    final active = <Sport, ArcadeGame>{};
+    for (final sport in sports(json['unlockedSports'])) {
+      final ladder = sportGameLadder[sport]!;
+      if (json['version'] == 1) {
+        final reached =
+            ((json['ladderReached'] as Map? ?? const {})[sport.name] as int? ??
+                    1)
+                .clamp(1, ladder.length);
+        completed[sport] = completedQuests.contains(sport)
+            ? ladder.toList()
+            : ladder.take(reached - 1).toList();
+        if (!completedQuests.contains(sport) && reached > 1) {
+          active[sport] = ladder[reached - 1];
+        }
+      } else {
+        completed[sport] = {
+          for (final name
+              in ((json['completedGames'] as Map? ?? const {})[sport.name]
+                      as List? ??
+                  const []))
+            if (gameNamed(name) case final ArcadeGame game
+                when game.sport == sport)
+              game,
+        }.toList();
+        final game = gameNamed(
+          (json['activeGames'] as Map? ?? const {})[sport.name],
+        );
+        if (game != null &&
+            game.sport == sport &&
+            !completed[sport]!.contains(game) &&
+            !completedQuests.contains(sport)) {
+          active[sport] = game;
+        }
+        if (completed[sport]!.length == ladder.length) {
+          completedQuests.add(sport);
+        }
+      }
+    }
     return UnlockProgress(
       grandfathered: json['grandfathered'] as bool? ?? false,
       homeSport: sportNamed(json['homeSport']),
       unlockedSports: sports(json['unlockedSports']),
-      ladderReached: {
-        for (final e in (json['ladderReached'] as Map? ?? const {}).entries)
-          ?sportNamed(e.key): e.value as int,
-      },
-      completedQuests: sports(json['completedQuests']),
+      completedGames: completed,
+      activeGames: active,
+      completedQuests: completedQuests,
       processedIds: Set<String>.from(json['processedIds'] as List? ?? const []),
       rookieTicketsUsed: sports(json['rookieTicketsUsed']),
       pendingReveals: [

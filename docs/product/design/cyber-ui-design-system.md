@@ -65,6 +65,45 @@ clear state/result feedback, and a reward/next-action handoff.
   `CyberCtaButton`, and `CyberSegmentedTabs`. If a visual pattern repeats, extend
   the shared cyber catalog rather than duplicate it.
 
+### Game discovery launch cards [BUILT]
+
+All 18 sport-specific Games entries and the curated Trending game tiles compose
+`CyberGameLaunchCard`, exported through the shared cyber catalog. It extends
+`ChamferedActionSurface` and `HudChamferClipper` with top-left and bottom-right
+cuts (`smallCut: 0`), a flat panel, a quiet accent border, a white Orbitron title,
+and a full-width action rail. Landscape hero cards keep the simulation on the
+right; narrow Quick Play and tall Trending cards stack the illustration above
+the title. Supporting labels are at least 10 px and compact titles at least 15 px.
+With text scaled above 1.2x, phone Quick Play grids use one wider column and
+Trending uses full-width tiles, retaining full game names and short action labels.
+
+The illustrations are original Flutter vector schematics: tactical card/passing
+chains, a perspective goal/aim reticle, a 5v5 board, a cricket chase, a hoop/shot
+arc, an F1 chassis/circuit, a tennis court/racket, a quiz core, a bingo grid,
+player/driver dossiers, and a winner trophy. Each game has a dedicated discovery
+accent from `AppTheme.game*`, shared between its sport page and Trending entry.
+The accent colours its wireframe, badge, quiet border and launch label; a 6%
+flat tint in the CTA rail adds a little identity without tinting the full panel.
+Pitch Duel stays cyan, Penalty is coral, Football Chess ice blue, Football Quiz
+violet, Bingo amber, and the football mystery rose. Cricket uses silver,
+seafoam and jade; Basketball uses gold, apricot and orchid; Motorsport uses
+coral-red, hot pink and periwinkle; Tennis uses green, citron and aqua.
+Quiz and mystery variants keep their own discovery shades where they share
+an illustration. Sport navigation colours, reward and state
+signals retain their existing tokens. The release feature cards reuse Pitch
+Duel and Penalty's discovery accents too.
+Ambient motion belongs to the schematic; borders do not
+pulse or glow. Hover/keyboard focus brightens the outline and launch rail;
+pressing gives a short scale response and selection haptic.
+
+The entire card, action rail, keyboard Enter/Space and accessibility activation
+invoke the existing game callback. Existing streak badges and quest lock/choice
+veils still carry real progression state. Locked illustrations stay static and
+the lock action continues through the existing mission-selection guard. Quick
+Play uses challenge/clue/grid labels instead of implying every mode is free.
+See [Motion, Audio, Haptics, and Celebration](motion-audio-haptics.md) for the
+loop and reduced-motion contract.
+
 ### Cyberpunk UI kit — sport access
 
 **BUILT:** Sport unlock sheets use the opt-in [Cyberpunk UI kit](cyberpunk-ui-kit.md).
@@ -182,6 +221,9 @@ widget must not become the authoritative store for durable state.
 - [`lib/config/theme.dart`](../../../lib/config/theme.dart)
 - [`lib/widgets/game_scaffold.dart`](../../../lib/widgets/game_scaffold.dart)
 - [`lib/widgets/cyber/cyber_widgets.dart`](../../../lib/widgets/cyber/cyber_widgets.dart)
+- [`lib/widgets/cyber/cyber_game_launch_card.dart`](../../../lib/widgets/cyber/cyber_game_launch_card.dart)
+- [`lib/widgets/cyber/game_launch_art.dart`](../../../lib/widgets/cyber/game_launch_art.dart)
+- [`lib/screens/predictions/prediction_home_screen.dart`](../../../lib/screens/predictions/prediction_home_screen.dart)
 - [`lib/widgets/cyber/cyber_cta_button.dart`](../../../lib/widgets/cyber/cyber_cta_button.dart)
 - [`lib/widgets/cyber/cyber_segmented_tabs.dart`](../../../lib/widgets/cyber/cyber_segmented_tabs.dart)
 - [`lib/widgets/cyber/cyber_chart.dart`](../../../lib/widgets/cyber/cyber_chart.dart)
@@ -195,3 +237,8 @@ Component behavior is exercised by screen/widget tests linked from the owning
 feature pages; the shared chart system has its own
 [`test/cyber_chart_test.dart`](../../../test/cyber_chart_test.dart). Visual changes also require running-app review under the project
 instructions; documentation-only edits do not.
+Game-card routing/layout is covered by `game_hero_cta_test.dart`,
+`final_over_games_tab_test.dart`, and `trending_hub_test.dart`. The shared
+`cyber_game_launch_card_test.dart` covers motion shutdown/resume, input routes,
+and all schematic variants with enlarged text; `tool/game_cards_preview.dart`
+provides an isolated production-widget running-app preview.

@@ -8,18 +8,16 @@ import '../../../models/sport_match.dart';
 import '../../../models/unlock_progress.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
+import '../../../widgets/unlock_celebration_host.dart';
 import 'unlock_sheets.dart';
 
-/// Slot #1 of a sport's GAMES tab while its Beginner's Quest is running: the
-/// current objective ("PLAY FINAL OVER"), a segment per ladder game, the step
-/// reward and what it unlocks next. Built on the shared [CyberObjectiveCard]
-/// so it reads as the same quest family as the daily quests.
+/// Slot #1 of a sport's GAMES tab while its quest is running. The active
+/// mission, route progress and reward share one compact card.
 class BeginnerQuestCard extends StatelessWidget {
   const BeginnerQuestCard({
     required this.sport,
     required this.unlocks,
     required this.onPlay,
-    this.showHeader = true,
     this.showAction = false,
     super.key,
   });
@@ -27,182 +25,268 @@ class BeginnerQuestCard extends StatelessWidget {
   final Sport sport;
   final UnlockProgress unlocks;
   final ValueChanged<ArcadeGame> onPlay;
-  final bool showHeader;
 
-  /// The Games-tab card is informational. Quest hubs can opt into a direct
-  /// launch action alongside their fuller ladder controls.
+  /// Active Games-tab missions stay informational. A waiting mission always
+  /// offers the picker; quest hubs can also offer direct launch actions.
   final bool showAction;
 
   @override
   Widget build(BuildContext context) {
     final step = unlocks.currentStep(sport);
-    if (step == null) return const SizedBox.shrink();
+    if (!unlocks.isQuestActive(sport)) return const SizedBox.shrink();
     final ladder = sportGameLadder[sport]!;
     final cleared = unlocks.stepsCleared(sport);
     final accent = sportModuleFor(sport).accent;
-    final lastStep = step.ladderIndex == ladder.length - 1;
-    final next = lastStep ? null : ladder[step.ladderIndex + 1];
     return Column(
       key: ValueKey('beginner-quest-${sport.name}'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (showHeader) ...[
-          _QuestHeader(accent: accent, cleared: cleared, total: ladder.length),
-          const SizedBox(height: 8),
-        ],
         _CompactBeginnerQuestCard(
           step: step,
-          next: next,
+          sport: sport,
           accent: accent,
-          chapter: unlocks.missionLabel(sport),
-          onPlay: () => onPlay(step),
-          showAction: showAction,
+          chapter: unlocks.chapterLabel(sport),
+          cleared: cleared,
+          total: ladder.length,
+          onPlay: () => step == null
+              ? showQuestGamePicker(context, sport, onPlay: onPlay)
+              : onPlay(step),
+          showAction: showAction || step == null,
         ),
       ],
     );
   }
 }
 
-/// The GAMES tab already shows overall quest progress in [_QuestHeader], so
-/// this card keeps only the next decision: what to play and what it unlocks.
+/// A single active-contract card for the GAMES tab. Its compact HUD progress
+/// avoids repeating a second header above the mission itself.
 class _CompactBeginnerQuestCard extends StatelessWidget {
   const _CompactBeginnerQuestCard({
     required this.step,
-    required this.next,
+    required this.sport,
     required this.accent,
     required this.chapter,
+    required this.cleared,
+    required this.total,
     required this.onPlay,
     required this.showAction,
   });
-  final ArcadeGame step;
-  final ArcadeGame? next;
+  final ArcadeGame? step;
+  final Sport sport;
   final Color accent;
   final String chapter;
+  final int cleared;
+  final int total;
   final VoidCallback onPlay;
   final bool showAction;
 
   @override
-  Widget build(BuildContext context) => CyberPanel(
-    accent: accent,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text(
-          chapter,
-          style: Cyber.label(10, color: accent, letterSpacing: 1.4),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(step.icon, size: 24, color: accent),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(step.title, style: Cyber.display(18)),
-                  const SizedBox(height: 6),
-                  Text(
-                    step.questRequirement,
-                    style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+  Widget build(BuildContext context) {
+    final questTitle = chapter == 'BEGINNER'
+        ? "BEGINNER'S QUEST"
+        : '$chapter QUEST';
+    return CyberPanel(
+      accent: accent,
+      glow: !showAction,
+      cornerCuts: true,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      child: Stack(
+        children: [
+          if (sport == Sport.football)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _MissionPitchPainter(
+                    color: accent.withValues(alpha: 0.08),
                   ),
-                  if (step.isQuiz) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      'Free beginner attempts until cleared',
-                      style: Cyber.bodyFor(context, 12, color: Cyber.success),
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        const HudLine(),
-        const SizedBox(height: 12),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final compact =
-                constraints.maxWidth < 280 ||
-                MediaQuery.textScalerOf(context).scale(12) > 15;
-            final xp = Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.bolt_rounded, size: 17, color: Cyber.gold),
-                const SizedBox(width: 4),
-                Text(
-                  '+$beginnerQuestStepXp XP',
-                  style: Cyber.display(12, color: Cyber.gold).copyWith(
-                    fontFeatures: const [FontFeature.tabularFigures()],
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.flag_rounded, size: 15, color: accent),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      questTitle,
+                      style: Cyber.label(10, color: accent, letterSpacing: 1.5),
+                    ),
                   ),
-                ),
-              ],
-            );
-            final unlock = Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  next == null
-                      ? Icons.emoji_events_outlined
-                      : Icons.lock_open_rounded,
-                  size: 16,
-                  color: next == null ? Cyber.gold : accent,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    next == null
-                        ? '+$beginnerQuestCompleteOz Oz on completion'
-                        : 'Unlocks ${next!.title}',
-                    style: Cyber.bodyFor(
-                      context,
-                      12,
-                      color: AppTheme.textContrast,
-                    ).copyWith(height: 1.2),
-                  ),
-                ),
-              ],
-            );
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (compact) ...[
-                  xp,
-                  const SizedBox(height: 8),
-                  unlock,
-                ] else
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      xp,
-                      const SizedBox(width: 12),
-                      Expanded(child: unlock),
-                    ],
-                  ),
-                if (showAction) ...[
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(minHeight: 44),
-                      child: CyberObjectiveAction(
-                        key: const ValueKey('beginner-quest-play'),
-                        label: compact ? 'PLAY NOW' : 'PLAY ${step.title}',
-                        icon: Icons.play_arrow_rounded,
-                        accent: accent,
-                        onTap: onPlay,
+                  Semantics(
+                    label: '$cleared of $total missions complete',
+                    excludeSemantics: true,
+                    child: Text(
+                      '${cleared.toString().padLeft(2, '0')}/${total.toString().padLeft(2, '0')}',
+                      style: Cyber.display(11, color: Colors.white).copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
                   ),
                 ],
-              ],
-            );
-          },
+              ),
+              const SizedBox(height: 7),
+              CyberProgressBar(
+                value: cleared / total,
+                accent: accent,
+                height: 4,
+                trackColor: Cyber.bg.withValues(alpha: 0.7),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _MissionIconPlate(
+                    icon: step?.icon ?? Icons.sports_esports_rounded,
+                    color: accent,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          step?.title ??
+                              (cleared == 0
+                                  ? 'CHOOSE YOUR FIRST GAME'
+                                  : 'CHOOSE YOUR NEXT GAME'),
+                          style: Cyber.display(18),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          step?.questRequirement ??
+                              'Pick any unfinished game to begin your route.',
+                          style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+                        ),
+                        if (step?.isQuiz == true) ...[
+                          const SizedBox(height: 5),
+                          Text(
+                            'Free beginner attempts until cleared',
+                            style: Cyber.bodyFor(
+                              context,
+                              12,
+                              color: Cyber.success,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              const HudLine(),
+              const SizedBox(height: 10),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact =
+                      constraints.maxWidth < 280 ||
+                      MediaQuery.textScalerOf(context).scale(12) > 15;
+                  final xp = _QuestRewardRail(
+                    icon: Icons.bolt_rounded,
+                    label: '+$beginnerQuestStepXp XP',
+                    color: Cyber.gold,
+                  );
+                  final unlock = step == null
+                      ? null
+                      : _QuestRewardRail(
+                          icon: cleared == total - 1
+                              ? Icons.emoji_events_outlined
+                              : Icons.lock_open_rounded,
+                          label: cleared == total - 1
+                              ? '+$beginnerQuestCompleteOz Oz ON CLEAR'
+                              : 'CHOOSE NEXT GAME ON CLEAR',
+                          color: cleared == total - 1 ? Cyber.gold : accent,
+                        );
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (compact) ...[
+                        xp,
+                        if (unlock != null) ...[
+                          const SizedBox(height: 8),
+                          unlock,
+                        ],
+                      ] else
+                        Row(
+                          children: [
+                            xp,
+                            if (unlock != null) ...[
+                              const SizedBox(width: 14),
+                              Expanded(child: unlock),
+                            ],
+                          ],
+                        ),
+                      if (showAction) ...[
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(minHeight: 44),
+                            child: CyberObjectiveAction(
+                              key: ValueKey(
+                                step == null
+                                    ? 'beginner-quest-choose'
+                                    : 'beginner-quest-play',
+                              ),
+                              label: step == null
+                                  ? 'CHOOSE GAME'
+                                  : compact
+                                  ? 'PLAY NOW'
+                                  : 'PLAY ${step!.title}',
+                              icon: step == null
+                                  ? Icons.touch_app_rounded
+                                  : Icons.play_arrow_rounded,
+                              accent: accent,
+                              onTap: onPlay,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuestRewardRail extends StatelessWidget {
+  const _QuestRewardRail({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Icon(icon, size: 16, color: color),
+      const SizedBox(width: 5),
+      Flexible(
+        child: Text(
+          label,
+          softWrap: true,
+          style: Cyber.label(
+            10,
+            color: color,
+            letterSpacing: 0.8,
+          ).copyWith(height: 1.25),
         ),
-      ],
-    ),
+      ),
+    ],
   );
 }
 
@@ -222,25 +306,117 @@ class RookiePathPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ladder = sportGameLadder[sport]!;
+    final choosing = unlocks.needsSelection(sport);
     return Column(
       key: const ValueKey('rookie-path-panel'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _RookieLadder(sport: sport, unlocks: unlocks, onPlay: onPlay),
-        const SizedBox(height: 16),
-        Text(
-          'Complete all ${ladder.length} missions to earn '
-          '$beginnerQuestCompleteOz Oz - enough for another sport.',
-          style: Cyber.bodyFor(context, 13, color: Cyber.gold),
-        ),
-        if (unlocks.initialQuestActive) ...[
+        if (choosing) ...[
+          BeginnerQuestCard(sport: sport, unlocks: unlocks, onPlay: onPlay),
           const SizedBox(height: 16),
-          const _DailyQuestLockedPreview(),
+        ],
+        _QuestChapterMap(
+          cleared: unlocks.stepsCleared(sport),
+          total: sportGameLadder[sport]!.length,
+          accent: sportModuleFor(sport).accent,
+        ),
+        if (!choosing) ...[
+          const SizedBox(height: 20),
+          _RookieLadder(sport: sport, unlocks: unlocks, onPlay: onPlay),
         ],
       ],
     );
   }
+}
+
+/// The two meaningful rewards stay visible without repeating six locked games.
+class _QuestChapterMap extends StatelessWidget {
+  const _QuestChapterMap({
+    required this.cleared,
+    required this.total,
+    required this.accent,
+  });
+
+  final int cleared;
+  final int total;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) => CyberPanel(
+    accent: accent,
+    cornerCuts: true,
+    padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('YOUR ROUTE', style: Cyber.label(10, color: accent)),
+        const SizedBox(height: 12),
+        for (final chapter in [
+          (
+            name: 'BEGINNER',
+            start: 0,
+            end: beginnerChapterLength,
+            reward: total == beginnerChapterLength
+                ? 'DAILY +$beginnerQuestCompleteOz OZ'
+                : 'DAILY QUESTS',
+            icon: Icons.flag_rounded,
+          ),
+          if (total > beginnerChapterLength)
+            (
+              name: 'EXPLORER',
+              start: beginnerChapterLength,
+              end: total,
+              reward: '+$beginnerQuestCompleteOz OZ',
+              icon: Icons.toll_rounded,
+            ),
+        ]) ...[
+          if (chapter.start > 0) ...[
+            const SizedBox(height: 12),
+            const HudLine(),
+            const SizedBox(height: 12),
+          ],
+          Row(
+            children: [
+              Icon(
+                chapter.icon,
+                size: 18,
+                color: cleared >= chapter.end ? Cyber.success : accent,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  chapter.name,
+                  style: Cyber.display(
+                    11,
+                    color: cleared >= chapter.end
+                        ? Cyber.success
+                        : Colors.white,
+                  ),
+                ),
+              ),
+              Text(
+                chapter.reward,
+                style: Cyber.label(
+                  9,
+                  color: chapter.start > 0 || total == beginnerChapterLength
+                      ? Cyber.gold
+                      : accent,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 7),
+          CyberProgressBar(
+            value: ((cleared - chapter.start) / (chapter.end - chapter.start))
+                .clamp(0, 1)
+                .toDouble(),
+            accent: cleared >= chapter.end ? Cyber.success : accent,
+            height: 4,
+          ),
+        ],
+      ],
+    ),
+  );
 }
 
 /// Compact active sport quests used below Daily Quests in the multi-sport
@@ -338,7 +514,7 @@ class _RookieLadder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final module = sportModuleFor(sport);
-    final ladder = sportGameLadder[sport]!;
+    final ladder = unlocks.routeFor(sport);
     final cleared = unlocks.stepsCleared(sport);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -349,7 +525,7 @@ class _RookieLadder extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'MISSION LADDER',
+                'GAME BOARD',
                 style: Cyber.label(
                   10,
                   color: module.accent,
@@ -383,9 +559,8 @@ class _RookieLadder extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _MissionRouteNode(
-                        index: index,
                         cleared: index < cleared,
-                        active: index == cleared,
+                        active: ladder[index] == unlocks.currentStep(sport),
                         accent: module.accent,
                       ),
                       const SizedBox(width: 8),
@@ -400,18 +575,17 @@ class _RookieLadder extends StatelessWidget {
                             key: ValueKey(
                               '${ladder[index].name}-${index < cleared
                                   ? 'cleared'
-                                  : index == cleared
+                                  : ladder[index] == unlocks.currentStep(sport)
                                   ? 'active'
                                   : 'locked'}',
                             ),
-                            index: index,
+                            missionNumber: cleared + 1,
                             game: ladder[index],
                             cleared: index < cleared,
-                            active: index == cleared,
-                            nextUnlock: index == cleared + 1,
+                            active: ladder[index] == unlocks.currentStep(sport),
                             football: sport == Sport.football,
                             accent: module.accent,
-                            onTap: index <= cleared
+                            onTap: unlocks.isGameUnlocked(ladder[index])
                                 ? () => onPlay(ladder[index])
                                 : () => showLockedGameSheet(
                                     context,
@@ -435,13 +609,11 @@ class _RookieLadder extends StatelessWidget {
 
 class _MissionRouteNode extends StatelessWidget {
   const _MissionRouteNode({
-    required this.index,
     required this.cleared,
     required this.active,
     required this.accent,
   });
 
-  final int index;
   final bool cleared;
   final bool active;
   final Color accent;
@@ -462,37 +634,35 @@ class _MissionRouteNode extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: color.withValues(alpha: active ? 0.9 : 0.45)),
       ),
-      child: cleared
-          ? const Icon(Icons.check_rounded, color: Cyber.success, size: 19)
-          : Text(
-              '${index + 1}'.padLeft(2, '0'),
-              style: Cyber.label(
-                9,
-                color: color,
-              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-            ),
+      child: Icon(
+        cleared
+            ? Icons.check_rounded
+            : active
+            ? Icons.bolt_rounded
+            : Icons.lock_outline_rounded,
+        color: color,
+        size: 18,
+      ),
     );
   }
 }
 
 class _RookieLadderRow extends StatelessWidget {
   const _RookieLadderRow({
-    required this.index,
+    required this.missionNumber,
     required this.game,
     required this.cleared,
     required this.active,
-    required this.nextUnlock,
     required this.football,
     required this.accent,
     required this.onTap,
     super.key,
   });
 
-  final int index;
+  final int missionNumber;
   final ArcadeGame game;
   final bool cleared;
   final bool active;
-  final bool nextUnlock;
   final bool football;
   final Color accent;
   final VoidCallback onTap;
@@ -508,8 +678,6 @@ class _RookieLadderRow extends StatelessWidget {
         ? 'CLEARED · REPLAY'
         : active
         ? 'ACTIVE MISSION'
-        : nextUnlock
-        ? 'NEXT UNLOCK'
         : 'LOCKED';
     void activate() {
       HapticFeedback.selectionClick();
@@ -522,12 +690,16 @@ class _RookieLadderRow extends StatelessWidget {
       onTap: activate,
       excludeSemantics: true,
       label:
-          'Mission ${index + 1}, ${game.title}. $status. '
+          '${active
+              ? 'Mission $missionNumber'
+              : cleared
+              ? 'Completed game'
+              : 'Game option'}, ${game.title}. $status. '
           '${active
               ? game.questRequirement
               : cleared
               ? 'Replay available'
-              : game.unlockRequirement}',
+              : 'Finish your current mission to choose this game'}',
       child: GestureDetector(
         key: ValueKey('mission-ticket-${game.name}'),
         behavior: HitTestBehavior.opaque,
@@ -536,8 +708,6 @@ class _RookieLadderRow extends StatelessWidget {
           clipper: const HudChamferClipper(bigCut: 10, smallCut: 2),
           borderColor: active
               ? accent.withValues(alpha: 0.9)
-              : nextUnlock
-              ? Cyber.amber.withValues(alpha: 0.48)
               : color.withValues(alpha: cleared ? 0.42 : 0.25),
           glowColor: active ? accent : null,
           glow: active ? 0.8 : 0,
@@ -560,11 +730,14 @@ class _RookieLadderRow extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
                   child: active
-                      ? _ActiveMissionContent(game: game, accent: accent)
+                      ? _ActiveMissionContent(
+                          game: game,
+                          accent: accent,
+                          missionNumber: missionNumber,
+                        )
                       : _CompactMissionContent(
                           game: game,
                           cleared: cleared,
-                          nextUnlock: nextUnlock,
                           color: color,
                         ),
                 ),
@@ -578,17 +751,22 @@ class _RookieLadderRow extends StatelessWidget {
 }
 
 class _ActiveMissionContent extends StatelessWidget {
-  const _ActiveMissionContent({required this.game, required this.accent});
+  const _ActiveMissionContent({
+    required this.game,
+    required this.accent,
+    required this.missionNumber,
+  });
 
   final ArcadeGame game;
   final Color accent;
+  final int missionNumber;
 
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
-        'LIVE CONTRACT // ${game.ladderIndex + 1}',
+        'LIVE CONTRACT // $missionNumber',
         style: Cyber.label(9, color: accent, letterSpacing: 1.2),
       ),
       const SizedBox(height: 10),
@@ -640,13 +818,11 @@ class _CompactMissionContent extends StatelessWidget {
   const _CompactMissionContent({
     required this.game,
     required this.cleared,
-    required this.nextUnlock,
     required this.color,
   });
 
   final ArcadeGame game;
   final bool cleared;
-  final bool nextUnlock;
   final Color color;
 
   @override
@@ -667,32 +843,19 @@ class _CompactMissionContent extends StatelessWidget {
               ),
             ),
           ),
-          if (nextUnlock) ...[
-            const SizedBox(width: 4),
+          if (!cleared)
             const Icon(
               Icons.lock_outline_rounded,
-              size: 16,
-              color: Cyber.amber,
+              size: 15,
+              color: Cyber.muted,
             ),
-          ],
         ],
       ),
       const SizedBox(height: 8),
       Text(
-        cleared
-            ? 'CLEARED · REPLAY'
-            : nextUnlock
-            ? 'NEXT UNLOCK'
-            : 'LOCKED',
-        style: Cyber.label(8.5, color: nextUnlock ? Cyber.amber : color),
+        cleared ? 'CLEARED · REPLAY' : 'LOCKED',
+        style: Cyber.label(8.5, color: color),
       ),
-      if (!cleared) ...[
-        const SizedBox(height: 4),
-        Text(
-          game.unlockRequirement,
-          style: Cyber.bodyFor(context, 11.5, color: Cyber.muted),
-        ),
-      ],
     ],
   );
 }
@@ -795,41 +958,6 @@ class _MissionPitchPainter extends CustomPainter {
       oldDelegate.color != color;
 }
 
-class _DailyQuestLockedPreview extends StatelessWidget {
-  const _DailyQuestLockedPreview();
-
-  @override
-  Widget build(BuildContext context) {
-    return CyberPanel(
-      accent: Cyber.muted,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.lock_outline_rounded, color: Cyber.muted, size: 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'DAILY QUESTS LOCKED',
-                  style: Cyber.display(12, color: Colors.white),
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  'Complete your first three home-sport missions to unlock '
-                  'Daily Quests. Your activity already counts.',
-                  style: Cyber.bodyFor(context, 13, color: Cyber.muted),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// One-line quest strip for the MATCH tab: takes the daily-quest tile's slot
 /// while the Beginner's Quest runs, so a new player sees one objective, not two.
 class BeginnerQuestStrip extends StatelessWidget {
@@ -847,20 +975,27 @@ class BeginnerQuestStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final step = unlocks.currentStep(sport);
-    if (step == null) return const SizedBox.shrink();
+    if (!unlocks.isQuestActive(sport)) return const SizedBox.shrink();
     final ladder = sportGameLadder[sport]!;
     final cleared = unlocks.stepsCleared(sport);
     final accent = sportModuleFor(sport).accent;
     return Semantics(
       button: true,
-      label: "Beginner's Quest, next: play ${step.title}",
+      label: step == null
+          ? "Beginner's Quest, choose your next game"
+          : "Beginner's Quest, next: play ${step.title}",
       child: GestureDetector(
         key: ValueKey('beginner-quest-strip-${sport.name}'),
         behavior: HitTestBehavior.opaque,
         onTap: () {
           HapticFeedback.selectionClick();
           playSound(SoundEffect.uiTap);
-          onTap();
+          final choose = UnlockRevealGate.instance.chooseGame;
+          if (step == null && choose != null) {
+            choose(sport);
+          } else {
+            onTap();
+          }
         },
         child: ChamferedActionSurface(
           clipper: const HudChamferClipper(bigCut: 12, smallCut: 4),
@@ -903,7 +1038,9 @@ class BeginnerQuestStrip extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          'VIEW QUEST - ${step.title}',
+                          step == null
+                              ? 'CHOOSE YOUR ${cleared == 0 ? 'FIRST' : 'NEXT'} GAME'
+                              : 'VIEW QUEST - ${step.title}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Cyber.display(13, color: Colors.white),
@@ -924,37 +1061,6 @@ class BeginnerQuestStrip extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _QuestHeader extends StatelessWidget {
-  const _QuestHeader({
-    required this.accent,
-    required this.cleared,
-    required this.total,
-  });
-
-  final Color accent;
-  final int cleared;
-  final int total;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text("BEGINNER'S QUEST", style: Cyber.display(12)),
-        const SizedBox(height: 6),
-        Text(
-          '$cleared of $total missions complete',
-          style: Cyber.bodyFor(
-            context,
-            13,
-            color: accent,
-          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-        ),
-      ],
     );
   }
 }

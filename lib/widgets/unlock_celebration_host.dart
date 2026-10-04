@@ -25,6 +25,7 @@ class UnlockRevealGate {
   final ValueNotifier<bool> hubVisible = ValueNotifier(false);
 
   ValueChanged<ArcadeGame>? playGame;
+  ValueChanged<Sport>? chooseGame;
   ValueChanged<Sport>? openSport;
   VoidCallback? openQuestHub;
   VoidCallback? chooseSport;
@@ -114,8 +115,38 @@ class _UnlockRevealFor extends StatelessWidget {
     final module = sportModuleFor(reveal.targetSport);
     final sportLabel = module.label.toUpperCase();
     switch (reveal.kind) {
-      case UnlockRevealKind.graduation:
+      case UnlockRevealKind.graduation
+          when context
+              .read<GameBloc>()
+              .state
+              .unlocks
+              .completedFor(reveal.targetSport)
+              .contains(reveal.game):
+      case UnlockRevealKind.missionComplete:
+        final game = reveal.game!;
+        final unlocks = context.read<GameBloc>().state.unlocks;
+        return CyberUnlockReveal(
+          eyebrow: rookieGraduation
+              ? 'BEGINNER CHAPTER COMPLETE'
+              : 'MISSION COMPLETE',
+          title: game.title,
+          subtitle:
+              '${unlocks.stepsCleared(game.sport)}/${sportGameLadder[game.sport]!.length} missions cleared. '
+              '${rookieGraduation ? 'Daily Quests unlocked. ' : ''}Your next game is yours to choose.',
+          icon: game.icon,
+          accent: module.accent,
+          rewardLabel: '+$beginnerQuestStepXp XP',
+          ctaLabel: 'CHOOSE NEXT GAME',
+          onCta: gate.chooseGame == null
+              ? null
+              : () => gate.chooseGame!(game.sport),
+          secondaryLabel: rookieGraduation ? 'VIEW DAILY QUESTS' : 'CONTINUE',
+          onSecondary: rookieGraduation ? gate.openQuestHub : null,
+          onDismissed: onDismissed,
+        );
       case UnlockRevealKind.game:
+      // V1 graduation reveals name the newly opened game, not the cleared one.
+      case UnlockRevealKind.graduation:
         final game = reveal.game!;
         final ladder = sportGameLadder[game.sport]!;
         return CyberUnlockReveal(
@@ -124,8 +155,8 @@ class _UnlockRevealFor extends StatelessWidget {
               : 'NEW GAME UNLOCKED',
           title: game.title,
           subtitle:
-              '${game.ladderIndex} of ${ladder.length} missions complete. '
-              '${rookieGraduation ? 'Daily Quests are now open. Continue the Explorer chapter for 50 Oz.' : game.questRequirement}',
+              '${game.ladderIndex}/${ladder.length} missions cleared. '
+              '${rookieGraduation ? 'Daily Quests unlocked. Explorer pays 50 Oz.' : game.questRequirement}',
           icon: game.icon,
           accent: module.accent,
           rewardLabel: '+$beginnerQuestStepXp XP',
@@ -136,13 +167,12 @@ class _UnlockRevealFor extends StatelessWidget {
           onDismissed: onDismissed,
         );
       case UnlockRevealKind.sport:
-        final first = sportGameLadder[reveal.sport!]!.first;
         return CyberUnlockReveal(
           eyebrow: 'SPORT UNLOCKED',
           title: sportLabel,
           subtitle:
               '$sportLabel matches and picks are live. Its Beginner\'s Quest '
-              'starts with ${first.title}.',
+              'lets you choose any first game.',
           icon: module.icon,
           accent: module.accent,
           ctaLabel: 'ENTER $sportLabel',
@@ -164,10 +194,8 @@ class _UnlockRevealFor extends StatelessWidget {
               : 'SPORT QUEST COMPLETE',
           title: 'ALL $sportLabel GAMES OPEN',
           subtitle:
-              '${sportGameLadder[reveal.targetSport]!.length} of '
-              '${sportGameLadder[reveal.targetSport]!.length} missions complete. '
               '${rookieGraduation ? 'Daily Quests unlocked. ' : ''}'
-              '${hasLockedSports ? '50 Oz earned - enough to unlock another sport.' : 'Every sport is open. Your next Daily Quests await.'}',
+              '${hasLockedSports ? '50 Oz earned. Choose your next sport.' : 'Every sport is open. Daily Quests await.'}',
           icon: Icons.emoji_events_rounded,
           accent: module.accent,
           rewardLabel:

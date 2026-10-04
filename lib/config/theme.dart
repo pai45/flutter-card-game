@@ -167,6 +167,27 @@ class AppTheme {
   static const Color gameCtaFill = Color(0xFF0F3E4F);
   static const Color gameCtaBorder = Color(0xFF087B95);
 
+  // Discovery-card identity only. Sport navigation and semantic state colours
+  // keep their existing tokens. White titles remain the common visual anchor.
+  static const Color gamePitchDuel = textPrimary;
+  static const Color gamePenalty = Color(0xFFFFA08C); // coral
+  static const Color gameFootballChess = profileBorder; // ice blue
+  static const Color gameFootballQuiz = matchesLabel; // electric violet
+  static const Color gameFootballBingo = Color(0xFFFFB968); // amber
+  static const Color gameFootballMystery = Color(0xFFFF94C1); // rose
+  static const Color gameFinalOver = white227; // silver
+  static const Color gameCricketQuiz = Color(0xFF9CE8C3); // seafoam
+  static const Color gameCricketMystery = Color(0xFF53D9BA); // jade
+  static const Color gameHoopDuel = yellowColor;
+  static const Color gameBasketballQuiz = Color(0xFFFFC08C); // apricot
+  static const Color gameBasketballMystery = Color(0xFFE5A4EA); // orchid
+  static const Color gameGrandPrix = Color(0xFFFF777D); // racing coral-red
+  static const Color gameMotorsportQuiz = Color(0xFFF58ACA); // hot pink
+  static const Color gameDriverMystery = Color(0xFFAFA9FF); // periwinkle
+  static const Color gameTennisRally = pickLabel;
+  static const Color gameTennisQuiz = Color(0xFFD4E887); // citron
+  static const Color gameWinnerMystery = Color(0xFF7CEAE5); // aqua
+
   // Shared animated arena background tokens.
   static const Color arenaSky = Color(0xFF020812);
   static const Color arenaHorizon = Color(0xFF071522);
@@ -602,7 +623,7 @@ class Cyber {
   static const success = AppTheme.green700;
   static const red = AppTheme.redColor;
   static const violet = AppTheme.matchesLabel;
-  static const pink = Color(0xFFFF94C1); // pastel pink
+  static const pink = AppTheme.gameFootballMystery; // pastel pink
 
   static const border = AppTheme.border;
   static const line = AppTheme.settingsBorderColor;

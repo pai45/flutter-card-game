@@ -98,7 +98,7 @@ void main() {
           scale: size.width == 320 ? 1.4 : 1,
           result: (_) {},
         );
-        expect(find.text('OPENS ON UNLOCK'), findsOneWidget);
+        expect(find.text('OPENS ON UNLOCK'), findsNothing);
         for (final game in sportGameLadder[sport]!) {
           final entry = find.byKey(ValueKey('sport-unlock-game-${game.name}'));
           await tester.ensureVisible(entry);
@@ -107,11 +107,10 @@ void main() {
             find.descendant(of: entry, matching: find.text(game.title)),
             findsOneWidget,
           );
-        }
-        for (final game in sportGameLadder[sport]!.skip(1)) {
           expect(
-            find.text(
-              'AFTER ${sportGameLadder[sport]![game.ladderIndex - 1].title}',
+            find.descendant(
+              of: entry,
+              matching: find.text(game.questRequirement),
             ),
             findsOneWidget,
           );

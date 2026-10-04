@@ -1,15 +1,15 @@
 # Sport and Game Unlocks (Beginner's Quest)
 
 > **Status:** BUILT
-> **Last verified:** 2026-10-01
+> **Last verified:** 2026-10-04
 > **Scope:** The home sport chosen at onboarding, locked sports and games, the per-sport Beginner's Quest ladder that opens games by playing, and the 50 Oz sport unlock.
 
 ## Product Purpose
 
 A first-time player used to land on 5 sports and 18 games at once. Unlocks
-pace that: a new player starts in **one home sport** with **one open game**, and
-opens the rest by playing. Every game they finish pays back with an unlock
-moment and points them at the next one. Other sports stay visible as locked
+pace that: a new player starts in **one home sport**, chooses any first game,
+and opens the rest one mission at a time. Every completed mission pays back
+with a celebration and the choice of the next game. Other sports stay visible as locked
 teasers, so the player knows there is more to earn.
 
 ## Where It Lives
@@ -25,59 +25,70 @@ teasers, so the player knows there is more to earn.
   at a hidden TRENDING, falls back to the home sport.
 - **GAMES tab, slot #1.** The **BEGINNER'S QUEST** card, shown while that
   sport's quest is running. Its mission plate leads with the current game's
-  icon, name, and finish condition. A quiet reward rail shows `+40 XP` and the
-  next game unlock (or the completion bonus). It has no **PLAY** or **VIEW
-  QUEST** action: the Games page remains a clear catalogue, while launch and
-  full-ladder controls stay in the ROOKIE PATH command center. The header carries
-  ladder progress, so the card does not add a second meter. Finishing the run
-  still triggers the existing game-unlock or quest-completion reveal.
+  icon, name, and finish condition. A compact header inside that same card shows
+  the chapter, an `00/06` overall route count and a thin progress meter; it
+  replaces the former separate title, prose progress line, and repeated chapter
+  counter. The live mission is the focal plate, with a restrained pitch diagram
+  for football.
+  With no active mission, the card says **CHOOSE YOUR FIRST GAME** or
+  **CHOOSE YOUR NEXT GAME** and opens the game picker with **CHOOSE GAME**.
+  The picker lists every unfinished game with its icon, name, finish condition
+  and one `+40 XP PER CLEAR` reward cue above the choices. Tapping highlights an option; **CHOOSE & PLAY** saves the choice
+  before opening its lobby. Dismissal does not select anything. A failed save
+  keeps the picker open with retry feedback. The active Games card remains
+  informational, with launch controls in the catalogue and quest hub.
+  The reward rail shows `+40 XP`; active missions also show **CHOOSE NEXT GAME
+  ON CLEAR** or the final completion bonus. It wraps on small screens.
 - **MATCH / TRENDING quest slot.** The home-sport Beginner's Quest takes the
   daily-quest tile's place for the whole rookie phase, then the daily tile
   returns permanently. Buying another sport early does not change the focus.
 - **Streak / quest hub.** Before home-sport graduation it becomes a tabless
-  **ROOKIE PATH** command center. It opens directly with the MISSION LADDER;
-  the live ticket carries the current game's PLAY action, finish condition,
-  and +40 XP reward, while the ladder header shows progress. A locked Daily
-  Quest preview remains below the route. After graduation, one-sport
-  careers get TODAY; managed careers with 2+ sports get QUESTS (Daily Quests
-  followed by active sport quests). Its MISSION LADDER sits directly on the
-  quest-page background, with no enclosing panel. It is a vertical route of
-  numbered mission tickets. The selected mission expands into a live dossier
-  with its finish condition, +40 XP reward emblem and PLAY cue; football adds a
-  faint pitch diagram. Cleared tickets offer replay, locked tickets explain
-  their prerequisite, and the next unlock carries a quiet amber marker.
+  **ROOKIE PATH** command center. When a game has not been chosen, one quest
+  card leads to the picker; the six locked game tickets are hidden. A compact
+  chapter map shows the two meaningful payoffs: Daily Quests after three home
+  missions, then 50 Oz when Football Explorer is complete. Three-game sports
+  show Daily Quests and 50 Oz together at the third clear. With an active
+  mission, the **GAME BOARD** shows the live ticket with its PLAY action,
+  finish condition and +40 XP, then quiet locked options and cleared replays.
+  Football adds a faint pitch diagram. Completed tickets follow the player's
+  chosen order; route nodes use state icons rather than numbers because games
+  can be selected out of catalogue order. After graduation, one-sport managed
+  careers get QUESTS with Daily Quests followed by active sport quests.
 - **ALL SPORTS.** Locked sports show a lock, `LOCKED // N GAMES + MATCHES` and
   `50 OZ`, and open the unlock sheet. Fixtures are never fetched for them.
 - **Match search.** Results cover unlocked sports only.
 - **Launch guard.** Every game launch goes through one guarded entry in the
-  app shell. A locked game opens its lock sheet instead, so trending tiles,
-  quest routes and reveal CTAs cannot bypass a lock.
+  app shell. A locked game opens its lock sheet while a mission is active,
+  or the picker with that game highlighted while awaiting selection. A locked
+  sport opens its purchase sheet. Quest shortcuts also open the picker when
+  no home-sport mission is selected.
 
 ## Player Flow
 
 1. Onboarding: pick a home sport (e.g. Cricket), then its club, then FINISH
    SETUP. Both hub strips land on the home sport.
-2. GAMES shows the Beginner's Quest card: `PLAY FINAL OVER`, step 1 of 3,
-   `+40 XP`, `UNLOCKS CRICKET QUIZ`. Only Final Over is open. The next game
-   wears an amber **NEXT UNLOCK** padlock chip; later games show
-   **QUEST STEP n**.
-3. The player finishes one Final Over (win or lose) and returns to the hub.
-   **NEW GAME UNLOCKED** plays: the padlock rattles, the shackle springs open,
-   and the Cricket Quiz plate slams in with `+40 XP` and **PLAY NOW**.
-4. The quiz step comes with a **ROOKIE TICKET**: the first quiz entry during
-   the quest is free.
-5. Finishing the last home-sport game plays **ROOKIE PATH COMPLETE**:
-   `DAILY QUESTS UNLOCKED` and `+50 OZ`, with VIEW TODAY or VIEW QUESTS.
+2. GAMES offers **CHOOSE YOUR FIRST GAME**, `00/03` progress and `+40 XP`.
+   The player can choose Final Over, Cricket Quiz or Guess the Player.
+3. The selected game becomes the active mission and opens its lobby. Other
+   unfinished games stay locked until that mission clears. Completed games
+   remain available for replay.
+4. Completion gives `+40 XP`, a result receipt and the queued **MISSION
+   COMPLETE** celebration with **CHOOSE NEXT GAME**. The receipt presents the
+   XP reward, route meter and next unlock before the player continues. Any remaining game may
+   be selected. A selected quiz has free beginner attempts until cleared.
+5. After three distinct home-sport missions, Daily Quests unlock. Clearing
+   all games in a sport pays `+50 OZ`; Football continues through three
+   Explorer choices after graduation and pays the bonus after six missions.
 6. The player taps a padlocked sport on the strip. The UNLOCK sheet previews
-   that sport's full game ladder and the balance before and after. They tap
+   that sport's game catalogue and the balance before and after. They tap
    **UNLOCK · 50 OZ**, **SPORT UNLOCKED** plays, and **ENTER \<SPORT\>** lands
    them on that sport's GAMES tab, where its own Beginner's Quest starts.
 
 ## Mechanics and Rules
 
-**Ladder order** (source of truth: `sportGameLadder`):
+**Game catalogue** (`sportGameLadder` supplies display order, not mission order):
 
-| Sport | 1 (open) | 2 | 3 | 4 | 5 | 6 |
+| Sport | Game | Game | Game | Game | Game | Game |
 |---|---|---|---|---|---|---|
 | Football | Pitch Duel | Penalty Shootout | Football Quiz | Guess the Player | Football Bingo | 5v5 Football Chess |
 | Cricket | Final Over | Cricket Quiz | Guess the Player | | | |
@@ -86,8 +97,9 @@ teasers, so the player knows there is more to earn.
 | Tennis | Tennis Rally | Tennis Quiz | Guess the Winner | | | |
 
 **Unlocking games:**
-- Game N+1 unlocks when the quest's **current step** (game N) is finished once.
-  Winning is not required.
+- Before the first mission and after each clear, choose any unfinished game
+  in that sport. Selection opens one game and locks the mission until cleared.
+  Finishing that mission enables another choice; winning is not required.
 - Replaying an earlier game never advances the ladder, and neither does a
   repeated settlement id.
 - Games unlock by playing only. There is no coin skip.
@@ -102,8 +114,8 @@ teasers, so the player knows there is more to earn.
 
 **Unlocking a sport:**
 - All five sport purchase sheets use the shared Cyberpunk UI kit: sport identity
-  header, featured first game, numbered prerequisite route, and balance/cost footer.
-  The route has no additional outer enclosure. Cricket opens FINAL OVER first.
+  header, game catalogue with finish conditions, and balance/cost footer.
+  Every game is a possible starter; there is no fixed prerequisite route.
 - Only the enabled primary action glows. The footer stays docked at normal text
   sizes when at least 620 px is available; short screens and text above 1.2x use
   one scrollable sheet. Close, barrier dismissal and back never purchase.
@@ -114,8 +126,8 @@ teasers, so the player knows there is more to earn.
 - An unaffordable purchase shows the shortfall and a pointer to the quest
   reward, and never charges.
 - Buying a sport you already own is a no-op.
-- An unlocked sport opens its matches, picks and first game, and starts its
-  own Beginner's Quest.
+- An unlocked sport opens its matches and picks, and offers its own first-game
+  picker. Sport mission selections and completion are independent.
 
 **Daily quests:**
 - The home quest is the one-time graduation gate. Daily activity records
@@ -156,10 +168,12 @@ teasers, so the player knows there is more to earn.
   gameplay, a result screen or a level-up. It also waits for achievement,
   streak and quest-reward moments, pack reveals and the welcome reward.
 - The streak reminder waits while unlock reveals are pending.
-- Locked tiles are desaturated and flat with no glow. The next unlock gets a
-  calm amber chip. The GAMES quest card uses a flat mission plate and reward
-  rail without extra actions. The full ladder and its launch controls remain
-  in the dedicated ROOKIE PATH command center. In that ladder, only the active
+- Locked tiles are desaturated and flat with no glow, with **CHOOSE AS YOUR
+  MISSION** or **FINISH CURRENT MISSION** chips. The GAMES quest card uses a
+  focal mission plate and reward rail, plus a picker action while awaiting choice.
+  Only the enabled primary picker action glows; the highlighted option gets an
+  accent border and check. The picker puts the +40 XP payoff once above the
+  choices instead of repeating it in every game row. In the ROOKIE PATH board, only the active
   ticket glows. Ticket taps have sound and haptic feedback, while advancement
   briefly transitions the ticket state unless reduced motion is requested.
   The existing unlock reveal remains the completion payoff.
@@ -167,12 +181,14 @@ teasers, so the player knows there is more to earn.
 ## Visible States
 
 - **Unmanaged:** a fresh install before onboarding finishes. Everything open.
-- **Gated:** home sport only, quest active.
-- **Mid-quest:** some games open, NEXT UNLOCK and QUEST STEP chips on the rest.
+- **Awaiting selection:** home/unlocked sport quest active, no assigned mission;
+  the card offers a first/next choice.
+- **Active mission:** selected game and completed games open; other unfinished
+  games require finishing the active mission.
 - **Quest complete:** the card disappears and all of that sport's games are
   open. Completing the home quest also graduates the career to Daily Quests.
 - **Multi-sport:** TRENDING returns once a second sport is open.
-- **Quest List:** after home graduation with 2+ sports, QUESTS combines Daily
+- **Quest List:** after home graduation, QUESTS combines Daily
   Quests with remaining active sport ladders.
 - **Grandfathered:** no locks, no quest.
 
@@ -184,9 +200,9 @@ is reached and recorded as played, every sport quest is complete, and the
 pending reveal queue is empty. Opening that career therefore shows the complete
 game board immediately and never replays unlock or quest-completion reveals.
 
-`UnlockProgress` (versioned JSON, key `pd_unlock_progress_v1`) stores:
+`UnlockProgress` (v2 JSON, existing key `pd_unlock_progress_v1`) stores:
 - the home sport and unlocked sports
-- ladder position per sport
+- ordered completed game identities and optional active game per sport
 - completed quests
 - processed settlement ids
 - rookie tickets used
@@ -194,12 +210,17 @@ game board immediately and never replays unlock or quest-completion reveals.
 
 GameBloc owns it and writes it after every change. A missing key plus a
 finished onboarding migrates to `grandfathered`.
+V1 saves with zero cleared missions become first-game choices. Progressed v1
+saves preserve their completed prefix and assigned active mission; the next
+clear enables choice. Completed quests, grandfathered access, processed IDs,
+rookie ticket markers and queued reveals survive migration. Selection and
+unlock mutations share a queue; failed selection saves never unlock or launch.
 
 ## Planned Scope and Current Limitations
 
 - **BUILT:** everything above.
-- The GAMES tab keeps its hand-built art layout, so the tiles are not reordered
-  to match the ladder. The lock chips communicate the order.
+- The GAMES tab keeps its hand-built art layout. The quest hub shows completed
+  games in chosen order; catalogue tiles identify the active mission and locks.
 - The leaderboard, shop and collection sport strips still list every sport;
   they are not gated.
 - Profile's Following editor still offers every sport as the primary sport.
@@ -212,7 +233,7 @@ finished onboarding migrates to `grandfathered`.
   `sportGameLadder` and the cost/reward constants.
 - [unlock_progress.dart](../../../lib/models/unlock_progress.dart)
 - [game_bloc.dart](../../../lib/blocs/game/game_bloc.dart): `HomeSportChosen`,
-  `SportUnlockPurchased`, `ArcadeGamePlayed`, `RookieTicketUsed`,
+  `SportUnlockPurchased`, `QuestGameSelected`, `ArcadeGamePlayed`, `RookieTicketUsed`,
   `UnlockRevealConsumed`, and the `_recordArcadePlay` hook.
 - [app.dart](../../../lib/app.dart): `_openArcadeGame` guard, `_openQuestGame`
   and the `UnlockRevealGate` wiring.
@@ -228,6 +249,9 @@ finished onboarding migrates to `grandfathered`.
 
 - `test/unlock_progress_test.dart`: ladder rules, idempotency, quest
   completion, sport unlock, rookie ticket, grandfathering and JSON versioning.
+- `test/quest_game_picker_test.dart`: every sport's picker, dismissal, save-before-
+  launch, duplicate taps, failed-save retry, and launching after a Rookie Path
+  rebuild at 320 px with enlarged text and reduced motion.
 - `test/sport_unlock_bloc_test.dart`: grandfather migration, step XP, a
   cricket game counting toward daily quests, the one-time +50 Oz, 50 Oz
   purchases (broke, owned) and rookie ticket spend.

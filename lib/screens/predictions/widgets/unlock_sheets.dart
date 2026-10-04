@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../blocs/game/game_bloc.dart';
@@ -7,10 +8,220 @@ import '../../../config/game_ladder.dart';
 import '../../../config/sport_modules.dart';
 import '../../../config/theme.dart';
 import '../../../models/sport_match.dart';
+import '../../../models/unlock_progress.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_cta_button.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/unlock_celebration_host.dart';
+
+Future<void> showQuestGamePicker(
+  BuildContext context,
+  Sport sport, {
+  required ValueChanged<ArcadeGame> onPlay,
+  ArcadeGame? initialGame,
+}) async {
+  final bloc = context.read<GameBloc>();
+  final navigator = Navigator.of(context);
+  if (!bloc.state.unlocks.needsSelection(sport)) return;
+  final game = await showModalBottomSheet<ArcadeGame>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    barrierColor: Cyber.bg.withValues(alpha: 0.78),
+    sheetAnimationStyle: MediaQuery.disableAnimationsOf(context)
+        ? AnimationStyle.noAnimation
+        : const AnimationStyle(duration: CyberKit.entrance),
+    constraints: BoxConstraints(
+      maxWidth: 480,
+      maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+    ),
+    builder: (_) => GameTypographyScope(
+      child: BlocProvider.value(
+        value: bloc,
+        child: QuestGamePicker(sport: sport, initialGame: initialGame),
+      ),
+    ),
+  );
+  // Saving can replace the choose-card in Rookie Path before the sheet closes.
+  if (game != null && navigator.mounted) onPlay(game);
+}
+
+/// Reuses the sport-access sheet and mission ticket surfaces for route choices.
+class QuestGamePicker extends StatefulWidget {
+  const QuestGamePicker({required this.sport, this.initialGame, super.key});
+  final Sport sport;
+  final ArcadeGame? initialGame;
+
+  @override
+  State<QuestGamePicker> createState() => _QuestGamePickerState();
+}
+
+class _QuestGamePickerState extends State<QuestGamePicker> {
+  ArcadeGame? _selected;
+  bool _saving = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _selected = widget.initialGame;
+  }
+
+  Future<void> _commit() async {
+    final game = _selected;
+    if (_saving || game == null) return;
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    final event = QuestGameSelected(game);
+    context.read<GameBloc>().add(event);
+    final result = await event.result.future;
+    if (!mounted) return;
+    if (result == QuestGameSelectionResult.selected) {
+      Navigator.of(context).pop(game);
+    } else {
+      setState(() {
+        _saving = false;
+        _error = result == QuestGameSelectionResult.saveFailed
+            ? 'Could not save your mission. Try again.'
+            : 'Your quest changed. Close this picker and continue your mission.';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final unlocks = context.select<GameBloc, UnlockProgress>(
+      (bloc) => bloc.state.unlocks,
+    );
+    final accent = sportModuleFor(widget.sport).accent;
+    final games = unlocks.remainingFor(widget.sport);
+    return PopScope(
+      canPop: !_saving,
+      child: CyberKitSheet(
+        onClose: () {
+          if (!_saving) Navigator.of(context).pop();
+        },
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              sportModuleFor(widget.sport).label.toUpperCase(),
+              style: Cyber.label(10, color: accent),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              unlocks.stepsCleared(widget.sport) == 0
+                  ? 'CHOOSE YOUR FIRST GAME'
+                  : 'CHOOSE YOUR NEXT GAME',
+              style: Cyber.display(20),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Pick your mission. Finish it to choose the next one. A loss counts.',
+              style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+            ),
+            const SizedBox(height: 10),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: CyberChip(
+                label: '+$beginnerQuestStepXp XP PER CLEAR',
+                color: Cyber.gold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            for (final game in games) ...[
+              Semantics(
+                button: true,
+                selected: game == _selected,
+                child: GestureDetector(
+                  key: ValueKey('quest-choice-${game.name}'),
+                  onTap: _saving
+                      ? null
+                      : () {
+                          HapticFeedback.selectionClick();
+                          setState(() {
+                            _selected = game;
+                            _error = null;
+                          });
+                        },
+                  child: CyberPanel(
+                    accent: game == _selected ? accent : Cyber.muted,
+                    cornerCuts: true,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          game.icon,
+                          size: 24,
+                          color: game == _selected ? accent : Cyber.muted,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(game.title, style: Cyber.display(13)),
+                              const SizedBox(height: 6),
+                              Text(
+                                game.questRequirement,
+                                style: Cyber.bodyFor(
+                                  context,
+                                  12,
+                                  color: Cyber.muted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (game == _selected) ...[
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.check_circle_outline,
+                            color: accent,
+                            size: 20,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+          ],
+        ),
+        footer: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_error != null) ...[
+              Semantics(
+                liveRegion: true,
+                child: Text(
+                  _error!,
+                  style: Cyber.bodyFor(context, 13, color: Cyber.danger),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            CyberActionButton(
+              key: const ValueKey('quest-choose-play'),
+              label: _saving ? 'SAVING MISSION' : 'CHOOSE & PLAY',
+              icon: Icons.play_arrow_rounded,
+              onPressed:
+                  !_saving && _selected != null && unlocks.canSelect(_selected!)
+                  ? _commit
+                  : null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// Choosing a sport only previews its existing purchase sheet.
 Future<void> showNextSportPicker(BuildContext context) async {
@@ -32,7 +243,7 @@ Future<void> showNextSportPicker(BuildContext context) async {
           Text('CHOOSE YOUR NEXT SPORT', style: Cyber.display(20)),
           const SizedBox(height: 8),
           Text(
-            '50 Oz opens matches, picks and the first game.',
+            '50 Oz opens matches, picks and your choice of first game.',
             style: Cyber.bodyFor(context, 14),
           ),
           const SizedBox(height: 16),
@@ -115,6 +326,15 @@ Future<void> showLockedGameSheet(
     return;
   }
   final step = unlocks.currentStep(game.sport);
+  if (unlocks.needsSelection(game.sport)) {
+    await showQuestGamePicker(
+      context,
+      game.sport,
+      onPlay: onPlay,
+      initialGame: game,
+    );
+    return;
+  }
   final play = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
@@ -213,12 +433,12 @@ class _SportUnlockSheetState extends State<SportUnlockSheet> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Open $label matches, picks and ${ladder.first.title}. Play through its quest to unlock every game.',
+            'Open $label matches and picks, then choose any first game. Finish each mission to choose your next game.',
             style: Cyber.bodyFor(context, 14, color: Cyber.muted),
           ),
           const SizedBox(height: 24),
           CyberKitSection(
-            label: 'YOUR GAME ROUTE',
+            label: 'CHOOSE YOUR GAME ROUTE',
             count: '${ladder.length} GAMES',
           ),
           const SizedBox(height: 16),
@@ -228,10 +448,8 @@ class _SportUnlockSheetState extends State<SportUnlockSheet> {
               index: i + 1,
               title: ladder[i].title,
               icon: ladder[i].icon,
-              detail: i == 0
-                  ? 'Your first game. ${ladder[i].questRequirement}'
-                  : 'AFTER ${ladder[i - 1].title}',
-              featured: i == 0,
+              detail: ladder[i].questRequirement,
+              featured: false,
               last: i == ladder.length - 1,
             ),
         ],
@@ -349,12 +567,8 @@ class _LockedGameSheet extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     step == null
-                        ? 'Keep playing to open it.'
-                        : game.ladderIndex == step.ladderIndex + 1
-                        ? 'Finish one ${step.title} run to unlock it - win or '
-                              'lose.'
-                        : 'Unlocks after ${ladder[game.ladderIndex - 1].title}. '
-                              'Next up: ${step.title}.',
+                        ? 'Choose this game as your next mission.'
+                        : 'Finish your current mission to choose this game. Active mission: ${step.title}.',
                     style: Cyber.bodyFor(context, 13, color: Cyber.muted),
                   ),
                 ],

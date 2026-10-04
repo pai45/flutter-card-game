@@ -54,33 +54,98 @@ class _QuestResultReceiptState extends State<QuestResultReceipt> {
             container: true,
             child: CyberPanel(
               accent: Cyber.success,
+              cornerCuts: true,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    'MISSION COMPLETE · +$beginnerQuestStepXp XP',
-                    style: Cyber.display(12, color: Cyber.gold),
+                  Wrap(
+                    alignment: WrapAlignment.spaceBetween,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 10,
+                    runSpacing: 8,
+                    children: [
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.check_circle_rounded,
+                            color: Cyber.success,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'MISSION CLEARED',
+                              style: Cyber.display(13, color: Cyber.success),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        '+$beginnerQuestStepXp XP',
+                        style: Cyber.display(13, color: Cyber.gold),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${receipt.completed} of ${receipt.total} missions complete',
-                    style: Cyber.bodyFor(context, 13),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'QUEST PROGRESS',
+                          style: Cyber.label(9, color: Cyber.muted),
+                        ),
+                      ),
+                      Text(
+                        '${receipt.completed}/${receipt.total}',
+                        style: Cyber.display(12, color: Colors.white),
+                      ),
+                    ],
                   ),
-                  if (receipt.graduated) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      'Daily Quests unlocked',
-                      style: Cyber.bodyFor(context, 13, color: Cyber.success),
-                    ),
-                  ],
-                  const SizedBox(height: 6),
-                  Text(
-                    receipt.questCompleted
-                        ? '+$beginnerQuestCompleteOz Oz · Sport quest complete'
-                        : '${receipt.nextGame!.title} unlocked',
-                    style: Cyber.bodyFor(context, 13),
+                  const SizedBox(height: 7),
+                  CyberProgressBar(
+                    value: receipt.completed / receipt.total,
+                    accent: Cyber.success,
+                    height: 5,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        receipt.questCompleted
+                            ? Icons.toll_rounded
+                            : receipt.graduated
+                            ? Icons.lock_open_rounded
+                            : Icons.arrow_forward_rounded,
+                        color: receipt.questCompleted
+                            ? Cyber.gold
+                            : receipt.graduated
+                            ? Cyber.success
+                            : Cyber.cyan,
+                        size: 17,
+                      ),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          receipt.questCompleted
+                              ? '+$beginnerQuestCompleteOz OZ EARNED · SPORT CLEARED'
+                              : receipt.graduated
+                              ? 'DAILY QUESTS UNLOCKED'
+                              : 'NEXT: CHOOSE A GAME',
+                          style: Cyber.label(
+                            10,
+                            color: receipt.questCompleted
+                                ? Cyber.gold
+                                : receipt.graduated
+                                ? Cyber.success
+                                : Cyber.cyan,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   CyberObjectiveAction(
                     label: 'CONTINUE QUEST',
                     icon: Icons.arrow_forward,

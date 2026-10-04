@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../config/game_ladder.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
@@ -279,6 +281,15 @@ class DailyQuestRewardConsumed extends GameEvent {}
 class HomeSportChosen extends GameEvent {
   HomeSportChosen(this.sport);
   final Sport sport;
+}
+
+enum QuestGameSelectionResult { selected, rejected, saveFailed }
+
+/// Resolves only after the selected mission has been durably saved.
+class QuestGameSelected extends GameEvent {
+  QuestGameSelected(this.game);
+  final ArcadeGame game;
+  final Completer<QuestGameSelectionResult> result = Completer();
 }
 
 /// Spend [sportUnlockCostOz] to open another sport.

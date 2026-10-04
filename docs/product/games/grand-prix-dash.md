@@ -61,6 +61,7 @@ stats or XP. In-progress racing is session-only and does not survive app restart
 | Speed | Base maximum 88 m/s, about 317 KPH; tow/ERS can exceed it |
 | Acceleration / brake / coast | 26 / 44 / 10 m/s² before contextual modifiers |
 | Track / wall | Asphalt half-width 4.5 m; walls at ±6.5 m |
+| Car footprint | 25% smaller on both axes: 1.5 m wide, 4.125 m long contact footprint |
 | Stuck | Below 14 m/s for 10 seconds retires the player |
 | Recovery | Available after 2.5 stuck seconds; stationary for 3 seconds |
 | Result | Classified finish or P20 DNF; a DNF has no PB |
@@ -148,6 +149,13 @@ a short line-held moment. These actions do not award extra XP.
 | Coastal Sprint | Fast sweepers and a major stop | Palms, cliffs, shoreline and boats |
 
 The procedural renderer uses theme tokens and cached scenery pictures.
+All race cars and shared livery previews render at 75% of their previous width
+and height, preserving their proportions. Contact dimensions and passing
+clearance match the smaller cars; grid spacing and the road stay wide enough
+for close racing. Traffic retains safe closing-speed braking clearance.
+Player glow, spin rings, tyre marks, smoke, sparks and ERS/tow trails scale
+with the car. HUD typography and control touch targets retain their readable
+sizes, while the smaller field leaves more visible racing space.
 Textured asphalt, rubber line, kerbs, braking boards and checker markings
 remain anchored in track space. Cars turn with track tangent and heading;
 front wheels steer, body highlights define the shape, and ERS/braking have
@@ -245,6 +253,7 @@ shared match history remains readable. No unfinished race is persisted.
 - [Domain and records](../../../lib/models/grand_prix.dart), [circuits](../../../lib/data/grand_prix_circuits.dart)
 - [Engine](../../../lib/games/grand_prix/grand_prix_engine.dart), [shared geometry](../../../lib/games/grand_prix/grand_prix_track.dart), [fixed clock](../../../lib/games/grand_prix/grand_prix_simulation_clock.dart)
 - [Renderer](../../../lib/games/grand_prix/grand_prix_game.dart), [scenery](../../../lib/games/grand_prix/grand_prix_scenery.dart), [car painter](../../../lib/games/grand_prix/grand_prix_car_painter.dart)
+- [Shared car scale and contact dimensions](../../../lib/games/grand_prix/grand_prix_car_dimensions.dart)
 - [Cubit](../../../lib/blocs/grand_prix/grand_prix_cubit.dart), [lobby](../../../lib/screens/grand_prix/grand_prix_lobby_screen.dart), [race screen](../../../lib/screens/grand_prix/grand_prix_race_screen.dart)
 - [HUD](../../../lib/screens/grand_prix/widgets/grand_prix_driving_hud.dart), [controls](../../../lib/screens/grand_prix/widgets/grand_prix_controls.dart), [feedback/pause](../../../lib/screens/grand_prix/widgets/grand_prix_race_feedback.dart), [result](../../../lib/screens/grand_prix/widgets/grand_prix_result.dart)
 - [Audio](../../../lib/utils/sound_effects.dart), [audio generator](../../../tool/audio/build_audio.py), [asset catalogue](../../audio/CUE_CATALOG.md)

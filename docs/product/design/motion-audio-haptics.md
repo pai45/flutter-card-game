@@ -36,6 +36,23 @@ shootout, and matchmaking.
 - Respect sound/music/haptic settings where a mode exposes them.
 - Settlement happens independently of animation completion or skip.
 
+### Game discovery illustration loops [BUILT]
+
+Games hero cards, Quick Play tiles, and curated Trending game cards use a
+4.8-second local illustration loop: shot/pass trajectories, rotating aim
+reticles, a circuit marker and speed rails, a racket drift, answer-node
+selection, grid linkage, or a dossier scan. Only the isolated `CustomPainter`
+repaints on each tick, inside a `RepaintBoundary`; labels and the card layout do
+not rebuild with the loop. The controller is disposed with the card.
+
+Platform reduced motion, a disabled route `TickerMode`, and locked-card state
+stop the controller and show a readable fixed simulation pose. Removing the
+restriction resumes the loop. The 120 ms press scale and hover/focus arrow shift
+become immediate under reduced motion; their readable outline/rail feedback
+remains. Tapping confirms with the existing selection haptic and launches
+through the existing callback. Ambient loops do not play sound, award rewards,
+or delay navigation.
+
 ### Pitch Duel contribution reveal and timing [BUILT]
 
 The persistent board reveals player → action → scenario → combination → timing
@@ -86,6 +103,9 @@ Rivals hold lanes through straights and change lanes gradually; straight-line
 body tilt is capped so the scroller projection does not exaggerate normal
 steering into sideways motion. The compact left HUD omits direction/distance
 guidance, leaving rival information and relevant race alerts.
+Cars and livery previews use a shared 75% scale on both axes. Car glow, spin
+rings and tyre/ERS/tow effects follow that scale; HUD text and control hit
+areas retain their accessible sizes.
 
 Original engine low/high bands crossfade by RPM/load with quieter wind and tyre
 layers. The shared controller keeps global mute, and active-race ownership
@@ -113,6 +133,8 @@ shared/participating surfaces. Reward persistence belongs to settlement systems.
 ## Implementation References
 
 - [`lib/utils/sound_effects.dart`](../../../lib/utils/sound_effects.dart)
+- [`lib/widgets/cyber/cyber_game_launch_card.dart`](../../../lib/widgets/cyber/cyber_game_launch_card.dart)
+- [`lib/widgets/cyber/game_launch_art.dart`](../../../lib/widgets/cyber/game_launch_art.dart)
 - [`lib/utils/game_audio_mappings.dart`](../../../lib/utils/game_audio_mappings.dart)
 - [`lib/widgets/streak_celebration_host.dart`](../../../lib/widgets/streak_celebration_host.dart)
 - [`lib/widgets/achievement_unlock_celebration.dart`](../../../lib/widgets/achievement_unlock_celebration.dart)
@@ -122,6 +144,7 @@ shared/participating surfaces. Reward persistence belongs to settlement systems.
 ## Tests
 
 - [`test/audio_controller_test.dart`](../../../test/audio_controller_test.dart)
+- [`test/cyber_game_launch_card_test.dart`](../../../test/cyber_game_launch_card_test.dart)
 - [`test/grand_prix_presentation_test.dart`](../../../test/grand_prix_presentation_test.dart)
 - [`test/game_audio_mappings_test.dart`](../../../test/game_audio_mappings_test.dart)
 - [`test/basketball_action_cue_test.dart`](../../../test/basketball_action_cue_test.dart)

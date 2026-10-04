@@ -223,6 +223,7 @@ class _AppShellState extends State<AppShell>
     WidgetsBinding.instance.addObserver(this);
     UnlockRevealGate.instance
       ..playGame = _openArcadeGame
+      ..chooseGame = _chooseQuestGame
       ..openSport = _enterSport
       ..openQuestHub = _openStreakHub
       ..chooseSport = _chooseNextSport
@@ -291,6 +292,7 @@ class _AppShellState extends State<AppShell>
     if (gate.playGame == _openArcadeGame) {
       gate.hubVisible.value = false;
       gate.playGame = null;
+      gate.chooseGame = null;
       gate.openSport = null;
       gate.openQuestHub = null;
       gate.chooseSport = null;
@@ -493,8 +495,7 @@ class _AppShellState extends State<AppShell>
     }
     await _storage.saveOnboardingComplete(true);
     if (!mounted) return;
-    // Starts the gated unlock ladder: only the home sport (and its first game)
-    // is open, and both hub strips land on it.
+    // Opens the home sport; its Games quest card offers the first-game choice.
     context.read<GameBloc>().add(HomeSportChosen(result.primarySport));
     setState(() {
       _selectedAvatarId = result.avatarId;
@@ -579,12 +580,30 @@ class _AppShellState extends State<AppShell>
   /// home sport's current Beginner's Quest game instead of a lock sheet.
   void _openQuestGame(ArcadeGame preferred) {
     final unlocks = context.read<GameBloc>().state.unlocks;
+    final home = unlocks.homeSport ?? Sport.football;
+    if (unlocks.needsSelection(home)) {
+      _chooseQuestGame(home);
+      return;
+    }
     if (unlocks.isGameUnlocked(preferred)) {
       _openArcadeGame(preferred);
       return;
     }
-    final home = unlocks.homeSport ?? Sport.football;
-    _openArcadeGame(unlocks.currentStep(home) ?? sportGameLadder[home]!.first);
+    final step = unlocks.currentStep(home);
+    if (step != null) {
+      _openArcadeGame(step);
+    }
+  }
+
+  void _chooseQuestGame(Sport sport) {
+    _enterSport(sport);
+    final unlocks = context.read<GameBloc>().state.unlocks;
+    final step = unlocks.currentStep(sport);
+    if (unlocks.needsSelection(sport)) {
+      showQuestGamePicker(context, sport, onPlay: _openArcadeGame);
+    } else if (step != null) {
+      _openArcadeGame(step);
+    }
   }
 
   /// The single, guarded entry into every GAMES-tab mode. A locked game (or a

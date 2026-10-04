@@ -312,14 +312,14 @@ void main() {
     expect(chessRect.height, greaterThan(chessRect.width * 1.8));
     expect(chessRect.top, moreOrLessEquals(quizRect.top));
     expect(quizRect.left, moreOrLessEquals(bingoRect.left));
-    expect(bingoRect.top, greaterThan(quizRect.bottom));
-    expect(guessRect.width, greaterThan(guessRect.height * 1.8));
+    expect(bingoRect.top, greaterThanOrEqualTo(quizRect.bottom));
+    expect(guessRect.width, greaterThan(guessRect.height * 1.6));
 
     final title = find.descendant(
       of: pitchFinder,
       matching: find.text('PITCH DUEL'),
     );
-    expect(tester.getCenter(title).dy, lessThan(pitchRect.center.dy));
+    expect(tester.getCenter(title).dy, greaterThan(pitchRect.center.dy));
 
     await tester.tap(pitchFinder);
     expect(harnessKey.currentState!.pitchDuelOpens, 1);
@@ -582,7 +582,13 @@ class _HubBundle {
         BlocProvider<PredictionCubit>.value(value: predictions),
         BlocProvider<PicksCubit>.value(value: picks),
       ],
-      child: MaterialApp(home: child),
+      child: MaterialApp(
+        home: child,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child!,
+        ),
+      ),
     );
   }
 
