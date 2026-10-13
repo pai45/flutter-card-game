@@ -4,6 +4,7 @@ import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
 import '../../models/sport_match.dart';
 import 'cyber_underline_tabs.dart';
+import 'statoz_icons.dart';
 
 /// Same sport strip used on the MATCH / GAMES hub (Football, Cricket,
 /// Basketball, Tennis, Motorsport) via [CyberUnderlineTabs].
@@ -25,7 +26,10 @@ class SportUnderlineTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     final tabs = CyberUnderlineTabs(
       labels: sportTabLabels,
-      icons: sportTabIcons,
+      iconBuilders: [
+        for (final sport in sportTabOrder)
+          (color) => StatozSportIcon(sport: sport, size: 21, color: color),
+      ],
       iconColors: sportTabColors,
       activeIndex: activeIndex,
       accent: sportModuleFor(selectedSport).accent,
@@ -97,10 +101,13 @@ class SportHubTabs extends StatelessWidget {
       for (final sport in strip) sportModuleFor(sport).label.toUpperCase(),
       'ALL SPORTS',
     ];
-    final icons = <IconData>[
-      if (showTrending) Icons.local_fire_department_rounded,
-      for (final sport in strip) sportModuleFor(sport).icon,
-      Icons.more_horiz_rounded,
+    final iconBuilders = <Widget Function(Color)>[
+      if (showTrending)
+        (color) =>
+            Icon(Icons.local_fire_department_rounded, size: 21, color: color),
+      for (final sport in strip)
+        (color) => StatozSportIcon(sport: sport, size: 21, color: color),
+      (color) => Icon(Icons.more_horiz_rounded, size: 21, color: color),
     ];
     final iconColors = <Color>[
       if (showTrending) Cyber.cyan,
@@ -128,7 +135,7 @@ class SportHubTabs extends StatelessWidget {
         : sportModuleFor(selectedSport).accent;
     final tabs = CyberUnderlineTabs(
       labels: labels,
-      icons: icons,
+      iconBuilders: iconBuilders,
       iconColors: iconColors,
       locked: lockedSports.isEmpty ? null : locked,
       activeIndex: visibleActiveIndex,

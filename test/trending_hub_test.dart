@@ -1,3 +1,4 @@
+import 'package:card_game/widgets/cyber/statoz_icons.dart';
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/picks/picks_cubit.dart';
 import 'package:card_game/blocs/prediction/prediction_cubit.dart';
@@ -75,25 +76,25 @@ void main() {
       expect(tile, findsOneWidget);
       final sportIcon = find.descendant(
         of: tile,
-        matching: find.byIcon(sportModuleFor(entry.value).icon),
+        matching: find.byWidgetPredicate((widget) => widget is StatozSportIcon && widget.sport == entry.value),
       );
       expect(sportIcon, findsOneWidget);
       expect(
-        tester.widget<Icon>(sportIcon).color,
+        tester.widget<StatozSportIcon>(sportIcon).color,
         sportModuleFor(entry.value).accent,
       );
     }
 
     final hubTabs = find.byType(SportHubTabs);
     expect(
-      find.descendant(of: hubTabs, matching: find.byType(Icon)),
-      findsNWidgets(7),
+      find.descendant(of: hubTabs, matching: find.byType(StatozSportIcon)),
+      findsNWidgets(4),
     );
     expect(find.byKey(const ValueKey('match-search-button')), findsOneWidget);
     expect(
       find.descendant(
         of: hubTabs,
-        matching: find.byIcon(Icons.sports_motorsports),
+        matching: find.byWidgetPredicate((widget) => widget is StatozSportIcon && widget.sport == Sport.motorsport),
       ),
       findsOneWidget,
     );

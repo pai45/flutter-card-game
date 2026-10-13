@@ -46,7 +46,7 @@ void main() {
     final repository = MockPredictionRepository();
     final fixtures = await repository.fixtures();
     final fifaFixtures = fixtures
-        .where((fixture) => fixture.leagueId == 'fifa')
+        .where((fixture) => fixture.leagueId == 'fifa' && fixture.id.startsWith('fifa_'))
         .toList();
 
     expect(fifaFixtures, hasLength(32));

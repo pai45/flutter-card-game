@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../../config/game_ladder.dart';
 import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
+import '../../widgets/cyber/statoz_icons.dart';
 import '../../data/followable_leagues.dart';
 import '../../models/avatar_option.dart';
 import '../../models/profile_banner_option.dart';
@@ -801,7 +802,11 @@ class _SportTile extends StatelessWidget {
                     AnimatedScale(
                       duration: const Duration(milliseconds: 150),
                       scale: selected ? 1.1 : 1,
-                      child: Icon(module.icon, color: iconColor, size: 30),
+                      child: StatozSportIcon(
+                        sport: module.sport,
+                        color: iconColor,
+                        size: 30,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Text(

@@ -13,6 +13,7 @@ import '../../services/quiz_bank.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/cyber/statoz_icons.dart';
 import '../../widgets/game_scaffold.dart';
 import '../leaderboard/widgets/game_leaderboard_button.dart';
 import 'quiz_play_screen.dart';
@@ -495,8 +496,8 @@ class _KnowledgeArenaHero extends StatelessWidget {
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            Icon(
-                              _sportIcon(sport),
+                            StatozSportIcon(
+                              sport: sport,
                               color: Cyber.cyan,
                               size: 30,
                             ),
@@ -1495,11 +1496,3 @@ class _BriefingStat extends StatelessWidget {
     );
   }
 }
-
-IconData _sportIcon(Sport sport) => switch (sport) {
-  Sport.football => Icons.sports_soccer,
-  Sport.cricket => Icons.sports_cricket,
-  Sport.motorsport => Icons.sports_motorsports,
-  Sport.basketball => Icons.sports_basketball,
-  Sport.tennis => Icons.sports_tennis,
-};

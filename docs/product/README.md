@@ -191,6 +191,9 @@ reused before new components are introduced, and every meaningful action must
 produce clear feedback or gratification. Sport identity is consistent across
 tabs, onboarding, Trending, collections, shop, and leaderboards: Football is
 cyan, Cricket white, Basketball yellow, Tennis green, and Motorsport red.
+Those identity surfaces use the shared original StatOz mark family: five sport
+marks plus a distinct mark for each of the 18 game entries; generic Material
+icons remain reserved for actions and gameplay cues.
 Game discovery cards use dedicated per-game accents for their animated
 schematics, borders and launch rails, consistently across sport pages and
 Trending. Semantic state, reward, team, and game-mode colors remain separate. Data-dense

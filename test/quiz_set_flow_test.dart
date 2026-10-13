@@ -215,12 +215,11 @@ void main() {
     addTearDown(gameBloc.close);
     addTearDown(quizCubit.close);
     gameBloc.add(HomeSportChosen(Sport.cricket));
-    gameBloc.add(
-      ArcadeGamePlayed(ArcadeGame.finalOver, sourceId: 'rookie-first'),
-    );
-    await gameBloc.stream.firstWhere(
-      (s) => s.unlocks.hasRookieTicket(Sport.cricket),
-    );
+    await gameBloc.stream.firstWhere((s) => s.unlocks.homeSport == Sport.cricket);
+    final selection = QuestGameSelected(ArcadeGame.cricketQuiz);
+    gameBloc.add(selection);
+    expect(await selection.result.future, QuestGameSelectionResult.selected);
+    expect(gameBloc.state.unlocks.hasRookieTicket(Sport.cricket), isTrue);
     await tester.pumpWidget(
       _wrap(
         gameBloc: gameBloc,

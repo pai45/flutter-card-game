@@ -262,9 +262,15 @@ class CyberStatusBadge extends StatelessWidget {
 }
 
 class CyberSportEmblem extends StatelessWidget {
-  const CyberSportEmblem({required this.icon, required this.accent, super.key});
+  const CyberSportEmblem({
+    required this.icon,
+    required this.accent,
+    this.mark,
+    super.key,
+  });
   final IconData icon;
   final Color accent;
+  final Widget? mark;
 
   @override
   Widget build(BuildContext context) => ExcludeSemantics(
@@ -276,7 +282,7 @@ class CyberSportEmblem extends StatelessWidget {
         height: 64,
         color: Cyber.panel,
         alignment: Alignment.center,
-        child: Icon(icon, size: 32, color: accent),
+        child: mark ?? Icon(icon, size: 32, color: accent),
       ),
     ),
   );

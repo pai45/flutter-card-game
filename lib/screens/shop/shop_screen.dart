@@ -30,6 +30,7 @@ import '../../widgets/card_unpack_animation.dart';
 import '../../widgets/cyber/cyber_filter_chips.dart';
 import '../../widgets/cyber/sport_underline_tabs.dart';
 import '../../widgets/cyber/cyber_underline_tabs.dart';
+import '../../widgets/cyber/statoz_icons.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/staggered_card_entrance.dart';
@@ -102,8 +103,11 @@ final _shopSportLabels = _shopSports
     )
     .toList(growable: false);
 
-final _shopSportIcons = _shopSports
-    .map((sport) => sportModuleFor(sport).icon)
+final _shopSportIconBuilders = _shopSports
+    .map(
+      (sport) =>
+          (Color color) => StatozSportIcon(sport: sport, color: color),
+    )
     .toList(growable: false);
 
 final _shopSportColors = _shopSports
@@ -584,7 +588,7 @@ class _ShopSportsTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     final tabs = CyberUnderlineTabs(
       labels: _shopSportLabels,
-      icons: _shopSportIcons,
+      iconBuilders: _shopSportIconBuilders,
       iconColors: _shopSportColors,
       activeIndex: activeIndex,
       accent: sportModuleFor(selectedSport).accent,

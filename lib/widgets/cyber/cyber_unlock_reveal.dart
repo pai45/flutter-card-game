@@ -24,6 +24,7 @@ class CyberUnlockReveal extends StatefulWidget {
     required this.icon,
     required this.accent,
     required this.onDismissed,
+    this.mark,
     this.rewardLabel,
     this.ctaLabel,
     this.onCta,
@@ -38,6 +39,7 @@ class CyberUnlockReveal extends StatefulWidget {
   final String subtitle;
   final IconData icon;
   final Color accent;
+  final Widget? mark;
 
   /// Optional reward chip under the title, e.g. `+50 OZ`.
   final String? rewardLabel;
@@ -271,7 +273,9 @@ class _CyberUnlockRevealState extends State<CyberUnlockReveal>
                           ),
                           border: Border.all(color: accent, width: 2),
                         ),
-                        child: Icon(widget.icon, color: accent, size: 58),
+                        child:
+                            widget.mark ??
+                            Icon(widget.icon, color: accent, size: 58),
                       ),
                     ),
                   ),

@@ -8,6 +8,7 @@ import '../../../models/sport_match.dart';
 import '../../../models/unlock_progress.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
+import '../../../widgets/cyber/statoz_icons.dart';
 import '../../../widgets/unlock_celebration_host.dart';
 import 'unlock_sheets.dart';
 
@@ -139,7 +140,8 @@ class _CompactBeginnerQuestCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _MissionIconPlate(
-                    icon: step?.icon ?? Icons.sports_esports_rounded,
+                    game: step,
+                    icon: step == null ? Icons.sports_esports_rounded : null,
                     color: accent,
                   ),
                   const SizedBox(width: 10),
@@ -773,7 +775,7 @@ class _ActiveMissionContent extends StatelessWidget {
       Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _MissionIconPlate(icon: game.icon, color: accent),
+          _MissionIconPlate(game: game, color: accent),
           const SizedBox(width: 8),
           Expanded(child: Text(game.title, style: Cyber.display(13))),
         ],
@@ -832,7 +834,7 @@ class _CompactMissionContent extends StatelessWidget {
       Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _MissionIconPlate(icon: game.icon, color: color),
+          _MissionIconPlate(game: game, color: color),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -861,9 +863,11 @@ class _CompactMissionContent extends StatelessWidget {
 }
 
 class _MissionIconPlate extends StatelessWidget {
-  const _MissionIconPlate({required this.icon, required this.color});
+  const _MissionIconPlate({required this.color, this.game, this.icon})
+    : assert(game != null || icon != null);
 
-  final IconData icon;
+  final ArcadeGame? game;
+  final IconData? icon;
   final Color color;
 
   @override
@@ -875,7 +879,9 @@ class _MissionIconPlate extends StatelessWidget {
       color: Color.alphaBlend(color.withValues(alpha: 0.08), Cyber.panel2),
       border: Border.all(color: color.withValues(alpha: 0.5)),
     ),
-    child: Icon(icon, size: 17, color: color),
+    child: game == null
+        ? Icon(icon!, size: 17, color: color)
+        : StatozGameIcon(game: game!, size: 17, color: color),
   );
 }
 

@@ -1,3 +1,5 @@
+import 'package:card_game/models/sport_match.dart';
+import 'package:card_game/widgets/cyber/statoz_icons.dart';
 import 'package:card_game/config/sport_modules.dart';
 import 'package:card_game/config/theme.dart';
 import 'package:card_game/utils/sound_effects.dart';
@@ -36,7 +38,10 @@ void main() {
           body: StatefulBuilder(
             builder: (context, setState) => CyberUnderlineTabs(
               labels: const ['FOOTBALL', 'CRICKET'],
-              icons: const [Icons.sports_soccer, Icons.sports_cricket],
+              iconBuilders: [
+                (color) => StatozSportIcon(sport: Sport.football, color: color),
+                (color) => StatozSportIcon(sport: Sport.cricket, color: color),
+              ],
               iconColors: accents,
               activeIndex: activeIndex,
               accent: accents[activeIndex],
@@ -48,11 +53,11 @@ void main() {
     );
 
     expect(
-      tester.widget<Icon>(find.byIcon(Icons.sports_soccer)).color,
+      tester.widget<StatozSportIcon>(find.byWidgetPredicate((widget) => widget is StatozSportIcon && widget.sport == Sport.football)).color,
       Cyber.cyan,
     );
     expect(
-      tester.widget<Icon>(find.byIcon(Icons.sports_cricket)).color,
+      tester.widget<StatozSportIcon>(find.byWidgetPredicate((widget) => widget is StatozSportIcon && widget.sport == Sport.cricket)).color,
       AppTheme.whiteColor.withValues(alpha: 0.58),
     );
     final initialIndicator = tester.widget<AnimatedPositioned>(
@@ -60,15 +65,15 @@ void main() {
     );
     final initialLeft = initialIndicator.left;
 
-    await tester.tap(find.byIcon(Icons.sports_cricket));
+    await tester.tap(find.byWidgetPredicate((widget) => widget is StatozSportIcon && widget.sport == Sport.cricket));
     await tester.pumpAndSettle();
 
     expect(
-      tester.widget<Icon>(find.byIcon(Icons.sports_soccer)).color,
+      tester.widget<StatozSportIcon>(find.byWidgetPredicate((widget) => widget is StatozSportIcon && widget.sport == Sport.football)).color,
       Cyber.cyan.withValues(alpha: 0.58),
     );
     expect(
-      tester.widget<Icon>(find.byIcon(Icons.sports_cricket)).color,
+      tester.widget<StatozSportIcon>(find.byWidgetPredicate((widget) => widget is StatozSportIcon && widget.sport == Sport.cricket)).color,
       AppTheme.whiteColor,
     );
     final movedIndicator = tester.widget<AnimatedPositioned>(
@@ -109,22 +114,22 @@ void main() {
         Cyber.cyan,
       );
       expect(
-        tester.widget<Icon>(find.byIcon(Icons.sports_soccer)).color,
+        tester.widget<StatozSportIcon>(find.byWidgetPredicate((widget) => widget is StatozSportIcon && widget.sport == Sport.football)).color,
         Cyber.cyan.withValues(alpha: 0.58),
       );
       expect(
-        tester.widget<Icon>(find.byIcon(Icons.sports_cricket)).color,
+        tester.widget<StatozSportIcon>(find.byWidgetPredicate((widget) => widget is StatozSportIcon && widget.sport == Sport.cricket)).color,
         AppTheme.whiteColor.withValues(alpha: 0.58),
       );
       expect(
-        tester.widget<Icon>(find.byIcon(Icons.sports_basketball)).color,
+        tester.widget<StatozSportIcon>(find.byWidgetPredicate((widget) => widget is StatozSportIcon && widget.sport == Sport.basketball)).color,
         Cyber.gold.withValues(alpha: 0.58),
       );
       expect(
-        tester.widget<Icon>(find.byIcon(Icons.sports_motorsports)).color,
+        tester.widget<StatozSportIcon>(find.byWidgetPredicate((widget) => widget is StatozSportIcon && widget.sport == Sport.motorsport)).color,
         Cyber.f1Red.withValues(alpha: 0.58),
       );
-      expect(find.byIcon(Icons.sports_tennis), findsNothing);
+      expect(find.byWidgetPredicate((widget) => widget is StatozSportIcon && widget.sport == Sport.tennis), findsNothing);
 
       final indicator = tester.widget<DecoratedBox>(
         find.descendant(

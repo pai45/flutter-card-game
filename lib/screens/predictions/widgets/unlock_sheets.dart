@@ -12,6 +12,7 @@ import '../../../models/unlock_progress.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_cta_button.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
+import '../../../widgets/cyber/statoz_icons.dart';
 import '../../../widgets/unlock_celebration_host.dart';
 
 Future<void> showQuestGamePicker(
@@ -153,8 +154,8 @@ class _QuestGamePickerState extends State<QuestGamePicker> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          game.icon,
+                        StatozGameIcon(
+                          game: game,
                           size: 24,
                           color: game == _selected ? accent : Cyber.muted,
                         ),
@@ -428,7 +429,15 @@ class _SportUnlockSheetState extends State<SportUnlockSheet> {
                 ),
               ),
               const SizedBox(width: 12),
-              CyberSportEmblem(icon: module.icon, accent: module.accent),
+              CyberSportEmblem(
+                icon: module.icon,
+                accent: module.accent,
+                mark: StatozSportIcon(
+                  sport: module.sport,
+                  color: module.accent,
+                  size: 32,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -554,7 +563,7 @@ class _LockedGameSheet extends StatelessWidget {
         const SizedBox(height: 14),
         Row(
           children: [
-            _IconPlate(icon: game.icon, accent: Cyber.muted, locked: true),
+            _IconPlate(game: game, accent: Cyber.muted, locked: true),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -700,12 +709,12 @@ class _SheetEyebrow extends StatelessWidget {
 
 class _IconPlate extends StatelessWidget {
   const _IconPlate({
-    required this.icon,
+    required this.game,
     required this.accent,
     this.locked = false,
   });
 
-  final IconData icon;
+  final ArcadeGame game;
   final Color accent;
   final bool locked;
 
@@ -729,7 +738,7 @@ class _IconPlate extends StatelessWidget {
                 ),
                 border: Border.all(color: accent.withValues(alpha: 0.5)),
               ),
-              child: Icon(icon, color: accent, size: 30),
+              child: StatozGameIcon(game: game, color: accent, size: 30),
             ),
           ),
           if (locked)

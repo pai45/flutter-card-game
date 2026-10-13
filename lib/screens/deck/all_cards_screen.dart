@@ -11,6 +11,7 @@ import '../../models/cards.dart';
 import '../../models/sport_match.dart';
 import '../../services/card_share_service.dart';
 import '../../widgets/cyber/cyber_underline_tabs.dart';
+import '../../widgets/cyber/statoz_icons.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 
@@ -30,8 +31,11 @@ final _collectionSportLabels = _collectionSports
     )
     .toList(growable: false);
 
-final _collectionSportIcons = _collectionSports
-    .map((sport) => sportModuleFor(sport).icon)
+final _collectionSportIconBuilders = _collectionSports
+    .map(
+      (sport) =>
+          (Color color) => StatozSportIcon(sport: sport, color: color),
+    )
     .toList(growable: false);
 
 final _collectionSportColors = _collectionSports
@@ -123,7 +127,7 @@ class _AllCardsSportsTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     return CyberUnderlineTabs(
       labels: _collectionSportLabels,
-      icons: _collectionSportIcons,
+      iconBuilders: _collectionSportIconBuilders,
       iconColors: _collectionSportColors,
       activeIndex: activeIndex,
       accent: sportModuleFor(selectedSport).accent,

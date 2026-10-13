@@ -11,6 +11,7 @@ class DailyCaseLobby extends StatelessWidget {
     required this.sportLabel,
     required this.sportIcon,
     required this.sportAccent,
+    this.sportMark,
     required this.title,
     required this.description,
     required this.status,
@@ -33,6 +34,7 @@ class DailyCaseLobby extends StatelessWidget {
   final String sportLabel;
   final IconData sportIcon;
   final Color sportAccent;
+  final Widget? sportMark;
   final String title;
   final String description;
   final String status;
@@ -83,6 +85,7 @@ class DailyCaseLobby extends StatelessWidget {
                               CyberSportEmblem(
                                 icon: sportIcon,
                                 accent: sportAccent,
+                                mark: sportMark,
                               ),
                               const SizedBox(width: 12),
                               Expanded(

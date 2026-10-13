@@ -25,11 +25,14 @@ class CyberUnderlineTabs extends StatelessWidget {
     this.accent = Cyber.cyan,
     this.height = 50,
     this.icons,
+    this.iconBuilders,
     this.iconColors,
     this.minTabWidth,
     this.locked,
     super.key,
   }) : assert(icons == null || icons.length == labels.length),
+       assert(iconBuilders == null || iconBuilders.length == labels.length),
+       assert(icons == null || iconBuilders == null),
        assert(iconColors == null || iconColors.length == labels.length),
        assert(locked == null || locked.length == labels.length);
 
@@ -39,6 +42,7 @@ class CyberUnderlineTabs extends StatelessWidget {
   final Color accent;
   final double height;
   final List<IconData>? icons;
+  final List<Widget Function(Color color)>? iconBuilders;
 
   /// Optional identity color for each icon. Inactive icons keep a subdued
   /// version of their color while the active icon renders at full strength.
@@ -85,6 +89,7 @@ class CyberUnderlineTabs extends StatelessWidget {
                         child: _UnderlineTab(
                           label: labels[i],
                           icon: icons?[i],
+                          iconBuilder: iconBuilders?[i],
                           iconColor: iconColors?[i],
                           locked: locked?[i] ?? false,
                           active: activeIndex == i,
@@ -172,6 +177,7 @@ class _UnderlineTab extends StatefulWidget {
   const _UnderlineTab({
     required this.label,
     required this.icon,
+    required this.iconBuilder,
     required this.iconColor,
     required this.active,
     required this.accent,
@@ -181,6 +187,7 @@ class _UnderlineTab extends StatefulWidget {
 
   final String label;
   final IconData? icon;
+  final Widget Function(Color color)? iconBuilder;
   final Color? iconColor;
   final bool locked;
   final bool active;
@@ -224,7 +231,7 @@ class _UnderlineTabState extends State<_UnderlineTab> {
               selected: widget.active,
               label: widget.locked ? '${widget.label}, locked' : widget.label,
               child: ExcludeSemantics(
-                child: widget.icon == null
+                child: widget.icon == null && widget.iconBuilder == null
                     ? FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
@@ -244,8 +251,17 @@ class _UnderlineTabState extends State<_UnderlineTab> {
                             ? '${widget.label} - locked'
                             : widget.label,
                         child: widget.locked
-                            ? _LockedIcon(icon: widget.icon!, color: iconColor)
-                            : Icon(widget.icon, color: iconColor, size: 21),
+                            ? _LockedIcon(
+                                icon:
+                                    widget.iconBuilder?.call(iconColor) ??
+                                    Icon(
+                                      widget.icon,
+                                      color: iconColor,
+                                      size: 21,
+                                    ),
+                              )
+                            : widget.iconBuilder?.call(iconColor) ??
+                                  Icon(widget.icon, color: iconColor, size: 21),
                       ),
               ),
             ),
@@ -259,10 +275,9 @@ class _UnderlineTabState extends State<_UnderlineTab> {
 /// A locked teaser glyph: the sport icon dimmed, sealed with a small padlock.
 /// Flat on purpose - a locked tab is never the live element, so it never glows.
 class _LockedIcon extends StatelessWidget {
-  const _LockedIcon({required this.icon, required this.color});
+  const _LockedIcon({required this.icon});
 
-  final IconData icon;
-  final Color color;
+  final Widget icon;
 
   @override
   Widget build(BuildContext context) {
@@ -272,10 +287,7 @@ class _LockedIcon extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Align(
-            alignment: Alignment.topLeft,
-            child: Icon(icon, color: color, size: 21),
-          ),
+          Align(alignment: Alignment.topLeft, child: icon),
           Positioned(
             right: 0,
             bottom: 0,

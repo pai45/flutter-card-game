@@ -28,6 +28,7 @@ import '../../services/achievement_progress.dart';
 import '../../services/secure_storage_service.dart';
 import '../../widgets/avatar_frame_ring.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/cyber/statoz_icons.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/profile_banner_visual.dart';
 import '../../widgets/team_logo.dart';
@@ -2392,7 +2393,11 @@ class _PrimarySportChip extends StatelessWidget {
           color: module.accent.withValues(alpha: 0.1),
           border: Border.all(color: module.accent.withValues(alpha: 0.5)),
         ),
-        child: Icon(module.icon, color: module.accent, size: 20),
+        child: StatozSportIcon(
+          sport: module.sport,
+          color: module.accent,
+          size: 20,
+        ),
       ),
     );
   }
@@ -2728,7 +2733,7 @@ class _EditableSportPill extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(module.icon, color: color, size: 18),
+              StatozSportIcon(sport: module.sport, color: color, size: 18),
               const SizedBox(width: 7),
               Text(
                 module.label.toUpperCase(),

@@ -106,7 +106,7 @@ void main() {
   });
 
   group('SettlementWriter.computeQuizSettlement — cricket', () {
-    test('a no-result settles the result and voids unsupported stats', () {
+    test('an abandoned match voids all questions without inventing a result', () {
       final match = _cricketMatch(resultLine: 'Match abandoned, no result');
       final quiz = PredictionQuiz(
         matchId: match.id,
@@ -115,14 +115,7 @@ void main() {
       final settled = SettlementWriter.computeQuizSettlement(match, quiz);
 
       expect(settled.settleable, isTrue);
-      final winner = settled.questions.firstWhere((q) => q.id == 'winner');
-      expect(winner.settledOptionIndex, 2);
-      expect(
-        settled.questions
-            .where((q) => q.id != 'winner')
-            .every((q) => q.forcedVoid),
-        isTrue,
-      );
+      expect(settled.questions.every((q) => q.forcedVoid), isTrue);
     });
   });
 

@@ -17,6 +17,7 @@ import '../../../models/unlock_progress.dart';
 import '../../../utils/prediction_helpers.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
+import '../../../widgets/cyber/statoz_icons.dart';
 import '../../../widgets/staggered_card_entrance.dart';
 import '../../../widgets/team_logo.dart';
 import '../all_picks_screen.dart';
@@ -389,6 +390,11 @@ class _TrendingMatchCard extends StatelessWidget {
             leadingColor: live ? Cyber.success : Cyber.cyan,
             leadingIcon: module.icon,
             leadingIconColor: module.accent,
+            leadingMark: StatozSportIcon(
+              sport: match.sport,
+              size: 12,
+              color: module.accent,
+            ),
           ),
         ],
       ),
@@ -519,6 +525,11 @@ class _CricketTrendingMatchCard extends StatelessWidget {
             leadingColor: live ? Cyber.success : Cyber.cyan,
             leadingIcon: Icons.sports_cricket,
             leadingIconColor: sportModuleFor(Sport.cricket).accent,
+            leadingMark: StatozSportIcon(
+              sport: Sport.cricket,
+              size: 12,
+              color: sportModuleFor(Sport.cricket).accent,
+            ),
           ),
         ],
       ),
@@ -938,7 +949,11 @@ class _TrendingPredictCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(module.icon, size: 13, color: module.accent),
+                      StatozSportIcon(
+                        sport: match.sport,
+                        size: 13,
+                        color: module.accent,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -1052,7 +1067,11 @@ class _TrendingMarketCard extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Icon(module.icon, size: 13, color: module.accent),
+                          StatozSportIcon(
+                            sport: sport,
+                            size: 13,
+                            color: module.accent,
+                          ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(

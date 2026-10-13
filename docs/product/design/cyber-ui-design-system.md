@@ -1,7 +1,7 @@
 # Cyber UI Design System
 
 > **Status:** BUILT
-> **Last verified:** 2026-10-04
+> **Last verified:** 2026-10-11
 > **Scope:** Theme tokens, typography, shape language, glow hierarchy, layout, and shared cyber components
 
 ## Product Purpose
@@ -46,6 +46,14 @@ clear state/result feedback, and a reward/next-action handoff.
   sport uses full color and owns the tab's single glowing underline. These
   identity colors do not replace semantic LIVE, reward, danger, rarity, team,
   or game-mode colors.
+- **BUILT:** Sport and game identity uses the original StatOz 32 x 32 mark
+  family in `statoz_icons.dart`: five sport marks and one distinct mark for
+  each of the 18 game entries. The marks use a 1.75 px butt-cap, miter-join
+  construction and inherit the surrounding identity color. Use them on sport
+  selectors, discovery cards, quest/unlock moments, dossiers and other
+  identity surfaces. Keep Material icons for actions and live gameplay cues
+  such as shoot, defend, lock, search and navigation. Marks are decorative by
+  default when an adjacent label already names the sport or game.
 - **BUILT:** Team identity uses a four-role, competition-scoped palette. The
   supplied `primaryColor`, `secondaryColor`, and `textColor` are reserved for
   exact octagonal logo rendering. `secondaryTextColor` is the full-strength
@@ -222,6 +230,7 @@ widget must not become the authoritative store for durable state.
 - [`lib/widgets/game_scaffold.dart`](../../../lib/widgets/game_scaffold.dart)
 - [`lib/widgets/cyber/cyber_widgets.dart`](../../../lib/widgets/cyber/cyber_widgets.dart)
 - [`lib/widgets/cyber/cyber_game_launch_card.dart`](../../../lib/widgets/cyber/cyber_game_launch_card.dart)
+- [`lib/widgets/cyber/statoz_icons.dart`](../../../lib/widgets/cyber/statoz_icons.dart)
 - [`lib/widgets/cyber/game_launch_art.dart`](../../../lib/widgets/cyber/game_launch_art.dart)
 - [`lib/screens/predictions/prediction_home_screen.dart`](../../../lib/screens/predictions/prediction_home_screen.dart)
 - [`lib/widgets/cyber/cyber_cta_button.dart`](../../../lib/widgets/cyber/cyber_cta_button.dart)
@@ -242,3 +251,5 @@ Game-card routing/layout is covered by `game_hero_cta_test.dart`,
 `cyber_game_launch_card_test.dart` covers motion shutdown/resume, input routes,
 and all schematic variants with enlarged text; `tool/game_cards_preview.dart`
 provides an isolated production-widget running-app preview.
+`statoz_icons_test.dart` renders every sport and game mark and verifies the
+opt-in semantics contract.

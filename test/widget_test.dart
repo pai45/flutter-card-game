@@ -19,6 +19,8 @@ void main() {
       'pd_onboarding_reward_status_v1': 'seen',
       'pd_deck_slots_v1': jsonEncode([slot.toJson()]),
       'pd_pick_positions_v1': '[]',
+      // Navigation tests start with no active streak or reminder overlays.
+      'pd_daily_streak_v1': jsonEncode({'activeDays': {}, 'activitiesByDay': {}}),
     });
     SharedPreferences.setMockInitialValues({
       'pitch_duel_wallet': jsonEncode({
@@ -56,6 +58,8 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('cyber_gliding_tab_1')));
     await tester.pump(const Duration(seconds: 1));
+    await tester.tap(find.byTooltip('FOOTBALL'));
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('PITCH DUEL'), findsAtLeastNWidgets(1));
     expect(
@@ -76,6 +80,10 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('cyber_gliding_tab_1')));
     await tester.pump(const Duration(seconds: 1));
+    await tester.tap(find.byTooltip('FOOTBALL'));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byTooltip('FOOTBALL'));
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('PITCH DUEL'), findsAtLeastNWidgets(1));
     expect(
       tester
@@ -127,7 +135,7 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('cyber_gliding_tab_1')));
     await tester.pump(const Duration(milliseconds: 300));
-    await tester.tap(find.text('FORMULA 1').last);
+    await tester.tap(find.byTooltip('MOTORSPORT'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('GRAND PRIX DASH'), findsOneWidget);
 
@@ -204,14 +212,24 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('cyber_gliding_tab_1')));
     await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byTooltip('FOOTBALL'));
+    await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('FOOTBALL'), findsAtLeastNWidgets(1));
-    expect(find.text('FORMULA 1'), findsAtLeastNWidgets(1));
-    expect(find.text('BASKET'), findsAtLeastNWidgets(1));
-    expect(find.text('CRICKET'), findsAtLeastNWidgets(1));
+    expect(find.byTooltip('FOOTBALL'), findsAtLeastNWidgets(1));
+    expect(find.byTooltip('MOTORSPORT'), findsOneWidget);
+    expect(find.byTooltip('BASKET'), findsOneWidget);
+    expect(find.byTooltip('CRICKET'), findsOneWidget);
     expect(find.text('PITCH DUEL'), findsAtLeastNWidgets(1));
-    expect(find.text('PENALTY SHOOTOUT'), findsAtLeastNWidgets(1));
-    expect(find.text('5V5 FOOTBALL CHESS'), findsAtLeastNWidgets(1));
+    expect(find.text('PENALTY'), findsAtLeastNWidgets(1));
+    expect(find.text('SHOOTOUT'), findsAtLeastNWidgets(1));
+
+    await tester.scrollUntilVisible(
+      find.text('5V5 FOOTBALL'),
+      280,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('5V5 FOOTBALL'), findsAtLeastNWidgets(1));
+    expect(find.text('CHESS'), findsAtLeastNWidgets(1));
 
     await tester.scrollUntilVisible(
       find.text('FOOTBALL QUIZ'),
@@ -223,20 +241,20 @@ void main() {
     expect(find.text('FOOTBALL BINGO'), findsAtLeastNWidgets(1));
     expect(find.text('GUESS THE PLAYER'), findsAtLeastNWidgets(1));
 
-    await tester.tap(find.text('FORMULA 1').last);
+    await tester.tap(find.byTooltip('MOTORSPORT'));
     await tester.pump(const Duration(milliseconds: 300));
     // The F1 tab now hosts a real game instead of a coming-soon state.
     expect(find.text('GRAND PRIX DASH'), findsOneWidget);
     expect(find.text('ONE-LAP ARCADE RACER'), findsOneWidget);
     expect(find.text('PITCH DUEL'), findsNothing);
 
-    await tester.tap(find.text('BASKET').last);
+    await tester.tap(find.byTooltip('BASKET'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('HOOP DUEL'), findsOneWidget);
     expect(find.text('STREET 1-ON-1 ARCADE HOOPS'), findsOneWidget);
     expect(find.text('PITCH DUEL'), findsNothing);
 
-    await tester.tap(find.text('CRICKET').last);
+    await tester.tap(find.byTooltip('CRICKET'));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('FINAL OVER'), findsOneWidget);
     expect(find.text('SIX-BALL CRICKET CHASE'), findsOneWidget);

@@ -15,6 +15,7 @@ import '../../models/sport_match.dart';
 import '../../services/secure_storage_service.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
+import '../../widgets/cyber/statoz_icons.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/cyber/sport_underline_tabs.dart';
 import '../../widgets/game_scaffold.dart';
@@ -553,7 +554,7 @@ class _LoadoutHeader extends StatelessWidget {
               ),
               border: Border.all(color: accent.withValues(alpha: 0.52)),
             ),
-            child: Icon(module.icon, color: accent, size: 26),
+            child: StatozSportIcon(sport: entry.sport, color: accent, size: 26),
           ),
           const SizedBox(width: 12),
           Expanded(

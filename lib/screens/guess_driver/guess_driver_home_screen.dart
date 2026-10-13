@@ -8,6 +8,7 @@ import '../../models/daily_mystery.dart';
 import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/cyber/statoz_icons.dart';
 import '../../widgets/game_scaffold.dart';
 import '../leaderboard/widgets/game_leaderboard_button.dart';
 
@@ -125,6 +126,11 @@ class _GuessDriverHomeScreenState extends State<GuessDriverHomeScreen> {
       sportLabel: 'MOTORSPORT',
       sportIcon: Icons.sports_motorsports_rounded,
       sportAccent: Cyber.pink,
+      sportMark: const StatozSportIcon(
+        sport: Sport.motorsport,
+        color: Cyber.pink,
+        size: 32,
+      ),
       title: 'GUESS THE DRIVER',
       description:
           'Decode the race winner from the year, circuit and clues '

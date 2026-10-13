@@ -19,7 +19,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('motorsport AvatarsTab shows series chips and driver tiles', (
+  testWidgets('motorsport AvatarsTab filters F1 drivers by constructor', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(393, 852);
@@ -53,12 +53,13 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('F1'), findsOneWidget);
-    expect(find.text('NASCAR'), findsOneWidget);
+    expect(find.text('ALL'), findsOneWidget);
+    expect(find.text('RBR'), findsOneWidget);
     expect(find.text('M VERSTAPPEN'), findsOneWidget);
     expect(find.text('L NORRIS'), findsOneWidget);
 
-    await tester.tap(find.text('F2'));
+    await tester.ensureVisible(find.text('MCL'));
+    await tester.tap(find.text('MCL'));
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('M VERSTAPPEN'), findsNothing);

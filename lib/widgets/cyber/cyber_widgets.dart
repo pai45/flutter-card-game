@@ -5710,6 +5710,7 @@ class CyberTelemetryFooter extends StatelessWidget {
     this.leadingColor = Cyber.cyan,
     this.trailingColor = Cyber.muted,
     this.leadingIcon,
+    this.leadingMark,
     this.leadingIconColor,
     this.height = 36,
     super.key,
@@ -5720,6 +5721,7 @@ class CyberTelemetryFooter extends StatelessWidget {
   final Color leadingColor;
   final Color trailingColor;
   final IconData? leadingIcon;
+  final Widget? leadingMark;
   final Color? leadingIconColor;
   final double height;
 
@@ -5731,12 +5733,13 @@ class CyberTelemetryFooter extends StatelessWidget {
       color: Cyber.bg2,
       child: Row(
         children: [
-          if (leadingIcon != null) ...[
-            Icon(
-              leadingIcon,
-              size: 12,
-              color: leadingIconColor ?? leadingColor,
-            ),
+          if (leadingIcon != null || leadingMark != null) ...[
+            leadingMark ??
+                Icon(
+                  leadingIcon!,
+                  size: 12,
+                  color: leadingIconColor ?? leadingColor,
+                ),
             const SizedBox(width: 6),
           ],
           Expanded(

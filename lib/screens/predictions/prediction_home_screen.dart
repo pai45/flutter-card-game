@@ -2098,6 +2098,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
   ) {
     return switch (config.sourceId) {
       'pitch-duel' => _ArcadeHeroGameTile(
+        game: ArcadeGame.pitchDuel,
         key: const ValueKey('trending-pitch-duel-card'),
         title: 'PITCH DUEL',
         subtitle: 'TACTICAL CARD GAME',
@@ -2111,6 +2112,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: widget.onOpenGame,
       ),
       'penalty-shootout' => _ArcadeHeroGameTile(
+        game: ArcadeGame.penaltyShootout,
         key: const ValueKey('trending-penalty-card'),
         title: 'PENALTY SHOOTOUT',
         titleLines: const ['PENALTY', 'SHOOTOUT'],
@@ -2125,6 +2127,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: widget.onOpenShootout,
       ),
       'football-chess' => _ArcadeHeroGameTile(
+        game: ArcadeGame.footballChess,
         key: const ValueKey('trending-football-chess-card'),
         title: '5V5 FOOTBALL CHESS',
         titleLines: const ['5V5 FOOTBALL', 'CHESS'],
@@ -2138,6 +2141,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: widget.onOpenFootballChess,
       ),
       'football-quiz' => _QuickGameTile(
+        game: ArcadeGame.footballQuiz,
         title: 'FOOTBALL QUIZ',
         subtitle: 'TRIVIA GAUNTLET',
         art: CyberGameArt.quiz,
@@ -2146,6 +2150,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: () => widget.onOpenQuiz(Sport.football),
       ),
       'football-bingo' => _QuickGameTile(
+        game: ArcadeGame.footballBingo,
         title: 'FOOTBALL BINGO',
         subtitle: 'BUILD A WINNING GRID',
         art: CyberGameArt.bingo,
@@ -2154,6 +2159,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: widget.onOpenFootballBingo,
       ),
       'guess-player' => _QuickGameTile(
+        game: ArcadeGame.footballGuessPlayer,
         title: 'GUESS THE PLAYER',
         subtitle: 'DAILY FOOTBALL MYSTERY',
         art: CyberGameArt.player,
@@ -2162,6 +2168,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: widget.onOpenGuessPlayer,
       ),
       'final-over' => _ArcadeHeroGameTile(
+        game: ArcadeGame.finalOver,
         key: const ValueKey('trending-final-over-card'),
         title: 'FINAL OVER',
         subtitle: 'SIX-BALL CRICKET CHASE',
@@ -2173,6 +2180,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: widget.onOpenFinalOver,
       ),
       'hoop-duel' => _ArcadeHeroGameTile(
+        game: ArcadeGame.hoopDuel,
         key: const ValueKey('trending-hoop-duel-card'),
         title: 'HOOP DUEL',
         subtitle: 'STREET 1-ON-1',
@@ -2184,6 +2192,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: widget.onOpenBasketball,
       ),
       'grand-prix-dash' => _ArcadeHeroGameTile(
+        game: ArcadeGame.grandPrixDash,
         key: const ValueKey('trending-grand-prix-card'),
         title: 'GRAND PRIX DASH',
         titleLines: const ['GRAND PRIX', 'DASH'],
@@ -2196,6 +2205,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: widget.onOpenGrandPrix,
       ),
       'tennis-rally' => _ArcadeHeroGameTile(
+        game: ArcadeGame.tennisRally,
         key: const ValueKey('trending-tennis-rally-card'),
         title: 'TENNIS RALLY',
         subtitle: '2D ARCADE SETS // 5 MODES',
@@ -2378,6 +2388,7 @@ class _GamesTabState extends State<_GamesTab> {
           startIndex: 1,
           games: [
             _QuickGameEntry(
+              game: ArcadeGame.tennisQuiz,
               key: const ValueKey('tennis-quiz-grid-card'),
               lock: _lockFor(ArcadeGame.tennisQuiz),
               title: 'TENNIS QUIZ',
@@ -2387,6 +2398,7 @@ class _GamesTabState extends State<_GamesTab> {
               onTap: () => widget.onOpenQuiz(Sport.tennis),
             ),
             _QuickGameEntry(
+              game: ArcadeGame.guessWinner,
               key: const ValueKey('tennis-guess-winner-grid-card'),
               lock: _lockFor(ArcadeGame.guessWinner),
               title: 'GUESS THE WINNER',
@@ -2410,6 +2422,7 @@ class _GamesTabState extends State<_GamesTab> {
           index: 0,
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
+            game: ArcadeGame.hoopDuel,
             key: const ValueKey('hoop-duel-hero-card'),
             lock: _lockFor(ArcadeGame.hoopDuel),
             title: 'HOOP DUEL',
@@ -2429,6 +2442,7 @@ class _GamesTabState extends State<_GamesTab> {
           startIndex: 1,
           games: [
             _QuickGameEntry(
+              game: ArcadeGame.basketballQuiz,
               key: const ValueKey('basketball-quiz-grid-card'),
               lock: _lockFor(ArcadeGame.basketballQuiz),
               title: 'BASKETBALL QUIZ',
@@ -2438,6 +2452,7 @@ class _GamesTabState extends State<_GamesTab> {
               onTap: () => widget.onOpenQuiz(Sport.basketball),
             ),
             _QuickGameEntry(
+              game: ArcadeGame.basketballGuessPlayer,
               key: const ValueKey('basketball-guess-player-grid-card'),
               lock: _lockFor(ArcadeGame.basketballGuessPlayer),
               title: 'GUESS THE PLAYER',
@@ -2461,6 +2476,7 @@ class _GamesTabState extends State<_GamesTab> {
           index: 0,
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
+            game: ArcadeGame.finalOver,
             key: const ValueKey('final-over-hero-card'),
             lock: _lockFor(ArcadeGame.finalOver),
             title: 'FINAL OVER',
@@ -2480,6 +2496,7 @@ class _GamesTabState extends State<_GamesTab> {
           startIndex: 1,
           games: [
             _QuickGameEntry(
+              game: ArcadeGame.cricketQuiz,
               key: const ValueKey('cricket-quiz-grid-card'),
               lock: _lockFor(ArcadeGame.cricketQuiz),
               title: 'CRICKET QUIZ',
@@ -2489,6 +2506,7 @@ class _GamesTabState extends State<_GamesTab> {
               onTap: () => widget.onOpenQuiz(Sport.cricket),
             ),
             _QuickGameEntry(
+              game: ArcadeGame.cricketGuessPlayer,
               key: const ValueKey('cricket-guess-player-grid-card'),
               lock: _lockFor(ArcadeGame.cricketGuessPlayer),
               title: 'GUESS THE PLAYER',
@@ -2515,6 +2533,7 @@ class _GamesTabState extends State<_GamesTab> {
           index: 0,
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
+            game: ArcadeGame.pitchDuel,
             key: const ValueKey('pitch-duel-hero-card'),
             lock: _lockFor(ArcadeGame.pitchDuel),
             title: 'PITCH DUEL',
@@ -2532,6 +2551,7 @@ class _GamesTabState extends State<_GamesTab> {
           index: 1,
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
+            game: ArcadeGame.penaltyShootout,
             key: const ValueKey('penalty-shootout-hero-card'),
             lock: _lockFor(ArcadeGame.penaltyShootout),
             title: 'PENALTY SHOOTOUT',
@@ -2550,6 +2570,7 @@ class _GamesTabState extends State<_GamesTab> {
           index: 2,
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
+            game: ArcadeGame.footballChess,
             key: const ValueKey('football-chess-hero-card'),
             lock: _lockFor(ArcadeGame.footballChess),
             title: '5V5 FOOTBALL CHESS',
@@ -2570,6 +2591,7 @@ class _GamesTabState extends State<_GamesTab> {
           startIndex: 3,
           games: [
             _QuickGameEntry(
+              game: ArcadeGame.footballQuiz,
               key: const ValueKey('football-quiz-grid-card'),
               lock: _lockFor(ArcadeGame.footballQuiz),
               title: 'FOOTBALL QUIZ',
@@ -2579,6 +2601,7 @@ class _GamesTabState extends State<_GamesTab> {
               onTap: () => widget.onOpenQuiz(Sport.football),
             ),
             _QuickGameEntry(
+              game: ArcadeGame.footballBingo,
               key: const ValueKey('football-bingo-grid-card'),
               lock: _lockFor(ArcadeGame.footballBingo),
               title: 'FOOTBALL BINGO',
@@ -2588,6 +2611,7 @@ class _GamesTabState extends State<_GamesTab> {
               onTap: widget.onOpenFootballBingo,
             ),
             _QuickGameEntry(
+              game: ArcadeGame.footballGuessPlayer,
               key: const ValueKey('football-guess-player-grid-card'),
               lock: _lockFor(ArcadeGame.footballGuessPlayer),
               title: 'GUESS THE PLAYER',
@@ -2611,6 +2635,7 @@ class _GamesTabState extends State<_GamesTab> {
           index: 0,
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
+            game: ArcadeGame.grandPrixDash,
             key: const ValueKey('grand-prix-dash-hero-card'),
             lock: _lockFor(ArcadeGame.grandPrixDash),
             title: 'GRAND PRIX DASH',
@@ -2630,6 +2655,7 @@ class _GamesTabState extends State<_GamesTab> {
           startIndex: 1,
           games: [
             _QuickGameEntry(
+              game: ArcadeGame.motorsportQuiz,
               key: const ValueKey('motorsport-quiz-grid-card'),
               lock: _lockFor(ArcadeGame.motorsportQuiz),
               title: 'MOTORSPORT QUIZ',
@@ -2639,6 +2665,7 @@ class _GamesTabState extends State<_GamesTab> {
               onTap: () => widget.onOpenQuiz(Sport.motorsport),
             ),
             _QuickGameEntry(
+              game: ArcadeGame.guessDriver,
               key: const ValueKey('f1-guess-driver-grid-card'),
               lock: _lockFor(ArcadeGame.guessDriver),
               title: 'GUESS THE DRIVER',
@@ -2663,6 +2690,7 @@ class _TennisRallyGameTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _ArcadeHeroGameTile(
+      game: ArcadeGame.tennisRally,
       key: const ValueKey('tennis-rally-hero-card'),
       title: 'TENNIS RALLY',
       subtitle: '2D ARCADE SETS // 5 MODES',
@@ -2680,6 +2708,7 @@ enum GameHeroLayout { landscape, portrait }
 
 class _ArcadeHeroGameTile extends StatelessWidget {
   const _ArcadeHeroGameTile({
+    required this.game,
     required this.title,
     required this.subtitle,
     required this.badgeLabel,
@@ -2694,6 +2723,7 @@ class _ArcadeHeroGameTile extends StatelessWidget {
     super.key,
   });
 
+  final ArcadeGame game;
   final String title;
   final List<String>? titleLines;
   final String subtitle;
@@ -2719,6 +2749,7 @@ class _ArcadeHeroGameTile extends StatelessWidget {
         bigCut: 16,
         smallCut: 0,
         child: CyberGameLaunchCard(
+          game: game,
           title: title,
           titleLines: titleLines,
           subtitle: subtitle,
@@ -2774,6 +2805,7 @@ class _QuickPlayHeader extends StatelessWidget {
 
 class _QuickGameEntry {
   const _QuickGameEntry({
+    required this.game,
     required this.key,
     required this.title,
     required this.subtitle,
@@ -2783,6 +2815,7 @@ class _QuickGameEntry {
     this.lock,
   });
 
+  final ArcadeGame game;
   final _GameLock? lock;
   final Key key;
   final String title;
@@ -2835,6 +2868,7 @@ class _QuickGamesGrid extends StatelessWidget {
                   index: startIndex + index,
                   animate: animateIntro,
                   child: _QuickGameTile(
+                    game: games[index].game,
                     key: games[index].key,
                     title: games[index].title,
                     subtitle: games[index].subtitle,
@@ -2854,6 +2888,7 @@ class _QuickGamesGrid extends StatelessWidget {
 
 class _QuickGameTile extends StatelessWidget {
   const _QuickGameTile({
+    required this.game,
     required this.title,
     required this.subtitle,
     required this.art,
@@ -2862,6 +2897,7 @@ class _QuickGameTile extends StatelessWidget {
     this.lock,
     super.key,
   });
+  final ArcadeGame game;
   final String title;
   final String subtitle;
   final CyberGameArt art;
@@ -2882,6 +2918,7 @@ class _QuickGameTile extends StatelessWidget {
     bigCut: 16,
     smallCut: 0,
     child: CyberGameLaunchCard(
+      game: game,
       title: title,
       subtitle: subtitle,
       badge: 'QUICK PLAY',

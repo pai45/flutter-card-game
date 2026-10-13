@@ -11,6 +11,7 @@ import '../models/sport_match.dart';
 import '../models/streak.dart';
 import '../models/unlock_progress.dart';
 import 'cyber/cyber_unlock_reveal.dart';
+import 'cyber/statoz_icons.dart';
 
 /// Wiring between the app-root reveal host (which sits above the navigator)
 /// and the shell that owns navigation. The shell flips [hubVisible] as its
@@ -134,6 +135,7 @@ class _UnlockRevealFor extends StatelessWidget {
               '${unlocks.stepsCleared(game.sport)}/${sportGameLadder[game.sport]!.length} missions cleared. '
               '${rookieGraduation ? 'Daily Quests unlocked. ' : ''}Your next game is yours to choose.',
           icon: game.icon,
+          mark: StatozGameIcon(game: game, color: module.accent, size: 58),
           accent: module.accent,
           rewardLabel: '+$beginnerQuestStepXp XP',
           ctaLabel: 'CHOOSE NEXT GAME',
@@ -158,6 +160,7 @@ class _UnlockRevealFor extends StatelessWidget {
               '${game.ladderIndex}/${ladder.length} missions cleared. '
               '${rookieGraduation ? 'Daily Quests unlocked. Explorer pays 50 Oz.' : game.questRequirement}',
           icon: game.icon,
+          mark: StatozGameIcon(game: game, color: module.accent, size: 58),
           accent: module.accent,
           rewardLabel: '+$beginnerQuestStepXp XP',
           ctaLabel: 'PLAY ${game.title}',
@@ -174,6 +177,11 @@ class _UnlockRevealFor extends StatelessWidget {
               '$sportLabel matches and picks are live. Its Beginner\'s Quest '
               'lets you choose any first game.',
           icon: module.icon,
+          mark: StatozSportIcon(
+            sport: reveal.sport!,
+            color: module.accent,
+            size: 58,
+          ),
           accent: module.accent,
           ctaLabel: 'ENTER $sportLabel',
           onCta: gate.openSport == null

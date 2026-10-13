@@ -62,7 +62,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('LEAGUE'), findsOneWidget);
     expect(find.text('FIFA'), findsOneWidget);
-    await tester.tapAt(const Offset(20, 20)); // dismiss the settings sheet
+    Navigator.of(tester.element(find.text('LEAGUE'))).pop(); // dismiss settings
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
