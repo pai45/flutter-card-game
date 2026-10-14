@@ -82,6 +82,8 @@ jobs:
           test/game_hero_cta_test.dart
           test/game_discovery_test.dart
           test/match_discovery_contract_test.dart
+          test/match_editorial_test.dart
+          test/match_editorial_motion_test.dart
           test/trending_hub_test.dart
           test/widget_test.dart
 
