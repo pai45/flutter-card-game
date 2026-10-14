@@ -17,12 +17,8 @@ void main() {
           rootBundle.load('assets/fonts/Orbitron-VariableFont_wght.ttf'),
         ))
         .load();
-    await (FontLoader(
-          'Onest',
-        )..addFont(rootBundle.load('assets/fonts/Onest-VariableFont_wght.ttf')))
-        .load();
-    await (FontLoader('Exo 2')
-          ..addFont(rootBundle.load('assets/fonts/Exo2-VariableFont_wght.ttf')))
+    await (FontLoader('Space Grotesk')
+          ..addFont(rootBundle.load('assets/fonts/SpaceGrotesk-VariableFont_wght.ttf')))
         .load();
     await (FontLoader(
       'MaterialIcons',

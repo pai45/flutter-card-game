@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -142,8 +143,7 @@ class _CyberActionButtonState extends State<CyberActionButton> {
                             Expanded(
                               child: Text(
                                 label,
-                                style: Cyber.label(
-                                  12,
+                                style: Cyber.label(StatOzTypography.p12,
                                   color: ink,
                                   letterSpacing: 1.1,
                                 ),
@@ -202,8 +202,7 @@ class CyberKitSection extends StatelessWidget {
             const SizedBox(width: CyberKit.gap),
             Text(
               count!,
-              style: Cyber.label(
-                11,
+              style: Cyber.label(StatOzTypography.p11,
                 color: Cyber.muted,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
@@ -256,7 +255,7 @@ class CyberStatusBadge extends StatelessWidget {
         color: color.withValues(alpha: 0.08),
         border: Border(left: BorderSide(color: color, width: 2)),
       ),
-      child: Text(label, style: Cyber.label(9, color: color, letterSpacing: 1)),
+      child: Text(label, style: Cyber.label(StatOzTypography.p9, color: color, letterSpacing: 1)),
     );
   }
 }
@@ -320,7 +319,7 @@ class CyberProgressionEntry extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   index.toString().padLeft(2, '0'),
-                  style: Cyber.label(11, color: color).copyWith(
+                  style: Cyber.label(StatOzTypography.p11, color: color).copyWith(
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
@@ -385,7 +384,7 @@ class CyberProgressionEntry extends StatelessWidget {
                       const SizedBox(height: CyberKit.gap),
                       Text(
                         detail,
-                        style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+                        style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
                       ),
                     ],
                   ),

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -60,7 +61,7 @@ class GrandPrixDrivingHud extends StatelessWidget {
                                 p.playerPosition != c.playerPosition,
                             builder: (context, state) => Text(
                               'P${state.playerPosition}',
-                              style: Cyber.display(24, color: Cyber.cyan)
+                              style: Cyber.display(StatOzTypography.p24, color: Cyber.cyan)
                                   .copyWith(
                                     fontFeatures: const [
                                       FontFeature.tabularFigures(),
@@ -70,14 +71,14 @@ class GrandPrixDrivingHud extends StatelessWidget {
                           ),
                           Text(
                             '/$kFieldSize',
-                            style: Cyber.label(10, color: Cyber.muted),
+                            style: Cyber.label(StatOzTypography.p10, color: Cyber.muted),
                           ),
                           const SizedBox(width: 24),
                           ValueListenableBuilder<double>(
                             valueListenable: game.speedKph,
                             builder: (context, speed, _) => Text(
                               '${speed.round()}',
-                              style: Cyber.display(23).copyWith(
+                              style: Cyber.display(StatOzTypography.p23).copyWith(
                                 fontFeatures: const [
                                   FontFeature.tabularFigures(),
                                 ],
@@ -87,7 +88,7 @@ class GrandPrixDrivingHud extends StatelessWidget {
                           const SizedBox(width: 6),
                           Text(
                             'KPH',
-                            style: Cyber.label(8, color: Cyber.muted),
+                            style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                           ),
                           const SizedBox(width: 10),
                           ValueListenableBuilder<GrandPrixTelemetry>(
@@ -110,7 +111,7 @@ class GrandPrixDrivingHud extends StatelessWidget {
                     valueListenable: game.currentLap,
                     builder: (context, lap, _) => Text(
                       'LAP $lap/${game.laps}',
-                      style: Cyber.label(8, color: Cyber.muted),
+                      style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -134,8 +135,7 @@ class GrandPrixDrivingHud extends StatelessWidget {
                   children: [
                     Text(
                       t.deploying ? 'DEPLOY' : 'ERS',
-                      style: Cyber.label(
-                        8,
+                      style: Cyber.label(StatOzTypography.p8,
                         color: t.deploying ? Cyber.cyan : Cyber.muted,
                       ),
                     ),
@@ -151,15 +151,14 @@ class GrandPrixDrivingHud extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       '${(t.energy * 100).round()}%',
-                      style: Cyber.label(8, color: Cyber.muted),
+                      style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                     ),
                     const SizedBox(width: 12),
                     Text(
                       t.tow > 0.1
                           ? 'TOW ${(t.tow * 100).round()}%'
                           : '${t.cleanPasses} CLEAN',
-                      style: Cyber.label(
-                        8,
+                      style: Cyber.label(StatOzTypography.p8,
                         color: t.tow > 0.1 ? Cyber.cyan : Cyber.muted,
                       ),
                     ),
@@ -194,32 +193,32 @@ class GrandPrixDrivingHud extends StatelessWidget {
                               t.rivalName!.toUpperCase(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: Cyber.label(8, color: AppTheme.whiteColor),
+                              style: Cyber.label(StatOzTypography.p8, color: AppTheme.whiteColor),
                             ),
                             Text(
                               '+${t.rivalGapSeconds.toStringAsFixed(2)}s EST.',
-                              style: Cyber.label(8, color: Cyber.muted),
+                              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                             ),
                           ],
                           if (t.grip < 0.85) ...[
                             const SizedBox(height: 6),
                             Text(
                               'GRIP ${(t.grip * 100).round()}%',
-                              style: Cyber.label(8, color: Cyber.amber),
+                              style: Cyber.label(StatOzTypography.p8, color: Cyber.amber),
                             ),
                           ],
                           if (t.recoverySeconds > 0) ...[
                             const SizedBox(height: 6),
                             Text(
                               'RECOVERING ${t.recoverySeconds.ceil()}s',
-                              style: Cyber.label(9, color: Cyber.amber),
+                              style: Cyber.label(StatOzTypography.p9, color: Cyber.amber),
                             ),
                           ],
                           if (t.lastLapMs != null) ...[
                             const SizedBox(height: 6),
                             Text(
                               'LAST ${formatLapTime(t.lastLapMs)}',
-                              style: Cyber.label(8, color: Cyber.muted),
+                              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                             ),
                           ],
                         ],
@@ -235,7 +234,7 @@ class GrandPrixDrivingHud extends StatelessWidget {
                       children: [
                         Text(
                           'ROUTE',
-                          style: Cyber.label(7, color: Cyber.muted),
+                          style: Cyber.label(StatOzTypography.p7, color: Cyber.muted),
                         ),
                         const SizedBox(height: 4),
                         SizedBox(

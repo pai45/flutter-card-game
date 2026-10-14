@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -36,7 +37,7 @@ class HistoryHeaderBar extends StatelessWidget {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.display(19, color: accent, letterSpacing: 1),
+              style: Cyber.display(StatOzTypography.p19, color: accent, letterSpacing: 1),
             ),
           ),
         ],
@@ -134,8 +135,7 @@ class HistoryStatCell extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.label(
-              8,
+            style: Cyber.label(StatOzTypography.p8,
               color: accent.withValues(alpha: 0.9),
               letterSpacing: 1.4,
             ),
@@ -146,7 +146,7 @@ class HistoryStatCell extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               value,
-              style: Cyber.display(20, color: valueColor ?? Colors.white)
+              style: Cyber.display(StatOzTypography.p20, color: valueColor ?? Colors.white)
                   .copyWith(
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
@@ -201,16 +201,15 @@ class HistoryFilterChip extends StatelessWidget {
               style: TextStyle(
                 color: active ? accent : Cyber.muted,
                 fontFamily: Cyber.displayFont,
-                fontSize: 11,
-                fontWeight: FontWeight.w900,
+                fontSize: StatOzTypography.p11,
+                fontWeight: StatOzTypography.black,
                 letterSpacing: 0.8,
               ),
             ),
             const SizedBox(width: 6),
             Text(
               '$count',
-              style: Cyber.label(
-                9,
+              style: Cyber.label(StatOzTypography.p9,
                 color: (active ? accent : Cyber.muted).withValues(alpha: 0.7),
                 letterSpacing: 0.4,
                 fontFeatures: const [FontFeature.tabularFigures()],

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -326,10 +327,8 @@ class _MatchCircleCtaState extends State<_MatchCircleCta> {
                       const SizedBox(width: 9),
                       Text(
                         'Match Circle',
-                        style: Cyber.bodyFor(
-                          context,
-                          12,
-                          weight: FontWeight.w700,
+                        style: Cyber.bodyFor(context, StatOzTypography.p12,
+                          weight: StatOzTypography.bold,
                         ),
                       ),
                       const SizedBox(width: 5),
@@ -345,7 +344,7 @@ class _MatchCircleCtaState extends State<_MatchCircleCta> {
                       else if (countLabel != null)
                         Text(
                           countLabel,
-                          style: Cyber.bodyFor(context, 10, color: Cyber.muted),
+                          style: Cyber.bodyFor(context, StatOzTypography.p10, color: Cyber.muted),
                         ),
                     ],
                   ),
@@ -451,8 +450,7 @@ class _AllPicksCta extends StatelessWidget {
                 children: [
                   Text(
                     'VIEW ALL PICKS',
-                    style: Cyber.display(
-                      13,
+                    style: Cyber.display(StatOzTypography.p13,
                       color: Colors.white,
                       letterSpacing: 0.9,
                     ),
@@ -460,7 +458,7 @@ class _AllPicksCta extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     'Browse every open market',
-                    style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
                   ),
                 ],
               ),
@@ -850,13 +848,12 @@ class _BoardMetaCell extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1),
+          style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1),
         ),
         const SizedBox(height: 3),
         Text(
           value,
-          style: Cyber.display(
-            14,
+          style: Cyber.display(StatOzTypography.p14,
             color: color,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
@@ -879,7 +876,7 @@ class _BoardHeader extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Cyber.label(10, color: Cyber.gold, letterSpacing: 1.6),
+          style: Cyber.label(StatOzTypography.p10, color: Cyber.gold, letterSpacing: 1.6),
         ),
         const SizedBox(height: 8),
         Container(height: 1, color: Cyber.gold.withValues(alpha: 0.22)),
@@ -1104,8 +1101,7 @@ class _TimelineRow extends StatelessWidget {
       child: Text(
         "${event.minute}'",
         textAlign: TextAlign.center,
-        style: Cyber.display(
-          14,
+        style: Cyber.display(StatOzTypography.p14,
           color: Cyber.cyan,
         ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
       ),
@@ -1119,14 +1115,14 @@ class _TimelineRow extends StatelessWidget {
         children: [
           Text(
             event.playerName,
-            style: Cyber.bodyFor(context, 14, weight: FontWeight.w600),
+            style: Cyber.bodyFor(context, StatOzTypography.p14, weight: StatOzTypography.semibold),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           if (event.secondaryPlayerName != null)
             Text(
               event.secondaryPlayerName!,
-              style: Cyber.label(10, color: Cyber.muted),
+              style: Cyber.label(StatOzTypography.p10, color: Cyber.muted),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -1217,8 +1213,7 @@ class _CommentaryRow extends StatelessWidget {
               width: 36,
               child: Text(
                 item.minute,
-                style: Cyber.display(
-                  12,
+                style: Cyber.display(StatOzTypography.p12,
                   color: Cyber.cyan,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
@@ -1228,7 +1223,7 @@ class _CommentaryRow extends StatelessWidget {
           Expanded(
             child: Text(
               item.text,
-              style: Cyber.bodyFor(context, 13, color: Colors.white70),
+              style: Cyber.bodyFor(context, StatOzTypography.p13, color: Colors.white70),
             ),
           ),
         ],
@@ -1310,11 +1305,11 @@ class _StatePanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: Cyber.display(15, letterSpacing: 0.8)),
+                Text(title, style: Cyber.display(StatOzTypography.p15, letterSpacing: 0.8)),
                 const SizedBox(height: 5),
                 Text(
                   message,
-                  style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
                 ),
               ],
             ),
@@ -1395,7 +1390,7 @@ class _StatsLegend extends StatelessWidget {
     final swatch = Container(width: 9, height: 9, color: color);
     final text = Text(
       label.toUpperCase(),
-      style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.2),
+      style: Cyber.label(StatOzTypography.p10, color: Cyber.muted, letterSpacing: 1.2),
     );
     return Row(
       children: alignEnd
@@ -1421,8 +1416,7 @@ class _TeamStatRow extends StatelessWidget {
     // Flex needs whole numbers, and a side that recorded nothing should still
     // leave a sliver of colour rather than vanishing.
     final homeFlex = (stat.homeShare * 1000).round().clamp(4, 996);
-    final numberStyle = Cyber.label(
-      13,
+    final numberStyle = Cyber.label(StatOzTypography.p13,
       letterSpacing: 0.6,
       fontFeatures: const [FontFeature.tabularFigures()],
     );
@@ -1438,8 +1432,7 @@ class _TeamStatRow extends StatelessWidget {
                 child: Text(
                   stat.label.toUpperCase(),
                   textAlign: TextAlign.center,
-                  style: Cyber.label(
-                    9.5,
+                  style: Cyber.label(StatOzTypography.p9_5,
                     color: Cyber.muted,
                     letterSpacing: 1.1,
                   ),
@@ -1495,7 +1488,7 @@ class _Panel extends StatelessWidget {
         children: [
           Text(
             title,
-            style: Cyber.label(10, color: accent, letterSpacing: 1.4),
+            style: Cyber.label(StatOzTypography.p10, color: accent, letterSpacing: 1.4),
           ),
           const SizedBox(height: 12),
           child,
@@ -1517,13 +1510,13 @@ class _FactRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Text(label, style: Cyber.label(9, color: Cyber.muted)),
+          Text(label, style: Cyber.label(StatOzTypography.p9, color: Cyber.muted)),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               value,
               textAlign: TextAlign.end,
-              style: Cyber.bodyFor(context, 12, weight: FontWeight.w800),
+              style: Cyber.bodyFor(context, StatOzTypography.p12, weight: StatOzTypography.bold),
             ),
           ),
         ],

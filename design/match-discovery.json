@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "sports": [
+    "football",
+    "cricket",
+    "basketball",
+    "motorsport"
+  ],
+  "carouselSlots": [
+    {
+      "sport": "football",
+      "preferred": "epl_liv_mc_winner"
+    },
+    {
+      "sport": "cricket",
+      "preferred": "ipl_pjk_rcb_winner"
+    },
+    {
+      "sport": "basketball",
+      "preferred": "nba_lal_gsw_winner"
+    },
+    {
+      "sport": "motorsport",
+      "preferred": "f1_belgian_gp_winner"
+    },
+    {
+      "sport": "football",
+      "preferred": "epl_cfc_new_result"
+    }
+  ],
+  "layout": {
+    "page": 20,
+    "card": 16,
+    "matchGap": 16,
+    "gridGap": 16,
+    "moduleGap": 24,
+    "statusGap": 8,
+    "statusBelow": 12,
+    "tagHorizontal": 8,
+    "tagVertical": 4,
+    "tagMinHeight": 24,
+    "collapseWidth": 360,
+    "collapseTextScale": 1.4,
+    "cut": 16,
+    "plateInset": 5,
+    "detailCut": 6,
+    "emblem": 16,
+    "signalLength": 36,
+    "progressHeight": 4,
+    "progressGap": 4,
+    "outcomeWidth": 64,
+    "carouselDotGap": 4
+  },
+  "type": {
+    "question": 14,
+    "questionWeight": 500,
+    "answer": 12,
+    "name": 14,
+    "nameWeight": 600,
+    "title": 16,
+    "titleWeight": 600,
+    "support": 12,
+    "action": 12,
+    "status": 12,
+    "statusWeight": 600,
+    "score": 24,
+    "scoreWeight": 700,
+    "wideScore": 28
+  },
+  "cycle": {
+    "matches": 2,
+    "events": 3,
+    "compactMatches": 1,
+    "quizzes": 1,
+    "missions": 2,
+    "futures": 1
+  },
+  "status": {
+    "upcoming": "OPEN",
+    "scheduled": "OPEN",
+    "live": "LIVE",
+    "closed": "CLOSED",
+    "unresolved": "UNRESOLVED",
+    "finished": "FINISHED",
+    "settled": "SETTLED",
+    "voided": "VOID"
+  },
+  "appearance": {
+    "matchTintOpacity": 0.09,
+    "matchTintStop": 0.72,
+    "matchTintRadius": 1.15,
+    "featuredOutcomes": 3,
+    "percentageInkThreshold": 0.179,
+    "etchOpacity": 0.36,
+    "outcomeTint": 0.04,
+    "statusTint": 0.08,
+    "entranceMs": 420,
+    "entranceDistance": 12,
+    "entranceStaggerMs": 48,
+    "entranceThreshold": 0.08
+  },
+  "selection": {
+    "futurePriorityPattern": "champion|title|season"
+  }
+}

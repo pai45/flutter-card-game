@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -92,7 +93,7 @@ class DailyQuestPanel extends StatelessWidget {
                 Expanded(
                   child: Text(
                     state.questError!,
-                    style: Cyber.bodyFor(context, 13, color: Cyber.danger),
+                    style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.danger),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -259,7 +260,7 @@ class _QuestOpsHeader extends StatelessWidget {
           child: FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text('DAILY QUESTS', style: Cyber.display(15)),
+            child: Text('DAILY QUESTS', style: Cyber.display(StatOzTypography.p15)),
           ),
         ),
         const SizedBox(width: 10),
@@ -269,8 +270,7 @@ class _QuestOpsHeader extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           questClock(left),
-          style: Cyber.label(
-            10,
+          style: Cyber.label(StatOzTypography.p10,
             color: Cyber.muted,
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
@@ -326,8 +326,7 @@ class _RewardVault extends StatelessWidget {
                       : allCleared
                       ? 'VAULT EMPTY · BACK TOMORROW'
                       : 'VAULT EMPTY · CLEAR A QUEST',
-                  style: Cyber.label(
-                    10,
+                  style: Cyber.label(StatOzTypography.p10,
                     color: ready ? Cyber.gold : Cyber.muted,
                     letterSpacing: 1.2,
                   ),
@@ -343,8 +342,7 @@ class _RewardVault extends StatelessWidget {
                   builder: (context, value, _) => Text(
                     '+${value.round()} OZ',
                     style:
-                        Cyber.display(
-                          18,
+                        Cyber.display(StatOzTypography.p18,
                           color: Cyber.gold,
                           letterSpacing: 0,
                         ).copyWith(
@@ -357,7 +355,7 @@ class _RewardVault extends StatelessWidget {
           if (ready || claiming) ...[
             const SizedBox(height: 12),
             HudCtaButton(
-              labelStyle: Cyber.display(20),
+              labelStyle: Cyber.display(StatOzTypography.p20),
               label: claiming ? 'CLAIMING…' : 'CLAIM REWARDS',
               icon: Icons.redeem,
               accent: Cyber.gold,
@@ -394,11 +392,11 @@ class _GameChooserSheet extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text('CHOOSE YOUR GAME', style: Cyber.display(16)),
+                  Text('CHOOSE YOUR GAME', style: Cyber.display(StatOzTypography.p16)),
                   const SizedBox(height: 6),
                   Text(
                     'EVERY FINISHED GAME COUNTS · WINNING OPTIONAL',
-                    style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1),
+                    style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1),
                   ),
                   const SizedBox(height: 14),
                   const _GameChoiceTile(
@@ -476,7 +474,7 @@ class _GameChoiceTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(child: Text(title, style: Cyber.display(13))),
+                  Expanded(child: Text(title, style: Cyber.display(StatOzTypography.p13))),
                   Icon(Icons.chevron_right, color: accent, size: 22),
                 ],
               ),

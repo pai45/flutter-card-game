@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import '../models/sport_match.dart';
 import '../config/theme.dart';
@@ -57,10 +58,8 @@ class _CricketLineupViewState extends State<CricketLineupView> {
                       alignment: Alignment.center,
                       child: Text(
                         widget.match.home.name,
-                        style: Cyber.bodyFor(
-                          context,
-                          13,
-                          weight: _showHome ? FontWeight.w800 : FontWeight.w600,
+                        style: Cyber.bodyFor(context, StatOzTypography.p13,
+                          weight: _showHome ? StatOzTypography.extrabold : StatOzTypography.semibold,
                           color: _showHome ? Cyber.cyan : Cyber.muted,
                         ),
                       ),
@@ -80,12 +79,10 @@ class _CricketLineupViewState extends State<CricketLineupView> {
                       alignment: Alignment.center,
                       child: Text(
                         widget.match.away.name,
-                        style: Cyber.bodyFor(
-                          context,
-                          13,
+                        style: Cyber.bodyFor(context, StatOzTypography.p13,
                           weight: !_showHome
-                              ? FontWeight.w800
-                              : FontWeight.w600,
+                              ? StatOzTypography.extrabold
+                              : StatOzTypography.semibold,
                           color: !_showHome ? Cyber.gold : Cyber.muted,
                         ),
                       ),
@@ -127,10 +124,8 @@ class _CricketLineupViewState extends State<CricketLineupView> {
         children: [
           Text(
             title.toUpperCase(),
-            style: Cyber.bodyFor(
-              context,
-              14,
-              weight: FontWeight.w700,
+            style: Cyber.bodyFor(context, StatOzTypography.p14,
+              weight: StatOzTypography.bold,
               color: color,
             ),
           ),
@@ -169,14 +164,14 @@ class _CricketLineupViewState extends State<CricketLineupView> {
               children: [
                 Text(
                   player.name,
-                  style: Cyber.bodyFor(context, 14, weight: FontWeight.w600),
+                  style: Cyber.bodyFor(context, StatOzTypography.p14, weight: StatOzTypography.semibold),
                 ),
                 if (player.role != null && player.role!.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(
                       player.role!,
-                      style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
                     ),
                   ),
               ],
@@ -191,10 +186,8 @@ class _CricketLineupViewState extends State<CricketLineupView> {
               ),
               child: Text(
                 'C',
-                style: Cyber.bodyFor(
-                  context,
-                  10,
-                  weight: FontWeight.w800,
+                style: Cyber.bodyFor(context, StatOzTypography.p10,
+                  weight: StatOzTypography.bold,
                   color: Cyber.gold,
                 ),
               ),

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math';
 import 'dart:ui';
 
@@ -8,7 +9,7 @@ import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
 import 'package:flame/text.dart';
 import 'package:flutter/material.dart'
-    show Colors, Curves, FontWeight, TextStyle, Icons;
+    show Colors, Curves, TextStyle, Icons;
 
 import '../../blocs/football_chess/football_chess_state.dart';
 import '../../config/theme.dart';
@@ -467,7 +468,7 @@ class GridComponent extends PositionComponent {
         final textPaint = TextPaint(
           style: TextStyle(
             fontFamily: iconData.fontFamily,
-            fontSize: 16,
+            fontSize: StatOzTypography.p16,
             color: arrowColor,
             package: iconData.fontPackage,
           ),
@@ -615,7 +616,7 @@ class PlayerTokenComponent extends PositionComponent {
       style: TextStyle(
         fontFamily: Cyber.displayFont,
         fontSize: r * 0.74,
-        fontWeight: FontWeight.w700,
+        fontWeight: StatOzTypography.bold,
         color: teamColor,
       ),
     ).render(
@@ -629,7 +630,7 @@ class PlayerTokenComponent extends PositionComponent {
       style: TextStyle(
         fontFamily: Cyber.displayFont,
         fontSize: (r * 0.34).clamp(7.0, 11.0),
-        fontWeight: FontWeight.w600,
+        fontWeight: StatOzTypography.semibold,
         letterSpacing: 0.5,
         color: Colors.white.withValues(alpha: 0.82),
       ),

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -53,8 +54,8 @@ class ChessHud extends StatelessWidget {
                         clock,
                         style: TextStyle(
                           fontFamily: Cyber.displayFont,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
+                          fontSize: StatOzTypography.p18,
+                          fontWeight: StatOzTypography.bold,
                           letterSpacing: 1,
                           color: urgent ? Cyber.danger : Colors.white,
                           fontFeatures: const [FontFeature.tabularFigures()],
@@ -94,8 +95,8 @@ class ChessHud extends StatelessWidget {
     v,
     style: TextStyle(
       fontFamily: Cyber.displayFont,
-      fontSize: 24,
-      fontWeight: FontWeight.w800,
+      fontSize: StatOzTypography.p24,
+      fontWeight: StatOzTypography.extrabold,
       color: c,
       fontFeatures: const [FontFeature.tabularFigures()],
     ),
@@ -182,7 +183,7 @@ class _CentreFlashState extends State<CentreFlash>
                       style: TextStyle(
                         fontFamily: Cyber.displayFont,
                         fontSize: _size,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: StatOzTypography.extrabold,
                         letterSpacing: _size >= 30 ? 4 : 2,
                         color: _color,
                       ),
@@ -222,9 +223,9 @@ class ActionBar extends StatelessWidget {
             'WAITING FOR OPPONENT',
             style: TextStyle(
               fontFamily: Cyber.displayFont,
-              fontSize: 14,
+              fontSize: StatOzTypography.p14,
               letterSpacing: 2,
-              fontWeight: FontWeight.w600,
+              fontWeight: StatOzTypography.semibold,
               color: Cyber.muted,
             ),
           );
@@ -233,9 +234,9 @@ class ActionBar extends StatelessWidget {
             'SELECT A PIECE',
             style: TextStyle(
               fontFamily: Cyber.displayFont,
-              fontSize: 14,
+              fontSize: StatOzTypography.p14,
               letterSpacing: 2,
-              fontWeight: FontWeight.w600,
+              fontWeight: StatOzTypography.semibold,
               color: Cyber.cyan,
             ),
           );
@@ -244,9 +245,9 @@ class ActionBar extends StatelessWidget {
             'NO ACTIONS',
             style: TextStyle(
               fontFamily: Cyber.displayFont,
-              fontSize: 14,
+              fontSize: StatOzTypography.p14,
               letterSpacing: 2,
-              fontWeight: FontWeight.w600,
+              fontWeight: StatOzTypography.semibold,
               color: Cyber.danger,
             ),
           );
@@ -356,7 +357,7 @@ class _ActionChip extends StatelessWidget {
             const SizedBox(height: 3),
             Text(
               verb.label,
-              style: Cyber.label(10, color: c, letterSpacing: 1.2),
+              style: Cyber.label(StatOzTypography.p10, color: c, letterSpacing: 1.2),
             ),
           ],
         ),
@@ -393,7 +394,7 @@ class DecisionTimer extends StatelessWidget {
               children: [
                 Text(
                   '${secs}s',
-                  style: Cyber.label(11, color: accent, letterSpacing: 1)
+                  style: Cyber.label(StatOzTypography.p11, color: accent, letterSpacing: 1)
                       .copyWith(
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
@@ -494,8 +495,7 @@ class _OpponentActionToastState extends State<OpponentActionToast>
                     children: [
                       Text(
                         'CPU',
-                        style: Cyber.label(
-                          9,
+                        style: Cyber.label(StatOzTypography.p9,
                           color: Cyber.muted,
                           letterSpacing: 2,
                         ),
@@ -505,8 +505,8 @@ class _OpponentActionToastState extends State<OpponentActionToast>
                         _pieceName,
                         style: TextStyle(
                           fontFamily: Cyber.displayFont,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
+                          fontSize: StatOzTypography.p15,
+                          fontWeight: StatOzTypography.extrabold,
                           letterSpacing: 1.5,
                           color: Cyber.magenta,
                         ),
@@ -516,8 +516,8 @@ class _OpponentActionToastState extends State<OpponentActionToast>
                         _actionLabel,
                         style: TextStyle(
                           fontFamily: Cyber.displayFont,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                          fontSize: StatOzTypography.p12,
+                          fontWeight: StatOzTypography.semibold,
                           letterSpacing: 2,
                           color: Colors.white,
                         ),
@@ -585,7 +585,7 @@ class _LogChip extends StatelessWidget {
         children: [
           Text(
             '${you ? 'YOU' : 'OPP'} ${entry.verb.label}',
-            style: Cyber.label(8, color: c, letterSpacing: 0.6),
+            style: Cyber.label(StatOzTypography.p8, color: c, letterSpacing: 0.6),
           ),
           if (entry.card != CardType.none) ...[
             const SizedBox(width: 4),
@@ -640,8 +640,8 @@ class LastActionBanner extends StatelessWidget {
             '$actorText $verbLabel',
             style: TextStyle(
               fontFamily: Cyber.displayFont,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
+              fontSize: StatOzTypography.p14,
+              fontWeight: StatOzTypography.bold,
               letterSpacing: 2,
               color: color,
             ),

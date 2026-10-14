@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -60,8 +61,7 @@ class GrandPrixLiverySelector extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.end,
-                  style: Cyber.label(
-                    7.5,
+                  style: Cyber.label(StatOzTypography.p7_5,
                     color: Cyber.f1Red,
                     letterSpacing: 1.1,
                   ),
@@ -72,7 +72,7 @@ class GrandPrixLiverySelector extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'FREE LIVERIES',
-            style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.6),
+            style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1.6),
           ),
           const SizedBox(height: 8),
           _LiveryGrid(
@@ -84,7 +84,7 @@ class GrandPrixLiverySelector extends StatelessWidget {
             const SizedBox(height: 14),
             Text(
               'YOUR LIVERIES',
-              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.6),
+              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1.6),
             ),
             const SizedBox(height: 8),
             _LiveryGrid(
@@ -105,7 +105,7 @@ class GrandPrixLiverySelector extends StatelessWidget {
                 ),
                 child: Text(
                   'BROWSE MORE LIVERIES IN SHOP',
-                  style: Cyber.label(8, color: Cyber.f1Red, letterSpacing: 1.2),
+                  style: Cyber.label(StatOzTypography.p8, color: Cyber.f1Red, letterSpacing: 1.2),
                 ),
               ),
             ),
@@ -228,8 +228,7 @@ class GrandPrixLiveryTile extends StatelessWidget {
                       top: 6,
                       child: Text(
                         '${index + 1}'.padLeft(2, '0'),
-                        style: Cyber.label(
-                          6.5,
+                        style: Cyber.label(StatOzTypography.p6_5,
                           color: selected ? Cyber.f1Red : Cyber.muted,
                           letterSpacing: 0.8,
                           fontFeatures: const [FontFeature.tabularFigures()],
@@ -245,8 +244,7 @@ class GrandPrixLiveryTile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
-                        style: Cyber.label(
-                          6,
+                        style: Cyber.label(StatOzTypography.p6,
                           color: selected ? Colors.white : Cyber.muted,
                           letterSpacing: 0.4,
                         ),

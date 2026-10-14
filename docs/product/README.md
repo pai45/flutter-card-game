@@ -86,8 +86,8 @@ leaderboard CTA that opens that game's own board over the lobby, so standings ar
 reachable without leaving the tee-up. Shared systems connect them through XP
 tracks, total level, Oz Coins, cards and decks, achievements, streaks, starter
 packs, reward reveals, and local persistence.
-Game body text uses Exo 2 across the Games hub, arcade flows, and game-related
-parts of shared systems; real sports Matches and Pick content retains Onest.
+Game body text uses Space Grotesk across the Games hub, arcade flows, and game-related
+parts of shared systems; real sports Matches and Pick content retains Space Grotesk.
 Orbitron remains the display/HUD face across both areas.
 
 ## Playable Game Coverage

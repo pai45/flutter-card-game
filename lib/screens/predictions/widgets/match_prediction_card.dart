@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -8,6 +9,7 @@ import '../../../models/sport_match.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/team_logo.dart';
+import '../../../widgets/cyber/match_discovery.dart';
 import 'pick_status_style.dart';
 
 /// Fixture card on the prediction home — a faithful build of the design
@@ -75,6 +77,19 @@ class MatchPredictionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (match.sport != Sport.tennis) {
+      if (_finished &&
+          prediction != null &&
+          prediction!.status != PredictionStatus.settled &&
+          quiz?.settleable == true) {
+        return EditorialRevealCard(match: match, onTap: onTap);
+      }
+      return EditorialMatchCard(
+        match: match,
+        onTap: onTap,
+        followed: this.favorite != null,
+      );
+    }
     final favorite = this.favorite;
     // The club's WCAG-checked identity colour, from the same palette table the
     // badge itself uses — not the raw catalogue hex, which can be unreadable
@@ -124,9 +139,9 @@ class MatchPredictionCard extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: Cyber.bodyFor(
                   context,
-                  11.5,
+                  StatOzTypography.p11_5,
                   color: _resultCol,
-                  weight: FontWeight.w600,
+                  weight: StatOzTypography.semibold,
                 ),
               ),
             ],
@@ -215,9 +230,9 @@ class _TagContent extends StatelessWidget {
         style:
             Cyber.bodyFor(
               context,
-              13,
+              StatOzTypography.p13,
               color: _timeGold,
-              weight: FontWeight.w700,
+              weight: StatOzTypography.bold,
             ).copyWith(
               letterSpacing: 1,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -240,9 +255,9 @@ class _TagContent extends StatelessWidget {
             match.liveMinute != null ? "LIVE ${match.liveMinute}'" : 'LIVE',
             style: Cyber.bodyFor(
               context,
-              12.5,
+              StatOzTypography.p12_5,
               color: Cyber.danger,
-              weight: FontWeight.w800,
+              weight: StatOzTypography.bold,
             ).copyWith(letterSpacing: 0.8),
           ),
         ],
@@ -251,9 +266,9 @@ class _TagContent extends StatelessWidget {
         'Finished',
         style: Cyber.bodyFor(
           context,
-          11,
+          StatOzTypography.p11,
           color: Cyber.muted,
-          weight: FontWeight.w600,
+          weight: StatOzTypography.semibold,
         ).copyWith(letterSpacing: 0.4),
       ),
     };
@@ -293,9 +308,9 @@ class _RaceIdentityRow extends StatelessWidget {
           // finished team, so the race keeps its full identity at rest.
           style: Cyber.bodyFor(
             context,
-            14.5,
+            StatOzTypography.p14_5,
             color: Colors.white,
-            weight: FontWeight.w700,
+            weight: StatOzTypography.bold,
           ),
         ),
       ],
@@ -436,9 +451,11 @@ class _TeamColumn extends StatelessWidget {
           textAlign: alignEnd ? TextAlign.end : TextAlign.start,
           style: Cyber.bodyFor(
             context,
-            14.5,
+            StatOzTypography.p14_5,
             color: clubAccent ?? nameColor,
-            weight: clubAccent != null ? FontWeight.w800 : FontWeight.w700,
+            weight: clubAccent != null
+                ? StatOzTypography.extrabold
+                : StatOzTypography.bold,
           ),
         ),
         if (scoreContext != null) ...[
@@ -452,9 +469,9 @@ class _TeamColumn extends StatelessWidget {
             textAlign: alignEnd ? TextAlign.end : TextAlign.start,
             style: Cyber.bodyFor(
               context,
-              10.5,
+              StatOzTypography.p10_5,
               color: _scoreSub,
-              weight: FontWeight.w600,
+              weight: StatOzTypography.semibold,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
         ],
@@ -475,7 +492,7 @@ class _CricketScore extends StatelessWidget {
     maxLines: 1,
     overflow: TextOverflow.ellipsis,
     style: Cyber.display(
-      20,
+      StatOzTypography.p20,
       color: color,
       letterSpacing: 0,
     ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -520,7 +537,7 @@ class _ScoreCentre extends StatelessWidget {
       final isTennis = match.sport == Sport.tennis;
       final sets = match.tennisScorecard?.sets;
       final scoreStyle = Cyber.display(
-        21,
+        StatOzTypography.p21,
         color: Colors.white,
         letterSpacing: 0.5,
       ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
@@ -588,8 +605,8 @@ class _ScoreCentre extends StatelessWidget {
         style: TextStyle(
           color: Cyber.muted,
           fontFamily: Cyber.displayFont,
-          fontSize: 18,
-          fontWeight: FontWeight.w900,
+          fontSize: StatOzTypography.p18,
+          fontWeight: StatOzTypography.black,
           decoration: TextDecoration.none,
         ),
       ),
@@ -617,9 +634,9 @@ class _SetScoreChip extends StatelessWidget {
         style:
             Cyber.bodyFor(
               context,
-              10.5,
+              StatOzTypography.p10_5,
               color: Cyber.cyan,
-              weight: FontWeight.w700,
+              weight: StatOzTypography.bold,
             ).copyWith(
               fontFeatures: const [FontFeature.tabularFigures()],
               letterSpacing: 0.5,
@@ -676,7 +693,9 @@ class _StatusStrip extends StatelessWidget {
         // it's looked up by matchId regardless of whether the user played it.
         final rewardPending = !isSettled && prediction != null;
 
-        if (rewardPending) return const _RewardReadyStrip();
+        if (rewardPending) {
+          return const _RewardReadyStrip();
+        }
 
         if (isSettled) {
           final total = quiz?.questions.length ?? 0;
@@ -736,7 +755,7 @@ class _VolText extends StatelessWidget {
   Widget build(BuildContext context) => Text(
     text,
     style: Cyber.label(
-      9,
+      StatOzTypography.p9,
       color: Cyber.muted,
       letterSpacing: 0.8,
       fontFeatures: const [FontFeature.tabularFigures()],
@@ -769,7 +788,7 @@ class _PotentialXp extends StatelessWidget {
         Text(
           'POTENTIAL +$xp XP',
           style: Cyber.label(
-            9,
+            StatOzTypography.p9,
             color: color,
             letterSpacing: 0.8,
             fontFeatures: const [FontFeature.tabularFigures()],
@@ -800,7 +819,11 @@ class _LiveInPlay extends StatelessWidget {
       const SizedBox(width: 6),
       Text(
         'IN PLAY',
-        style: Cyber.label(9, color: Cyber.danger, letterSpacing: 1),
+        style: Cyber.label(
+          StatOzTypography.p9,
+          color: Cyber.danger,
+          letterSpacing: 1,
+        ),
       ),
     ],
   );
@@ -821,9 +844,9 @@ class _XpWon extends StatelessWidget {
         '+$xp XP',
         style: Cyber.bodyFor(
           context,
-          12,
+          StatOzTypography.p12,
           color: Cyber.success,
-          weight: FontWeight.w800,
+          weight: StatOzTypography.bold,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),
@@ -854,9 +877,9 @@ class _CoinsPnl extends StatelessWidget {
           '${up ? '+' : '−'}${formatOzCompact(pnl.abs())} OZ',
           style: Cyber.bodyFor(
             context,
-            12,
+            StatOzTypography.p12,
             color: color,
-            weight: FontWeight.w800,
+            weight: StatOzTypography.bold,
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
@@ -875,7 +898,7 @@ class _MutedLabel extends StatelessWidget {
   Widget build(BuildContext context) => Text(
     text,
     style: Cyber.label(
-      9,
+      StatOzTypography.p9,
       color: color ?? Cyber.muted,
       letterSpacing: 0.8,
       fontFeatures: const [FontFeature.tabularFigures()],
@@ -903,8 +926,12 @@ class _RewardReadyStrip extends StatelessWidget {
             const SizedBox(width: 7),
             Text(
               'RESULTS ARE OUT — TAP TO REVEAL',
-              style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1)
-                  .copyWith(
+              style:
+                  Cyber.label(
+                    StatOzTypography.p9,
+                    color: Cyber.gold,
+                    letterSpacing: 1,
+                  ).copyWith(
                     shadows: [
                       Shadow(
                         color: Cyber.gold.withValues(alpha: 0.25 + 0.35 * t),
@@ -1094,7 +1121,9 @@ Color _stateBorderColor(SportMatch match, UserPrediction? prediction) {
     case MatchStatus.upcoming:
       return _borderPredicted; // dark cyan — yet to begin
     case MatchStatus.finished:
-      if (prediction == null) return _borderCol; // neutral edge
+      if (prediction == null) {
+        return _borderCol;
+      } // neutral edge
       return prediction.status == PredictionStatus.settled
           ? Cyber
                 .cyan // cyan — revealed
@@ -1127,7 +1156,9 @@ Color _teamResultColor(
   if (!supportsWinLossTone || homeScore == null || awayScore == null) {
     return fallbackDim ? _dimName : Colors.white;
   }
-  if (homeScore == awayScore) return Colors.white;
+  if (homeScore == awayScore) {
+    return Colors.white;
+  }
   final won = isHome ? homeScore > awayScore : awayScore > homeScore;
   return won ? Colors.white : Cyber.muted;
 }
@@ -1151,7 +1182,9 @@ bool? _cricketHomeWon(SportMatch match) {
       .where((innings) => innings.teamId == match.away.id)
       .firstOrNull;
   if (homeInnings != null && awayInnings != null) {
-    if (homeInnings.runs == awayInnings.runs) return null;
+    if (homeInnings.runs == awayInnings.runs) {
+      return null;
+    }
     return homeInnings.runs > awayInnings.runs;
   }
   final homeRuns = int.tryParse(
@@ -1160,7 +1193,9 @@ bool? _cricketHomeWon(SportMatch match) {
   final awayRuns = int.tryParse(
     _cricketScoreDisplay(match.awayScore).score?.split('/').first ?? '',
   );
-  if (homeRuns == null || awayRuns == null || homeRuns == awayRuns) return null;
+  if (homeRuns == null || awayRuns == null || homeRuns == awayRuns) {
+    return null;
+  }
   return homeRuns > awayRuns;
 }
 

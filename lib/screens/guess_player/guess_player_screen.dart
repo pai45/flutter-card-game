@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -329,7 +330,7 @@ class _PlayView extends StatelessWidget {
                             Text(
                               'PLAYER ALREADY SCANNED · NO ATTEMPT USED',
                               textAlign: TextAlign.center,
-                              style: Cyber.label(9, color: Cyber.amber),
+                              style: Cyber.label(StatOzTypography.p9, color: Cyber.amber),
                             ),
                           ],
                           if (state.errorMessage != null) ...[
@@ -337,9 +338,7 @@ class _PlayView extends StatelessWidget {
                             Text(
                               state.errorMessage!,
                               textAlign: TextAlign.center,
-                              style: Cyber.bodyFor(
-                                context,
-                                11,
+                              style: Cyber.bodyFor(context, StatOzTypography.p11,
                                 color: Cyber.danger,
                               ),
                             ),
@@ -504,13 +503,13 @@ class _ClueTimeline extends StatelessWidget {
                     'CAREER PATH',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.display(10, color: AppTheme.textPrimary),
+                    style: Cyber.display(StatOzTypography.p10, color: AppTheme.textPrimary),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'ROUTE // ${state.revealedClueCount}/6',
-                  style: Cyber.label(7.5, color: Cyber.magenta),
+                  style: Cyber.label(StatOzTypography.p7_5, color: Cyber.magenta),
                 ),
               ],
             ),
@@ -683,8 +682,7 @@ class _CareerRouteNode extends StatelessWidget {
               child: Text(
                 year?.toString() ?? '—',
                 maxLines: 1,
-                style: Cyber.display(
-                  7.5,
+                style: Cyber.display(StatOzTypography.p7_5,
                   color: revealed ? Cyber.cyan : Cyber.muted,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
@@ -766,7 +764,7 @@ class _IntelHintMarket extends StatelessWidget {
       children: [
         Text(
           'INTEL // $coinCost COINS EACH',
-          style: Cyber.label(7, color: Cyber.muted),
+          style: Cyber.label(StatOzTypography.p7, color: Cyber.muted),
         ),
         SizedBox(height: compact ? 4 : 8),
         Row(
@@ -828,7 +826,7 @@ class _PlayerSearch extends StatelessWidget {
             Expanded(
               child: Text(
                 'PLAYER DATABASE',
-                style: Cyber.label(7.5, color: Cyber.muted),
+                style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted),
               ),
             ),
             Semantics(
@@ -840,7 +838,7 @@ class _PlayerSearch extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Text(
                     'GIVE UP',
-                    style: Cyber.label(7, color: Cyber.muted),
+                    style: Cyber.label(StatOzTypography.p7, color: Cyber.muted),
                   ),
                 ),
               ),
@@ -860,11 +858,9 @@ class _PlayerSearch extends StatelessWidget {
                   controller: textController,
                   focusNode: fieldFocus,
                   textInputAction: TextInputAction.search,
-                  style: Cyber.bodyFor(
-                    context,
-                    12,
+                  style: Cyber.bodyFor(context, StatOzTypography.p12,
                     color: AppTheme.textPrimary,
-                    weight: FontWeight.w700,
+                    weight: StatOzTypography.bold,
                   ),
                   onChanged: (_) {
                     if (selectedPlayer != null) onCleared();
@@ -878,7 +874,7 @@ class _PlayerSearch extends StatelessWidget {
                   },
                   decoration: InputDecoration(
                     hintText: 'SEARCH PLAYER',
-                    hintStyle: Cyber.label(8, color: Cyber.muted),
+                    hintStyle: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                     filled: true,
                     fillColor: Cyber.panel,
                     isDense: true,
@@ -977,17 +973,15 @@ class _PlayerSearch extends StatelessWidget {
                                   Expanded(
                                     child: Text(
                                       player.name,
-                                      style: Cyber.bodyFor(
-                                        context,
-                                        12,
+                                      style: Cyber.bodyFor(context, StatOzTypography.p12,
                                         color: AppTheme.textPrimary,
-                                        weight: FontWeight.w700,
+                                        weight: StatOzTypography.bold,
                                       ),
                                     ),
                                   ),
                                   Text(
                                     player.position,
-                                    style: Cyber.label(8, color: Cyber.muted),
+                                    style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                                   ),
                                 ],
                               ),
@@ -1175,7 +1169,7 @@ class _ExhaustedAttemptActions extends StatelessWidget {
       label: 'No guesses remaining. Buy one more guess or give up.',
       child: Column(
         children: [
-          Text('NO GUESSES LEFT', style: Cyber.label(8.5, color: Cyber.danger)),
+          Text('NO GUESSES LEFT', style: Cyber.label(StatOzTypography.p8_5, color: Cyber.danger)),
           const SizedBox(height: 7),
           Row(
             children: [
@@ -1240,8 +1234,7 @@ class _CalmDangerButton extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: Cyber.display(
-              11,
+            style: Cyber.display(StatOzTypography.p11,
               color: enabled ? Cyber.danger : Cyber.muted,
             ),
           ),

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -164,8 +165,7 @@ class _ShopAcquireOverlayState extends State<ShopAcquireOverlay>
                           child: Text(
                             'ACQUIRED',
                             style:
-                                Cyber.label(
-                                  13,
+                                Cyber.label(StatOzTypography.p13,
                                   color: accent,
                                   letterSpacing: 4.2,
                                 ).copyWith(
@@ -209,8 +209,7 @@ class _ShopAcquireOverlayState extends State<ShopAcquireOverlay>
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style:
-                                        Cyber.display(
-                                          26,
+                                        Cyber.display(StatOzTypography.p26,
                                           color: Colors.white,
                                           letterSpacing: 1.4,
                                         ).copyWith(
@@ -235,8 +234,7 @@ class _ShopAcquireOverlayState extends State<ShopAcquireOverlay>
                                       Text(
                                         '−${_formatInt(widget.coinsSpent)}',
                                         style:
-                                            Cyber.display(
-                                              18,
+                                            Cyber.display(StatOzTypography.p18,
                                               color: Cyber.muted,
                                             ).copyWith(
                                               fontFeatures: const [
@@ -268,8 +266,7 @@ class _ShopAcquireOverlayState extends State<ShopAcquireOverlay>
                   child: Center(
                     child: Text(
                       'TAP TO CONTINUE',
-                      style: Cyber.label(
-                        11,
+                      style: Cyber.label(StatOzTypography.p11,
                         color: Cyber.muted,
                         letterSpacing: 2,
                       ),

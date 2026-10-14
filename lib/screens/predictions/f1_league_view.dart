@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -214,13 +215,13 @@ class _F1LeagueViewState extends State<F1LeagueView> {
           children: [
             Text(
               'CHAMPIONSHIP LEADER',
-              style: Cyber.label(9, color: Cyber.cyan),
+              style: Cyber.label(StatOzTypography.p9, color: Cyber.cyan),
             ),
             const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: Text(leader.name, style: Cyber.display(21))),
+                Expanded(child: Text(leader.name, style: Cyber.display(StatOzTypography.p21))),
                 const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -229,7 +230,7 @@ class _F1LeagueViewState extends State<F1LeagueView> {
                       f1Number(leader.points),
                       style: _numberStyle(28, Cyber.cyan),
                     ),
-                    Text('POINTS', style: Cyber.label(8, color: Cyber.muted)),
+                    Text('POINTS', style: Cyber.label(StatOzTypography.p8, color: Cyber.muted)),
                   ],
                 ),
               ],
@@ -238,7 +239,7 @@ class _F1LeagueViewState extends State<F1LeagueView> {
               const SizedBox(height: 12),
               Text(
                 '${f1Number(gap)} PTS ahead of ${next!.name}',
-                style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
               ),
             ],
           ],
@@ -260,18 +261,18 @@ class _F1LeagueViewState extends State<F1LeagueView> {
           width: 32,
           child: Text(
             round ? '' : 'POS',
-            style: Cyber.label(8, color: Cyber.muted),
+            style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
           ),
         ),
         Expanded(
-          child: Text('ENTRY', style: Cyber.label(8, color: Cyber.muted)),
+          child: Text('ENTRY', style: Cyber.label(StatOzTypography.p8, color: Cyber.muted)),
         ),
         SizedBox(
           width: 52,
           child: Text(
             'PTS',
             textAlign: TextAlign.right,
-            style: Cyber.label(8, color: Cyber.muted),
+            style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
           ),
         ),
         SizedBox(
@@ -279,7 +280,7 @@ class _F1LeagueViewState extends State<F1LeagueView> {
           child: Text(
             round ? '' : 'GAP',
             textAlign: TextAlign.right,
-            style: Cyber.label(8, color: Cyber.muted),
+            style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
           ),
         ),
       ],
@@ -334,7 +335,7 @@ class _F1LeagueViewState extends State<F1LeagueView> {
                       Expanded(
                         child: Text(
                           row.name,
-                          style: Cyber.bodyFor(context, 13),
+                          style: Cyber.bodyFor(context, StatOzTypography.p13),
                           maxLines: 2,
                         ),
                       ),
@@ -383,14 +384,12 @@ class _F1LeagueViewState extends State<F1LeagueView> {
                           const Divider(color: Cyber.border),
                           Text(
                             'WEEKEND POINTS',
-                            style: Cyber.label(9, color: Cyber.cyan),
+                            style: Cyber.label(StatOzTypography.p9, color: Cyber.cyan),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             '${row.scoringRounds} scoring rounds · best ${f1Number(row.bestWeekend)} PTS',
-                            style: Cyber.bodyFor(
-                              context,
-                              12,
+                            style: Cyber.bodyFor(context, StatOzTypography.p12,
                               color: Cyber.muted,
                             ),
                           ),
@@ -414,7 +413,7 @@ class _F1LeagueViewState extends State<F1LeagueView> {
                           if (row.byRace.isEmpty)
                             Text(
                               'No recorded weekend points.',
-                              style: Cyber.bodyFor(context, 12),
+                              style: Cyber.bodyFor(context, StatOzTypography.p12),
                             ),
                         ],
                       ),
@@ -484,19 +483,19 @@ class _F1LeagueViewState extends State<F1LeagueView> {
       else
         Text(
           'Complete points histories are not available for the leading entries.',
-          style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+          style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
         ),
       const SizedBox(height: 8),
       Text(
         'Cumulative weekend points from ESPN. Drag the chart to inspect each round.',
-        style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+        style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
       ),
       const SizedBox(height: 24),
       const SectionLabel(label: 'Best weekend hauls'),
       const SizedBox(height: 8),
       Text(
         'Highest points in one weekend, including sprint points when supplied. Ties share the same total.',
-        style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+        style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
       ),
       const SizedBox(height: 12),
       for (final row in best.take(5))
@@ -511,13 +510,13 @@ class _F1LeagueViewState extends State<F1LeagueView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(row.name, style: Cyber.bodyFor(context, 13)),
+                      Text(row.name, style: Cyber.bodyFor(context, StatOzTypography.p13)),
                       Text(
                         row.byRace.entries
                             .where((e) => e.value == row.bestWeekend)
                             .map((e) => e.key)
                             .join(' · '),
-                        style: Cyber.label(8, color: Cyber.muted),
+                        style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                       ),
                     ],
                   ),
@@ -536,7 +535,7 @@ class _F1LeagueViewState extends State<F1LeagueView> {
   List<Widget> _rounds(F1LeagueData data) {
     if (data.rounds.isEmpty) {
       return [
-        Text('No rounds supplied by ESPN.', style: Cyber.bodyFor(context, 13)),
+        Text('No rounds supplied by ESPN.', style: Cyber.bodyFor(context, StatOzTypography.p13)),
       ];
     }
     final selected =
@@ -564,13 +563,13 @@ class _F1LeagueViewState extends State<F1LeagueView> {
         }),
       ),
       const SizedBox(height: 8),
-      Text(selected.name, style: Cyber.display(18)),
+      Text(selected.name, style: Cyber.display(StatOzTypography.p18)),
       const SizedBox(height: 8),
       Text(
         selected.played
             ? 'WEEKEND POINTS // HIGH TO LOW'
             : 'NO RESULT RECORDED',
-        style: Cyber.label(9, color: Cyber.muted),
+        style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
       ),
       const SizedBox(height: 16),
       _entryFilter(),
@@ -608,7 +607,7 @@ class _F1LeagueViewState extends State<F1LeagueView> {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Cyber.label(8, color: Cyber.muted)),
+        Text(label, style: Cyber.label(StatOzTypography.p8, color: Cyber.muted)),
         const SizedBox(height: 4),
         Text(value, style: _numberStyle(14, Cyber.textPrimary)),
       ],

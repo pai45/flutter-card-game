@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -110,19 +111,19 @@ class _QuestGamePickerState extends State<QuestGamePicker> {
           children: [
             Text(
               sportModuleFor(widget.sport).label.toUpperCase(),
-              style: Cyber.label(10, color: accent),
+              style: Cyber.label(StatOzTypography.p10, color: accent),
             ),
             const SizedBox(height: 12),
             Text(
               unlocks.stepsCleared(widget.sport) == 0
                   ? 'CHOOSE YOUR FIRST GAME'
                   : 'CHOOSE YOUR NEXT GAME',
-              style: Cyber.display(20),
+              style: Cyber.display(StatOzTypography.p20),
             ),
             const SizedBox(height: 8),
             Text(
               'Pick your mission. Finish it to choose the next one. A loss counts.',
-              style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+              style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
             ),
             const SizedBox(height: 10),
             const Align(
@@ -164,13 +165,11 @@ class _QuestGamePickerState extends State<QuestGamePicker> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(game.title, style: Cyber.display(13)),
+                              Text(game.title, style: Cyber.display(StatOzTypography.p13)),
                               const SizedBox(height: 6),
                               Text(
                                 game.questRequirement,
-                                style: Cyber.bodyFor(
-                                  context,
-                                  12,
+                                style: Cyber.bodyFor(context, StatOzTypography.p12,
                                   color: Cyber.muted,
                                 ),
                               ),
@@ -203,7 +202,7 @@ class _QuestGamePickerState extends State<QuestGamePicker> {
                 liveRegion: true,
                 child: Text(
                   _error!,
-                  style: Cyber.bodyFor(context, 13, color: Cyber.danger),
+                  style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.danger),
                 ),
               ),
               const SizedBox(height: 12),
@@ -241,11 +240,11 @@ Future<void> showNextSportPicker(BuildContext context) async {
       child: _UnlockSheetFrame(
         accent: Cyber.cyan,
         children: [
-          Text('CHOOSE YOUR NEXT SPORT', style: Cyber.display(20)),
+          Text('CHOOSE YOUR NEXT SPORT', style: Cyber.display(StatOzTypography.p20)),
           const SizedBox(height: 8),
           Text(
             '50 Oz opens matches, picks and your choice of first game.',
-            style: Cyber.bodyFor(context, 14),
+            style: Cyber.bodyFor(context, StatOzTypography.p14),
           ),
           const SizedBox(height: 16),
           for (final sport in sports) ...[
@@ -255,12 +254,12 @@ Future<void> showNextSportPicker(BuildContext context) async {
                 children: [
                   Text(
                     sportModuleFor(sport).label.toUpperCase(),
-                    style: Cyber.display(15),
+                    style: Cyber.display(StatOzTypography.p15),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     '${sportGameLadder[sport]!.length} games to discover',
-                    style: Cyber.bodyFor(context, 13),
+                    style: Cyber.bodyFor(context, StatOzTypography.p13),
                   ),
                   const SizedBox(height: 8),
                   CyberObjectiveAction(
@@ -402,7 +401,7 @@ class _SportUnlockSheetState extends State<SportUnlockSheet> {
         children: [
           Text(
             'SPORT ACCESS',
-            style: Cyber.label(10, color: Cyber.cyan, letterSpacing: 2),
+            style: Cyber.label(StatOzTypography.p10, color: Cyber.cyan, letterSpacing: 2),
           ),
           const SizedBox(height: 12),
           Row(
@@ -414,8 +413,7 @@ class _SportUnlockSheetState extends State<SportUnlockSheet> {
                   children: [
                     Text(
                       'UNLOCK',
-                      style: Cyber.label(
-                        12,
+                      style: Cyber.label(StatOzTypography.p12,
                         color: Cyber.muted,
                         letterSpacing: 2,
                       ),
@@ -423,7 +421,7 @@ class _SportUnlockSheetState extends State<SportUnlockSheet> {
                     const SizedBox(height: 4),
                     Text(
                       label,
-                      style: Cyber.display(24, color: AppTheme.textContrast),
+                      style: Cyber.display(StatOzTypography.p24, color: AppTheme.textContrast),
                     ),
                   ],
                 ),
@@ -443,7 +441,7 @@ class _SportUnlockSheetState extends State<SportUnlockSheet> {
           const SizedBox(height: 16),
           Text(
             'Open $label matches and picks, then choose any first game. Finish each mission to choose your next game.',
-            style: Cyber.bodyFor(context, 14, color: Cyber.muted),
+            style: Cyber.bodyFor(context, StatOzTypography.p14, color: Cyber.muted),
           ),
           const SizedBox(height: 24),
           CyberKitSection(
@@ -498,7 +496,7 @@ class _SportUnlockSheetState extends State<SportUnlockSheet> {
             const SizedBox(height: 12),
             Text(
               'NEED ${sportUnlockCostOz - coins} MORE OZ',
-              style: Cyber.label(10, color: Cyber.amber, letterSpacing: 1),
+              style: Cyber.label(StatOzTypography.p10, color: Cyber.amber, letterSpacing: 1),
             ),
             const SizedBox(height: 12),
             CyberActionButton(
@@ -527,12 +525,11 @@ class _UnlockBalance extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(label, style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1)),
+      Text(label, style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1)),
       const SizedBox(height: 4),
       Text(
         value,
-        style: Cyber.display(
-          14,
+        style: Cyber.display(StatOzTypography.p14,
           color: AppTheme.textContrast,
         ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
       ),
@@ -571,14 +568,14 @@ class _LockedGameSheet extends StatelessWidget {
                 children: [
                   Text(
                     game.title,
-                    style: Cyber.display(20, color: Colors.white),
+                    style: Cyber.display(StatOzTypography.p20, color: Colors.white),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     step == null
                         ? 'Choose this game as your next mission.'
                         : 'Finish your current mission to choose this game. Active mission: ${step.title}.',
-                    style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
                   ),
                 ],
               ),
@@ -591,14 +588,13 @@ class _LockedGameSheet extends StatelessWidget {
             Expanded(
               child: Text(
                 'QUEST PROGRESS',
-                style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.6),
+                style: Cyber.label(StatOzTypography.p10, color: Cyber.muted, letterSpacing: 1.6),
               ),
             ),
             const SizedBox(width: 8),
             Text(
               '$cleared / ${ladder.length}',
-              style: Cyber.display(
-                12,
+              style: Cyber.display(StatOzTypography.p12,
                 color: accent,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
@@ -699,7 +695,7 @@ class _SheetEyebrow extends StatelessWidget {
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.label(10, color: accent, letterSpacing: 1.8),
+            style: Cyber.label(StatOzTypography.p10, color: accent, letterSpacing: 1.8),
           ),
         ),
       ],

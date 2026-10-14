@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -229,6 +230,7 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
         _selectedMatchSport == null
             ? _TrendingMatchesTab(
                 questTile: _questTile(),
+                onOpenQuiz: widget.onOpenQuiz,
                 onOpenMatch: widget.onOpenMatch,
                 onOpenMarket: widget.onOpenMarket,
                 animateIntro: _shouldAnimateIntro(0),
@@ -356,6 +358,7 @@ class _PredictionBackground extends StatelessWidget {
 class _TrendingMatchesTab extends StatelessWidget {
   const _TrendingMatchesTab({
     required this.questTile,
+    required this.onOpenQuiz,
     required this.onOpenMatch,
     required this.onOpenMarket,
     required this.animateIntro,
@@ -367,11 +370,13 @@ class _TrendingMatchesTab extends StatelessWidget {
   final bool animateIntro;
   final VoidCallback onIntroPlayed;
   final Widget questTile;
+  final ValueChanged<Sport> onOpenQuiz;
 
   @override
   Widget build(BuildContext context) {
     return TrendingMatchesView(
       header: questTile,
+      onOpenQuiz: onOpenQuiz,
       onOpenMatch: onOpenMatch,
       onOpenMarket: onOpenMarket,
       animateIntro: animateIntro,
@@ -906,9 +911,9 @@ class _MatchesTabState extends State<_MatchesTab> {
                               entry.key.shortCode,
                               style: Cyber.bodyFor(
                                 context,
-                                13,
+                                StatOzTypography.p13,
                                 color: Cyber.cyan.withValues(alpha: 0.85),
-                                weight: FontWeight.w700,
+                                weight: StatOzTypography.bold,
                                 letterSpacing: 0.4,
                                 height: 1,
                               ),
@@ -924,7 +929,7 @@ class _MatchesTabState extends State<_MatchesTab> {
                             Text(
                               'STANDING',
                               style: Cyber.label(
-                                9,
+                                StatOzTypography.p9,
                                 color: Cyber.muted,
                                 letterSpacing: 1.2,
                               ),
@@ -1039,7 +1044,10 @@ class _NewGamesReleaseCard extends StatelessWidget {
                       'BRAND NEW GAMES',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.display(17, letterSpacing: 1.1),
+                      style: Cyber.display(
+                        StatOzTypography.p17,
+                        letterSpacing: 1.1,
+                      ),
                     ),
                   ),
                   if (onClose != null)
@@ -1058,7 +1066,7 @@ class _NewGamesReleaseCard extends StatelessWidget {
                 'Two new ways to play are live: tactical card battles in Pitch Duel and high-pressure spot kicks in Penalty Shootout.',
                 style: Cyber.bodyFor(
                   context,
-                  12,
+                  StatOzTypography.p12,
                   color: Cyber.muted,
                   height: 1.35,
                 ),
@@ -1097,7 +1105,11 @@ class _ReleaseMiniChip extends StatelessWidget {
       child: Text(
         label,
         maxLines: 1,
-        style: Cyber.label(13, color: accent, letterSpacing: 1),
+        style: Cyber.label(
+          StatOzTypography.p13,
+          color: accent,
+          letterSpacing: 1,
+        ),
       ),
     );
   }
@@ -1149,7 +1161,7 @@ class _NewGamesReleaseScreen extends StatelessWidget {
                         'Fresh game modes are now live. Use your squad in faster, more tactical football challenges built for quick sessions and big moments.',
                         style: Cyber.bodyFor(
                           context,
-                          13,
+                          StatOzTypography.p13,
                           color: Cyber.muted,
                           height: 1.45,
                         ),
@@ -1230,7 +1242,10 @@ class _ReleaseGameFeatureCard extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.display(18, letterSpacing: 1.1),
+                  style: Cyber.display(
+                    StatOzTypography.p18,
+                    letterSpacing: 1.1,
+                  ),
                 ),
               ),
             ],
@@ -1238,7 +1253,12 @@ class _ReleaseGameFeatureCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             description,
-            style: Cyber.bodyFor(context, 13, color: Cyber.muted, height: 1.4),
+            style: Cyber.bodyFor(
+              context,
+              StatOzTypography.p13,
+              color: Cyber.muted,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 16),
           _ReleaseGameButton(
@@ -1341,7 +1361,7 @@ class _ReleaseGameButton extends StatelessWidget {
                         label,
                         maxLines: 1,
                         style: Cyber.label(
-                          10,
+                          StatOzTypography.p10,
                           color: accent,
                           letterSpacing: 1.1,
                         ),
@@ -1404,14 +1424,20 @@ class _MatchDayNavigator extends StatelessWidget {
                     dayLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.display(15, letterSpacing: 1.5),
+                    style: Cyber.display(
+                      StatOzTypography.p15,
+                      letterSpacing: 1.5,
+                    ),
                   ),
                 ),
                 if (matchCount != null) ...[
                   const SizedBox(width: 6),
                   Text(
                     '($matchCount)',
-                    style: Cyber.label(13, color: Cyber.muted),
+                    style: Cyber.label(
+                      StatOzTypography.p13,
+                      color: Cyber.muted,
+                    ),
                   ),
                 ],
                 const SizedBox(width: 8),
@@ -1502,7 +1528,11 @@ class _DayDividerRow extends StatelessWidget {
       child: Center(
         child: Text(
           header,
-          style: Cyber.display(15, color: Cyber.cyan, letterSpacing: 1.5),
+          style: Cyber.display(
+            StatOzTypography.p15,
+            color: Cyber.cyan,
+            letterSpacing: 1.5,
+          ),
         ),
       ),
     );
@@ -1737,7 +1767,11 @@ class _YourClubPinState extends State<_YourClubPin> {
                 'YOUR CLUB',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.label(10, color: accent, letterSpacing: 1.6),
+                style: Cyber.label(
+                  StatOzTypography.p10,
+                  color: accent,
+                  letterSpacing: 1.6,
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -1788,7 +1822,11 @@ class _ClubPinReadout extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               'LIVE NOW',
-              style: Cyber.label(9.5, color: Cyber.danger, letterSpacing: 1.2),
+              style: Cyber.label(
+                StatOzTypography.p9_5,
+                color: Cyber.danger,
+                letterSpacing: 1.2,
+              ),
             ),
           ],
         ),
@@ -1800,7 +1838,11 @@ class _ClubPinReadout extends StatelessWidget {
     if (remaining.isNegative) {
       return Text(
         'KICKING OFF',
-        style: Cyber.label(9.5, color: accent, letterSpacing: 1.2),
+        style: Cyber.label(
+          StatOzTypography.p9_5,
+          color: accent,
+          letterSpacing: 1.2,
+        ),
       );
     }
     return Row(
@@ -1808,13 +1850,17 @@ class _ClubPinReadout extends StatelessWidget {
       children: [
         Text(
           'KICKS OFF',
-          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+          style: Cyber.label(
+            StatOzTypography.p9,
+            color: Cyber.muted,
+            letterSpacing: 1.2,
+          ),
         ),
         const SizedBox(width: 6),
         Text(
           _formatCountdown(remaining),
           style: Cyber.label(
-            11,
+            StatOzTypography.p11,
             color: accent,
             letterSpacing: 1,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -1917,7 +1963,11 @@ class _LeagueViewMoreRow extends StatelessWidget {
           children: [
             Text(
               'VIEW MORE',
-              style: Cyber.label(9, color: accent, letterSpacing: 1.1),
+              style: Cyber.label(
+                StatOzTypography.p9,
+                color: accent,
+                letterSpacing: 1.1,
+              ),
             ),
             const SizedBox(width: 4),
             Icon(
@@ -2079,6 +2129,15 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
                 span: MediaQuery.textScalerOf(context).scale(10) > 12
                     ? CyberBentoSpan.wide
                     : catalog[index].span,
+                // The opening pair occupies one compact portrait row.
+                rowHeight:
+                    catalog[index].sourceId == 'pitch-duel' ||
+                        catalog[index].sourceId == 'penalty-shootout'
+                    ? 300 +
+                          (MediaQuery.textScalerOf(context).scale(13) - 13)
+                                  .clamp(0, 32) *
+                              6
+                    : null,
                 child: StaggeredCardEntrance(
                   key: ValueKey(catalog[index].id),
                   index: index,
@@ -2235,7 +2294,7 @@ class _TrendingGameUnavailable extends StatelessWidget {
           'MODE OFFLINE\n$id',
           textAlign: TextAlign.center,
           style: Cyber.label(
-            10,
+            StatOzTypography.p10,
             color: Cyber.muted,
             letterSpacing: 0.6,
           ).copyWith(height: 1.3),
@@ -2785,7 +2844,11 @@ class _QuickPlayHeader extends StatelessWidget {
       children: [
         Text(
           'QUICK PLAY',
-          style: Cyber.display(11, color: Colors.white, letterSpacing: 1.8),
+          style: Cyber.display(
+            StatOzTypography.p11,
+            color: Colors.white,
+            letterSpacing: 1.8,
+          ),
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -2795,7 +2858,11 @@ class _QuickPlayHeader extends StatelessWidget {
           ),
           child: Text(
             badgeLabel,
-            style: Cyber.display(7, color: Cyber.cyan, letterSpacing: 1.1),
+            style: Cyber.display(
+              StatOzTypography.p7,
+              color: Cyber.cyan,
+              letterSpacing: 1.1,
+            ),
           ),
         ),
       ],
@@ -2994,7 +3061,11 @@ class _LockVeil extends StatelessWidget {
                   Flexible(
                     child: Text(
                       lock.label,
-                      style: Cyber.label(10, color: tint, letterSpacing: 1),
+                      style: Cyber.label(
+                        StatOzTypography.p10,
+                        color: tint,
+                        letterSpacing: 1,
+                      ),
                     ),
                   ),
                 ],

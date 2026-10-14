@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -5,6 +6,8 @@ import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/picks/picks_state.dart';
 import '../../config/theme.dart';
 import '../../models/picks.dart';
+import '../../models/sport_match.dart';
+import '../../widgets/cyber/match_discovery.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/staggered_card_entrance.dart';
@@ -37,6 +40,25 @@ class _PicksHomeViewState extends State<PicksHomeView> {
       builder: (context, state) {
         if (state.loading) return const _PicksSkeleton();
         final markets = state.filteredMarkets;
+        final groups = <List<PickMarket>>[];
+        final used = <String>{};
+        for (final m in markets) {
+          if (used.contains(m.id)) continue;
+          final group =
+              m.type == PickMarketType.event && m.sport != Sport.tennis
+              ? markets
+                    .where(
+                      (candidate) =>
+                          candidate.sport == m.sport &&
+                          candidate.type == PickMarketType.event &&
+                          !used.contains(candidate.id),
+                    )
+                    .take(3)
+                    .toList()
+              : [m];
+          used.addAll(group.map((m) => m.id));
+          groups.add(group);
+        }
         final stagger =
             widget.animateIntro && !_introPlayed && markets.isNotEmpty;
         if (stagger) {
@@ -49,11 +71,9 @@ class _PicksHomeViewState extends State<PicksHomeView> {
         return CustomScrollView(
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _PickFiltersHeader(),
-                ]),
+                delegate: SliverChildListDelegate([_PickFiltersHeader()]),
               ),
             ),
             if (markets.isEmpty)
@@ -66,25 +86,38 @@ class _PicksHomeViewState extends State<PicksHomeView> {
               )
             else
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(12, 16, 12, 28),
+                padding: const EdgeInsets.fromLTRB(20, 32, 20, 28),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    for (var i = 0; i < markets.length; i++) ...[
+                    for (var i = 0; i < groups.length; i++) ...[
                       StaggeredCardEntrance(
                         index: i,
                         animate: stagger,
-                        child: PickMarketCard(
-                          market: markets[i],
-                          positions: state.positionsForMarket(markets[i].id),
-                          onOpen: () => _openMarket(context, markets[i].id),
-                          onBuy: (outcome) => showPickTradeSheet(
-                            context: context,
-                            market: markets[i],
-                            outcome: outcome,
-                          ),
-                        ),
+                        child:
+                            groups[i].first.type == PickMarketType.event &&
+                                groups[i].first.sport != Sport.tennis
+                            ? EditorialEventsPanel(
+                                markets: groups[i],
+                                onOpen: (id) => _openMarket(context, id),
+                              )
+                            : PickMarketCard(
+                                key: ValueKey(
+                                  'pick-market-${groups[i].first.id}',
+                                ),
+                                market: groups[i].first,
+                                positions: state.positionsForMarket(
+                                  groups[i].first.id,
+                                ),
+                                onOpen: () =>
+                                    _openMarket(context, groups[i].first.id),
+                                onBuy: (outcome) => showPickTradeSheet(
+                                  context: context,
+                                  market: groups[i].first,
+                                  outcome: outcome,
+                                ),
+                              ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 32),
                     ],
                   ]),
                 ),
@@ -220,8 +253,8 @@ class _TabCtaChip extends StatelessWidget {
           style: TextStyle(
             color: color,
             fontFamily: Cyber.displayFont,
-            fontSize: 11,
-            fontWeight: FontWeight.w900,
+            fontSize: StatOzTypography.p11,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 0.8,
           ),
         ),
@@ -279,7 +312,6 @@ class _CutChipBorder extends ShapeBorder {
   @override
   ShapeBorder? lerpTo(ShapeBorder? b, double t) => this;
 }
-
 
 class _EmptyMarkets extends StatelessWidget {
   const _EmptyMarkets({
@@ -438,7 +470,7 @@ class _PickSettingsSheet extends StatelessWidget {
                           Text(
                             'MARKET FILTERS',
                             style: Cyber.label(
-                              12,
+                              StatOzTypography.p12,
                               color: Cyber.cyan,
                               letterSpacing: 1.8,
                             ),
@@ -447,7 +479,7 @@ class _PickSettingsSheet extends StatelessWidget {
                           Text(
                             'LEAGUE',
                             style: Cyber.label(
-                              8,
+                              StatOzTypography.p8,
                               color: Cyber.muted,
                               letterSpacing: 1.4,
                             ),
@@ -469,7 +501,7 @@ class _PickSettingsSheet extends StatelessWidget {
                           Text(
                             'STATUS',
                             style: Cyber.label(
-                              8,
+                              StatOzTypography.p8,
                               color: Cyber.muted,
                               letterSpacing: 1.4,
                             ),
@@ -505,7 +537,7 @@ class _PickSettingsSheet extends StatelessWidget {
                           Text(
                             'SORT BY',
                             style: Cyber.label(
-                              8,
+                              StatOzTypography.p8,
                               color: Cyber.muted,
                               letterSpacing: 1.4,
                             ),
@@ -525,10 +557,7 @@ class _PickSettingsSheet extends StatelessWidget {
                                   label: 'CLOSING',
                                   value: PickSortOption.closingSoon,
                                 ),
-                                (
-                                  label: 'VOLUME',
-                                  value: PickSortOption.volume,
-                                ),
+                                (label: 'VOLUME', value: PickSortOption.volume),
                                 (
                                   label: 'TRENDING',
                                   value: PickSortOption.trending,
@@ -537,8 +566,7 @@ class _PickSettingsSheet extends StatelessWidget {
                                 _TabCtaChip(
                                   label: entry.label,
                                   active: state.sortOption == entry.value,
-                                  onTap: () =>
-                                      cubit.setSortOption(entry.value),
+                                  onTap: () => cubit.setSortOption(entry.value),
                                 ),
                             ],
                           ),

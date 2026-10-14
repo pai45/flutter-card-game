@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import '../../config/game_ladder.dart';
 import 'dart:async';
 
@@ -142,12 +143,12 @@ class _FootballBingoScreenState extends State<FootballBingoScreen>
               children: [
                 Text(
                   'ROUTE UNLOCKED',
-                  style: Cyber.label(10, color: Cyber.amber),
+                  style: Cyber.label(StatOzTypography.p10, color: Cyber.amber),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   career.name,
-                  style: Cyber.display(20, color: Colors.white),
+                  style: Cyber.display(StatOzTypography.p20, color: Colors.white),
                 ),
                 const SizedBox(height: 14),
                 Wrap(
@@ -168,7 +169,7 @@ class _FootballBingoScreenState extends State<FootballBingoScreen>
                 const SizedBox(height: 14),
                 Text(
                   'VERIFIED SENIOR CLUB ROUTE',
-                  style: Cyber.label(9, color: Cyber.muted),
+                  style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
                 ),
               ],
             ),
@@ -385,12 +386,12 @@ class _BingoHeader extends StatelessWidget implements PreferredSizeWidget {
                 children: [
                   Text(
                     'BACK TO BINGO',
-                    style: Cyber.label(12, color: Colors.white),
+                    style: Cyber.label(StatOzTypography.p12, color: Colors.white),
                   ),
                   const SizedBox(height: 5),
                   Text(
                     'BINGO GRID',
-                    style: Cyber.display(20, letterSpacing: 1.1),
+                    style: Cyber.display(StatOzTypography.p20, letterSpacing: 1.1),
                   ),
                 ],
               ),
@@ -435,12 +436,12 @@ class _StatusStrip extends StatelessWidget {
                   child: Text(
                     state.puzzle.title.toUpperCase(),
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(11, color: Colors.white),
+                    style: Cyber.label(StatOzTypography.p11, color: Colors.white),
                   ),
                 ),
                 Text(
                   '${state.progress.solvedCellIds.length}/9',
-                  style: Cyber.display(14, color: Cyber.amber),
+                  style: Cyber.display(StatOzTypography.p14, color: Cyber.amber),
                 ),
               ],
             ),
@@ -478,9 +479,9 @@ class _TimerBlock extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(label, style: Cyber.label(8, color: Cyber.muted)),
+          Text(label, style: Cyber.label(StatOzTypography.p8, color: Cyber.muted)),
           const SizedBox(height: 3),
-          Text(value, style: Cyber.display(13, color: Cyber.amber)),
+          Text(value, style: Cyber.display(StatOzTypography.p13, color: Cyber.amber)),
         ],
       ),
     );
@@ -676,7 +677,7 @@ class _GridCell extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.label(8, color: Cyber.muted),
+                style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
               ),
       ),
     );
@@ -810,13 +811,13 @@ class _PlayerPanel extends StatelessWidget {
             children: [
               Text(
                 'GRID COMPLETE',
-                style: Cyber.display(15, color: Cyber.amber),
+                style: Cyber.display(StatOzTypography.p15, color: Cyber.amber),
               ),
               const SizedBox(height: 6),
               Text(
                 'Return to logs for more grids.',
                 textAlign: TextAlign.center,
-                style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
               ),
             ],
           ),
@@ -831,10 +832,10 @@ class _PlayerPanel extends StatelessWidget {
           children: [
             Text(
               'NEXT GRID UNLOCKS IN',
-              style: Cyber.label(10, color: Cyber.muted),
+              style: Cyber.label(StatOzTypography.p10, color: Cyber.muted),
             ),
             const SizedBox(height: 8),
-            Text(timer, style: Cyber.display(24, color: Cyber.amber)),
+            Text(timer, style: Cyber.display(StatOzTypography.p24, color: Cyber.amber)),
           ],
         ),
       );
@@ -842,7 +843,7 @@ class _PlayerPanel extends StatelessWidget {
     final portrait = player.resolvedPortraitAsset;
     return Column(
       children: [
-        Text('ACTIVE PLAYER', style: Cyber.label(10, color: Cyber.muted)),
+        Text('ACTIVE PLAYER', style: Cyber.label(StatOzTypography.p10, color: Cyber.muted)),
         const SizedBox(height: 10),
         Container(
           key: portraitKey,
@@ -885,11 +886,11 @@ class _CompletePanel extends StatelessWidget {
         children: [
           const Icon(Icons.verified, color: Cyber.lime, size: 30),
           const SizedBox(height: 8),
-          Text('GRID COMPLETE', style: Cyber.display(16, color: Cyber.lime)),
+          Text('GRID COMPLETE', style: Cyber.display(StatOzTypography.p16, color: Cyber.lime)),
           const SizedBox(height: 6),
           Text(
             'Tomorrow unlocks the next run.',
-            style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+            style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
           ),
         ],
       ),
@@ -940,14 +941,14 @@ class _LifelineDock extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         '+1 LIFELINE',
-                        style: Cyber.display(13, color: AppTheme.darkInk),
+                        style: Cyber.display(StatOzTypography.p13, color: AppTheme.darkInk),
                       ),
                       const SizedBox(width: 10),
                       const CoinIcon(size: 16),
                       const SizedBox(width: 4),
                       Text(
                         '$kFootballBingoLifelineCost',
-                        style: Cyber.display(13, color: AppTheme.darkInk),
+                        style: Cyber.display(StatOzTypography.p13, color: AppTheme.darkInk),
                       ),
                     ],
                   ),
@@ -1054,8 +1055,7 @@ class _CompletionOverlayState extends State<_CompletionOverlay> {
                         Text(
                           _summary ? 'DAILY LOGGED' : 'GRID COMPLETE',
                           textAlign: TextAlign.center,
-                          style: Cyber.display(
-                            18,
+                          style: Cyber.display(StatOzTypography.p18,
                             color: _summary ? Cyber.amber : Cyber.lime,
                             letterSpacing: 1.8,
                           ),
@@ -1063,7 +1063,7 @@ class _CompletionOverlayState extends State<_CompletionOverlay> {
                         const SizedBox(height: 8),
                         Text(
                           '$count/9',
-                          style: Cyber.display(30, color: Colors.white),
+                          style: Cyber.display(StatOzTypography.p30, color: Colors.white),
                         ),
                         const SizedBox(height: 14),
                         Wrap(
@@ -1104,7 +1104,7 @@ class _CompletionOverlayState extends State<_CompletionOverlay> {
                           child: Text(
                             _summary ? 'TAP TO CONTINUE' : 'TAP TO REVEAL',
                             key: ValueKey(_summary),
-                            style: Cyber.label(10, color: Cyber.muted),
+                            style: Cyber.label(StatOzTypography.p10, color: Cyber.muted),
                           ),
                         ),
                       ],

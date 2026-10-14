@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -240,16 +241,14 @@ class _StreakReminderSheetState extends State<StreakReminderSheet> {
                                         atRisk
                                             ? 'STREAK AT RISK'
                                             : 'KEEP THE FIRE BURNING',
-                                        style: Cyber.display(19, color: accent),
+                                        style: Cyber.display(StatOzTypography.p19, color: accent),
                                       ),
                                       const SizedBox(height: 6),
                                       Text(
                                         atRisk
                                             ? '$clock left to save your $current-day run.'
                                             : 'Play anything today to make it ${current + 1}.',
-                                        style: Cyber.bodyFor(
-                                          context,
-                                          14,
+                                        style: Cyber.bodyFor(context, StatOzTypography.p14,
                                           color: Colors.white.withValues(
                                             alpha: 0.85,
                                           ),
@@ -277,8 +276,7 @@ class _StreakReminderSheetState extends State<StreakReminderSheet> {
                                     children: [
                                       Text(
                                         'LAST 7 DAYS',
-                                        style: Cyber.label(
-                                          9,
+                                        style: Cyber.label(StatOzTypography.p9,
                                           color: Cyber.muted,
                                           letterSpacing: 1.4,
                                         ),
@@ -292,7 +290,7 @@ class _StreakReminderSheetState extends State<StreakReminderSheet> {
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
                                           textAlign: TextAlign.right,
-                                          style: Cyber.label(9, color: accent),
+                                          style: Cyber.label(StatOzTypography.p9, color: accent),
                                         ),
                                       ),
                                     ],
@@ -321,15 +319,14 @@ class _StreakReminderSheetState extends State<StreakReminderSheet> {
                               'PICK YOUR MOVE',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: Cyber.display(13),
+                              style: Cyber.display(StatOzTypography.p13),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'ANY ONE OF THESE LIGHTS TODAY',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: Cyber.label(
-                                8.5,
+                              style: Cyber.label(StatOzTypography.p8_5,
                                 color: Cyber.muted,
                                 letterSpacing: 1,
                               ),
@@ -411,7 +408,7 @@ class _StatusTag extends StatelessWidget {
                   )
                 : dot(1),
             const SizedBox(width: 6),
-            Text(label, style: Cyber.label(9.5, color: accent)),
+            Text(label, style: Cyber.label(StatOzTypography.p9_5, color: accent)),
           ],
         ),
       ),
@@ -440,7 +437,7 @@ class _HubLink extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('STREAK HUB', style: Cyber.label(9.5, color: Cyber.cyan)),
+              Text('STREAK HUB', style: Cyber.label(StatOzTypography.p9_5, color: Cyber.cyan)),
               const Icon(Icons.chevron_right, size: 16, color: Cyber.cyan),
             ],
           ),
@@ -482,7 +479,7 @@ class _FlameCore extends StatelessWidget {
                   child: Text(
                     '$count',
                     maxLines: 1,
-                    style: Cyber.display(32, letterSpacing: 0).copyWith(
+                    style: Cyber.display(StatOzTypography.p32, letterSpacing: 0).copyWith(
                       height: 1.05,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
@@ -491,8 +488,7 @@ class _FlameCore extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   count == 1 ? 'DAY' : 'DAYS',
-                  style: Cyber.label(
-                    8.5,
+                  style: Cyber.label(StatOzTypography.p8_5,
                     color: Cyber.muted,
                     letterSpacing: 1.4,
                   ),
@@ -534,8 +530,7 @@ class _MilestoneLine extends StatelessWidget {
                 children: [
                   Text(
                     'DAY ${milestone.days} REWARD',
-                    style: Cyber.label(
-                      8.5,
+                    style: Cyber.label(StatOzTypography.p8_5,
                       color: Cyber.muted,
                       letterSpacing: 1.2,
                     ),
@@ -545,7 +540,7 @@ class _MilestoneLine extends StatelessWidget {
                     milestone.rewardLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.display(13),
+                    style: Cyber.display(StatOzTypography.p13),
                   ),
                 ],
               ),
@@ -553,7 +548,7 @@ class _MilestoneLine extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               toGo == 1 ? 'UNLOCKS TODAY' : '$toGo DAYS AWAY',
-              style: Cyber.label(9.5, color: toGo == 1 ? accent : Cyber.muted),
+              style: Cyber.label(StatOzTypography.p9_5, color: toGo == 1 ? accent : Cyber.muted),
             ),
           ],
         ),
@@ -583,7 +578,7 @@ class _ShieldLine extends StatelessWidget {
         const SizedBox(width: 10),
         Text(
           armed ? 'SHIELD ARMED' : 'NO SHIELD',
-          style: Cyber.label(10, color: armed ? Cyber.cyan : Cyber.muted),
+          style: Cyber.label(StatOzTypography.p10, color: armed ? Cyber.cyan : Cyber.muted),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -592,7 +587,7 @@ class _ShieldLine extends StatelessWidget {
                 ? 'Covers ${shields == 1 ? 'a missed day' : '$shields missed days'}.'
                 : 'Clear the Daily Sweep to forge one.',
             maxLines: 2,
-            style: Cyber.bodyFor(context, 12, color: Cyber.muted, height: 1.3),
+            style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted, height: 1.3),
           ),
         ),
       ],
@@ -656,8 +651,7 @@ class _MoveTile extends StatelessWidget {
                           child: Text(
                             move.label,
                             maxLines: 1,
-                            style: Cyber.label(
-                              11,
+                            style: Cyber.label(StatOzTypography.p11,
                               color: selected ? Colors.white : Cyber.muted,
                             ),
                           ),

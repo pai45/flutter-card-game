@@ -44,6 +44,14 @@ jobs:
           fi
 
 
+      - name: Set up Node for typography verification
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Verify shared typography
+        run: node scripts/typography-library.mjs --check
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -72,6 +80,8 @@ jobs:
           test/cyber_underline_tabs_test.dart
           test/profile_setup_screen_test.dart
           test/game_hero_cta_test.dart
+          test/game_discovery_test.dart
+          test/match_discovery_contract_test.dart
           test/trending_hub_test.dart
           test/widget_test.dart
 

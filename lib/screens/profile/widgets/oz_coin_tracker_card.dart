@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -46,7 +47,7 @@ class _OzCoinTrackerCardState extends State<OzCoinTrackerCard> {
               const SizedBox(width: 9),
               Text(
                 'OZ COIN TRACKER',
-                style: Cyber.display(15, color: Cyber.gold, letterSpacing: 1),
+                style: Cyber.display(StatOzTypography.p15, color: Cyber.gold, letterSpacing: 1),
               ),
               const Spacer(),
               GestureDetector(
@@ -56,8 +57,7 @@ class _OzCoinTrackerCardState extends State<OzCoinTrackerCard> {
                   children: [
                     Text(
                       'HISTORY',
-                      style: Cyber.label(
-                        10,
+                      style: Cyber.label(StatOzTypography.p10,
                         color: Cyber.gold.withValues(alpha: 0.9),
                         letterSpacing: 1.4,
                       ),
@@ -179,12 +179,12 @@ class _CoinBalanceChartState extends State<CoinBalanceChart> {
               children: [
                 Text(
                   'BALANCE',
-                  style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+                  style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.2),
                 ),
                 const Spacer(),
                 Text(
                   '${formatOzGrouped(value)} OZ',
-                  style: Cyber.display(18, color: Cyber.gold).copyWith(
+                  style: Cyber.display(StatOzTypography.p18, color: Cyber.gold).copyWith(
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
@@ -362,8 +362,7 @@ class _TrackerRangeTabs extends StatelessWidget {
                 ),
                 child: Text(
                   _rangeLabel(range),
-                  style: Cyber.label(
-                    10,
+                  style: Cyber.label(StatOzTypography.p10,
                     color: active == range ? Cyber.gold : Cyber.muted,
                     letterSpacing: 1,
                   ),

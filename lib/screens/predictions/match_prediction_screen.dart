@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -24,6 +25,7 @@ import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import '../../widgets/team_logo.dart';
+import '../../widgets/cyber/match_discovery.dart';
 import '../shop/widgets/shop_card.dart' show CoinIcon;
 import 'market_detail_screen.dart';
 import 'widgets/score_prediction_picker.dart';
@@ -797,7 +799,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     final messenger = ScaffoldMessenger.maybeOf(context);
     messenger?.showSnackBar(
       SnackBar(
-        content: Text(message, style: Cyber.body(13)),
+        content: Text(message, style: Cyber.body(StatOzTypography.p13)),
         backgroundColor: Cyber.panel,
         behavior: SnackBarBehavior.floating,
       ),
@@ -1409,22 +1411,47 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
             children: [
-              for (var i = 0; i < _quizzes.length; i++)
-                Padding(
-                  padding: EdgeInsets.only(
-                    bottom: i == _quizzes.length - 1 ? 0 : 26,
+              if (_match.sport != Sport.tennis &&
+                  _match.status == MatchStatus.finished &&
+                  _quizzes.every((q) {
+                    final p = _predictionCubit.state.predictionFor(
+                      _match.id,
+                      q.id,
+                    );
+                    return p != null && p.status != PredictionStatus.settled;
+                  }))
+                EditorialPairedGrid(
+                  children: [
+                    for (var i = 0; i < _quizzes.length; i++)
+                      _QuizSetHubCard(
+                        match: _match,
+                        quiz: _quizzes[i],
+                        index: i + 1,
+                        prediction: _predictionCubit.state.predictionFor(
+                          _match.id,
+                          _quizzes[i].id,
+                        ),
+                        onTap: () => _openQuizSet(_quizzes[i]),
+                      ),
+                  ],
+                )
+              else
+                for (var i = 0; i < _quizzes.length; i++)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      bottom: i == _quizzes.length - 1 ? 0 : 26,
+                    ),
+                    child: _QuizSetHubCard(
+                      match: _match,
+                      quiz: _quizzes[i],
+                      index: i + 1,
+                      prediction: context
+                          .read<PredictionCubit>()
+                          .state
+                          .predictionFor(_match.id, _quizzes[i].id),
+                      onTap: () => _openQuizSet(_quizzes[i]),
+                    ),
                   ),
-                  child: _QuizSetHubCard(
-                    match: _match,
-                    quiz: _quizzes[i],
-                    index: i + 1,
-                    prediction: context
-                        .read<PredictionCubit>()
-                        .state
-                        .predictionFor(_match.id, _quizzes[i].id),
-                    onTap: () => _openQuizSet(_quizzes[i]),
-                  ),
-                ),
             ],
           ),
         ),
@@ -1744,8 +1771,8 @@ class _QuizTopBar extends StatelessWidget {
               style: TextStyle(
                 color: Colors.white,
                 fontFamily: Cyber.bodyFont,
-                fontWeight: FontWeight.w600,
-                fontSize: 18,
+                fontWeight: StatOzTypography.semibold,
+                fontSize: StatOzTypography.p18,
                 height: 1,
               ),
             ),
@@ -1797,7 +1824,7 @@ class _QuizHeader extends StatelessWidget {
               Text(
                 _statusLabel,
                 style: Cyber.display(
-                  15,
+                  StatOzTypography.p15,
                   color: _statusColor,
                   letterSpacing: 1.5,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -1819,13 +1846,19 @@ class _QuizHeader extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Cyber.body(
-                        15,
+                        StatOzTypography.p15,
                         color: homeColor,
-                        weight: FontWeight.w700,
+                        weight: StatOzTypography.bold,
                       ),
                     ),
                   ),
-                  Text('-', style: Cyber.display(16, color: Cyber.muted)),
+                  Text(
+                    '-',
+                    style: Cyber.display(
+                      StatOzTypography.p16,
+                      color: Cyber.muted,
+                    ),
+                  ),
                   Expanded(
                     child: Text(
                       match.away.name,
@@ -1833,9 +1866,9 @@ class _QuizHeader extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Cyber.body(
-                        15,
+                        StatOzTypography.p15,
                         color: awayColor,
-                        weight: FontWeight.w700,
+                        weight: StatOzTypography.bold,
                       ),
                     ),
                   ),
@@ -1946,7 +1979,7 @@ class _LockLine extends StatelessWidget {
         Text(
           text,
           style: Cyber.label(
-            11,
+            StatOzTypography.p11,
             color: color,
             letterSpacing: 1.4,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -2018,7 +2051,11 @@ class _XpPotTickerState extends State<_XpPotTicker>
         children: [
           Text(
             'POTENTIAL',
-            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4),
+            style: Cyber.label(
+              StatOzTypography.p9,
+              color: Cyber.muted,
+              letterSpacing: 1.4,
+            ),
           ),
           const SizedBox(width: 5),
           const Icon(Icons.bolt, size: 13, color: Cyber.gold),
@@ -2031,7 +2068,7 @@ class _XpPotTickerState extends State<_XpPotTicker>
             child: Text(
               '${shown.round()}',
               style: Cyber.display(
-                12,
+                StatOzTypography.p12,
                 color: Cyber.gold,
                 letterSpacing: 0.6,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -2040,7 +2077,7 @@ class _XpPotTickerState extends State<_XpPotTicker>
           Text(
             '/${widget.max} XP',
             style: Cyber.label(
-              10,
+              StatOzTypography.p10,
               color: Cyber.muted,
               letterSpacing: 1.2,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -2073,7 +2110,11 @@ class _AllQuizzesButton extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 'ALL QUIZZES',
-                style: Cyber.label(10, color: Cyber.cyan, letterSpacing: 1.2),
+                style: Cyber.label(
+                  StatOzTypography.p10,
+                  color: Cyber.cyan,
+                  letterSpacing: 1.2,
+                ),
               ),
             ],
           ),
@@ -2456,6 +2497,10 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
       widget.prediction,
       coins: coins,
     );
+    if (v.glow && widget.match.sport != Sport.tennis) {
+      _pulse.stop();
+      return EditorialRevealCard(match: widget.match, onTap: widget.onTap);
+    }
     final homeColor = paletteForTeam(
       widget.match.home,
       sport: widget.match.sport,
@@ -2490,7 +2535,7 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
                     content: Text(
                       v.blockedMessage ??
                           'This quiz is not available right now.',
-                      style: Cyber.body(13),
+                      style: Cyber.body(StatOzTypography.p13),
                     ),
                     backgroundColor: Cyber.panel,
                     behavior: SnackBarBehavior.floating,
@@ -2587,7 +2632,7 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
                                       Text(
                                         v.tag,
                                         style: Cyber.label(
-                                          8.5,
+                                          StatOzTypography.p8_5,
                                           color: v.accent,
                                           letterSpacing: 1.6,
                                         ),
@@ -2598,7 +2643,7 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                         style: Cyber.display(
-                                          14.5,
+                                          StatOzTypography.p14_5,
                                           color: Colors.white,
                                           letterSpacing: 0.2,
                                         ).copyWith(height: 1.2),
@@ -2619,7 +2664,10 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
                                 widget.quiz.subtitle!,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: Cyber.body(11.5, color: Cyber.muted),
+                                style: Cyber.body(
+                                  StatOzTypography.p11_5,
+                                  color: Cyber.muted,
+                                ),
                               ),
                             ],
                             if (v.contest != null) ...[
@@ -2650,7 +2698,7 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
                                     overflow: TextOverflow.ellipsis,
                                     style:
                                         Cyber.label(
-                                          9,
+                                          StatOzTypography.p9,
                                           color: v.accent,
                                           letterSpacing: 1,
                                           fontFeatures: const [
@@ -2721,7 +2769,7 @@ class _IndexPlate extends StatelessWidget {
             child: Text(
               index.toString().padLeft(2, '0'),
               style: Cyber.display(
-                15,
+                StatOzTypography.p15,
                 color: accent,
                 letterSpacing: 0,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -2751,7 +2799,7 @@ class _RewardPill extends StatelessWidget {
       child: Text(
         text,
         style: Cyber.label(
-          9,
+          StatOzTypography.p9,
           color: color,
           letterSpacing: 0.6,
           fontFeatures: const [FontFeature.tabularFigures()],
@@ -2867,7 +2915,7 @@ class _ContestChip extends StatelessWidget {
           Text(
             label,
             style: Cyber.label(
-              8.5,
+              StatOzTypography.p8_5,
               color: color,
               letterSpacing: 0.8,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -2971,7 +3019,7 @@ class _ReviewNotice extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: Cyber.body(13, color: const Color(0xffbed7ee)),
+        style: Cyber.body(StatOzTypography.p13, color: const Color(0xffbed7ee)),
       ),
     );
   }
@@ -3015,13 +3063,17 @@ class _CommunityResultsTelemetry extends StatelessWidget {
               Expanded(
                 child: Text(
                   'COMMUNITY // FINAL',
-                  style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+                  style: Cyber.label(
+                    StatOzTypography.p9,
+                    color: Cyber.muted,
+                    letterSpacing: 1.2,
+                  ),
                 ),
               ),
               Text(
                 fieldSize > 0 ? '$fieldSize FIELD ENTRIES' : 'FIELD PENDING',
                 style: Cyber.label(
-                  8,
+                  StatOzTypography.p8,
                   color: Cyber.muted,
                   letterSpacing: 0.9,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -3033,7 +3085,7 @@ class _CommunityResultsTelemetry extends StatelessWidget {
           Text(
             hasVotes ? '$accuracy% CROWD ACCURACY' : 'NO CROWD VOTES',
             style: Cyber.display(
-              15,
+              StatOzTypography.p15,
               color: hasVotes ? Cyber.cyan : Cyber.muted,
               letterSpacing: 0.4,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -3043,7 +3095,7 @@ class _CommunityResultsTelemetry extends StatelessWidget {
             hasVotes
                 ? '$crowdCorrectVotes / $crowdTotalVotes votes matched the final answers.'
                 : 'Vote data will appear when the community feed is available.',
-            style: Cyber.body(11.5, color: Cyber.muted),
+            style: Cyber.body(StatOzTypography.p11_5, color: Cyber.muted),
           ),
         ],
       ),
@@ -3139,7 +3191,10 @@ class _ReviewQuestionCard extends StatelessWidget {
                         ),
                         child: Text(
                           'Q$index',
-                          style: Cyber.label(10, color: Cyber.cyan),
+                          style: Cyber.label(
+                            StatOzTypography.p10,
+                            color: Cyber.cyan,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -3147,7 +3202,7 @@ class _ReviewQuestionCard extends StatelessWidget {
                         child: Text(
                           question.text,
                           style: Cyber.display(
-                            13.5,
+                            StatOzTypography.p13_5,
                             color: Colors.white,
                             letterSpacing: 0.2,
                           ).copyWith(height: 1.25),
@@ -3169,7 +3224,7 @@ class _ReviewQuestionCard extends StatelessWidget {
                       Text(
                         communityOnly ? 'ACTUAL RESULT' : 'YOUR PICK',
                         style: Cyber.label(
-                          9,
+                          StatOzTypography.p9,
                           color: Cyber.muted,
                           letterSpacing: 1.1,
                         ),
@@ -3181,13 +3236,13 @@ class _ReviewQuestionCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Cyber.body(
-                            13,
+                            StatOzTypography.p13,
                             color: shownAnswer == null
                                 ? Cyber.muted
                                 : selectedCorrect && finished
                                 ? Cyber.success
                                 : Colors.white,
-                            weight: FontWeight.w700,
+                            weight: StatOzTypography.bold,
                           ),
                         ),
                       ),
@@ -3233,7 +3288,7 @@ class _ReviewQuestionCard extends StatelessWidget {
                     Text(
                       'CORRECT ANSWER: ${_answerLabel(question, correct)}',
                       style: Cyber.label(
-                        10,
+                        StatOzTypography.p10,
                         color: Cyber.success,
                         letterSpacing: 1,
                       ),
@@ -3311,7 +3366,7 @@ class _ReviewQuestionCard extends StatelessWidget {
     if (answers.isEmpty || votes == null || votes!.totalVotes == 0) {
       return Text(
         'NO CROWD VOTES YET',
-        style: Cyber.body(12, color: Cyber.muted),
+        style: Cyber.body(StatOzTypography.p12, color: Cyber.muted),
       );
     }
 
@@ -3330,11 +3385,15 @@ class _ReviewQuestionCard extends StatelessWidget {
           children: [
             Text(
               'CROWD PICK %',
-              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.1),
+              style: Cyber.label(
+                StatOzTypography.p9,
+                color: Cyber.muted,
+                letterSpacing: 1.1,
+              ),
             ),
             Text(
               '${votes?.totalVotes ?? 0} TOTAL VOTES',
-              style: Cyber.body(11, color: Cyber.muted),
+              style: Cyber.body(StatOzTypography.p11, color: Cyber.muted),
             ),
           ],
         ),
@@ -3397,7 +3456,11 @@ class _LiveQuestionStatusStrip extends StatelessWidget {
           const SizedBox(width: 7),
           Text(
             _questionStateLabel(intel.questionState),
-            style: Cyber.label(8.5, color: questionAccent, letterSpacing: 1),
+            style: Cyber.label(
+              StatOzTypography.p8_5,
+              color: questionAccent,
+              letterSpacing: 1,
+            ),
           ),
           const SizedBox(width: 8),
           Container(width: 1, height: 14, color: Cyber.borderSubtle),
@@ -3418,7 +3481,11 @@ class _LiveQuestionStatusStrip extends StatelessWidget {
                 key: ValueKey(intel.pickState),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.label(8.5, color: pickAccent, letterSpacing: 0.8),
+                style: Cyber.label(
+                  StatOzTypography.p8_5,
+                  color: pickAccent,
+                  letterSpacing: 0.8,
+                ),
               ),
             ),
           ),
@@ -3426,7 +3493,7 @@ class _LiveQuestionStatusStrip extends StatelessWidget {
           Text(
             timestamp,
             style: Cyber.label(
-              7.5,
+              StatOzTypography.p7_5,
               color: Cyber.muted,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
@@ -3470,7 +3537,10 @@ class _MultiplierBadge extends StatelessWidget {
         color: accent.withValues(alpha: 0.14),
         border: Border.all(color: accent.withValues(alpha: 0.7)),
       ),
-      child: Text(multiplier.label, style: Cyber.display(10, color: accent)),
+      child: Text(
+        multiplier.label,
+        style: Cyber.display(StatOzTypography.p10, color: accent),
+      ),
     );
   }
 }
@@ -3494,7 +3564,7 @@ class _EarnedXpLine extends StatelessWidget {
         Text(
           'EARNED XP: $earned',
           style: Cyber.label(
-            10,
+            StatOzTypography.p10,
             color: earned > 0 ? Cyber.gold : Cyber.muted,
             letterSpacing: 1,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -3544,7 +3614,7 @@ class _ReviewOptionChoice extends StatelessWidget {
               child: Text(
                 label.toUpperCase(),
                 style: Cyber.label(
-                  12,
+                  StatOzTypography.p12,
                   color: selected ? Colors.white : const Color(0xffc4cedd),
                   letterSpacing: 0.5,
                 ),
@@ -3588,9 +3658,9 @@ class _PollResultRow extends StatelessWidget {
               child: Text(
                 label.toUpperCase(),
                 style: Cyber.body(
-                  12,
+                  StatOzTypography.p12,
                   color: correct || selected ? Colors.white : Cyber.muted,
-                  weight: FontWeight.w700,
+                  weight: StatOzTypography.bold,
                 ),
               ),
             ),
@@ -3599,7 +3669,11 @@ class _PollResultRow extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 6),
                 child: Text(
                   'YOU',
-                  style: Cyber.label(9, color: Cyber.cyan, letterSpacing: 0.8),
+                  style: Cyber.label(
+                    StatOzTypography.p9,
+                    color: Cyber.cyan,
+                    letterSpacing: 0.8,
+                  ),
                 ),
               ),
             if (correct)
@@ -3608,7 +3682,7 @@ class _PollResultRow extends StatelessWidget {
                 child: Text(
                   'RIGHT',
                   style: Cyber.label(
-                    8,
+                    StatOzTypography.p8,
                     color: Cyber.success,
                     letterSpacing: 0.8,
                   ),
@@ -3617,9 +3691,9 @@ class _PollResultRow extends StatelessWidget {
             Text(
               '${(share * 100).round()}% · $votes VOTES',
               style: Cyber.body(
-                12,
+                StatOzTypography.p12,
                 color: accent,
-                weight: FontWeight.w800,
+                weight: StatOzTypography.bold,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ],
@@ -3742,7 +3816,7 @@ class _PredictionLockDockState extends State<_PredictionLockDock>
                   Text(
                     'LOCK PROTOCOL // 01',
                     style: Cyber.label(
-                      8,
+                      StatOzTypography.p8,
                       color: Cyber.muted,
                       letterSpacing: 1.2,
                     ),
@@ -3865,7 +3939,11 @@ class _DraftSaveTelemetry extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: Cyber.label(8.5, color: color, letterSpacing: 0.8),
+            style: Cyber.label(
+              StatOzTypography.p8_5,
+              color: color,
+              letterSpacing: 0.8,
+            ),
           ),
         ],
       ),
@@ -3920,7 +3998,11 @@ class _OpenPicksInlineAction extends StatelessWidget {
             Expanded(
               child: Text(
                 'OPEN SAME-MATCH PICKS',
-                style: Cyber.label(9.5, color: Cyber.cyan, letterSpacing: 1),
+                style: Cyber.label(
+                  StatOzTypography.p9_5,
+                  color: Cyber.cyan,
+                  letterSpacing: 1,
+                ),
               ),
             ),
             const Icon(Icons.arrow_forward, size: 16, color: Cyber.muted),
@@ -3992,9 +4074,9 @@ class _QuizNumberBurst extends StatelessWidget {
               '$number',
               style: TextStyle(
                 color: Cyber.lime,
-                fontFamily: 'Orbitron',
-                fontSize: 128,
-                fontWeight: FontWeight.w900,
+                fontFamily: StatOzTypography.displayFont,
+                fontSize: StatOzTypography.p128,
+                fontWeight: StatOzTypography.black,
                 shadows: [
                   Shadow(
                     color: Cyber.lime.withValues(alpha: glow),
@@ -4105,7 +4187,7 @@ class _QuestionPanel extends StatelessWidget {
                       text: question.text,
                       progress: questionProgress,
                       style: Cyber.display(
-                        16,
+                        StatOzTypography.p16,
                         letterSpacing: 0.3,
                       ).copyWith(height: 1.25),
                     ),
@@ -4175,7 +4257,10 @@ class _QuestionPanel extends StatelessWidget {
               color: Cyber.cyan.withValues(alpha: 0.16),
               border: Border.all(color: Cyber.border),
             ),
-            child: Text('$index', style: Cyber.display(15, color: Cyber.cyan)),
+            child: Text(
+              '$index',
+              style: Cyber.display(StatOzTypography.p15, color: Cyber.cyan),
+            ),
           ),
         ),
       ],
@@ -4314,7 +4399,7 @@ class _ScoreQuestionPanel extends StatelessWidget {
                         text: question.text,
                         progress: questionProgress,
                         style: Cyber.display(
-                          16,
+                          StatOzTypography.p16,
                           letterSpacing: 0.3,
                         ).copyWith(height: 1.25),
                       ),
@@ -4351,7 +4436,7 @@ class _ScoreQuestionPanel extends StatelessWidget {
                             ? 'EXACT SCORE — CORRECT'
                             : 'ACTUAL: ${question.settledHomeScore}–${question.settledAwayScore}',
                         style: Cyber.label(
-                          11,
+                          StatOzTypography.p11,
                           color: _correct ? Cyber.success : Cyber.danger,
                           letterSpacing: 0.8,
                         ),
@@ -4399,7 +4484,7 @@ class _ScoreQuestionPanel extends StatelessWidget {
               ),
               child: Text(
                 '$index',
-                style: Cyber.display(15, color: Cyber.cyan),
+                style: Cyber.display(StatOzTypography.p15, color: Cyber.cyan),
               ),
             ),
           ),
@@ -4436,7 +4521,11 @@ class _BoostSelector extends StatelessWidget {
         if (showLabel)
           Text(
             'BOOST',
-            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.1),
+            style: Cyber.label(
+              StatOzTypography.p9,
+              color: Cyber.muted,
+              letterSpacing: 1.1,
+            ),
           ),
         for (final multiplier in PredictionMultiplier.values)
           _MultiplierChip(
@@ -4555,7 +4644,7 @@ class _MultiplierChipState extends State<_MultiplierChip>
                 Text(
                   widget.multiplier.label,
                   style: Cyber.display(
-                    11,
+                    StatOzTypography.p11,
                     color: enabled || active
                         ? active
                               ? Colors.white
@@ -4616,20 +4705,28 @@ class _XpPill extends StatelessWidget {
             Text(
               '$reward',
               style: Cyber.display(
-                13,
+                StatOzTypography.p13,
                 color: Colors.white,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
             const SizedBox(width: 4),
             Text(
               'xp',
-              style: Cyber.label(10, color: Colors.white, letterSpacing: 0.5),
+              style: Cyber.label(
+                StatOzTypography.p10,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
             ),
             if (multiplier != null) ...[
               const SizedBox(width: 6),
               Text(
                 multiplier!.label,
-                style: Cyber.label(9, color: accent, letterSpacing: 0.4),
+                style: Cyber.label(
+                  StatOzTypography.p9,
+                  color: accent,
+                  letterSpacing: 0.4,
+                ),
               ),
             ],
           ],
@@ -4697,7 +4794,10 @@ class _OptionTile extends StatelessWidget {
               ),
               child: Text(
                 letter,
-                style: Cyber.display(13, color: active ? accent : Cyber.muted),
+                style: Cyber.display(
+                  StatOzTypography.p13,
+                  color: active ? accent : Cyber.muted,
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -4705,7 +4805,7 @@ class _OptionTile extends StatelessWidget {
               child: Text(
                 label.toUpperCase(),
                 style: Cyber.label(
-                  12.5,
+                  StatOzTypography.p12_5,
                   color: active ? Colors.white : const Color(0xffc4cedd),
                   letterSpacing: 0.6,
                 ),
@@ -4811,7 +4911,10 @@ class _BottomDock extends StatelessWidget {
             Text(
               helper,
               textAlign: TextAlign.center,
-              style: Cyber.body(12, color: const Color(0xFF90A1B9)),
+              style: Cyber.body(
+                StatOzTypography.p12,
+                color: const Color(0xFF90A1B9),
+              ),
             ),
           ],
         ),
@@ -5008,7 +5111,7 @@ class _PredictionLockedOverlayState extends State<_PredictionLockedOverlay>
                       child: Text(
                         '${widget.count} ANSWERS SEALED',
                         style: Cyber.label(
-                          11,
+                          StatOzTypography.p11,
                           color: Cyber.muted,
                           letterSpacing: 2.0,
                         ),
@@ -5034,7 +5137,7 @@ class _PredictionLockedOverlayState extends State<_PredictionLockedOverlay>
                         'UP TO $xpValue XP',
                         style:
                             Cyber.label(
-                              13,
+                              StatOzTypography.p13,
                               color: Cyber.gold,
                               letterSpacing: 1.6,
                             ).copyWith(
@@ -5220,8 +5323,12 @@ class _SubmittedHeadline extends StatelessWidget {
   Widget build(BuildContext context) {
     final chars = text.split('');
     final n = chars.length;
-    final style = Cyber.display(22, color: Colors.white, letterSpacing: 1.5)
-        .copyWith(
+    final style =
+        Cyber.display(
+          StatOzTypography.p22,
+          color: Colors.white,
+          letterSpacing: 1.5,
+        ).copyWith(
           shadows: [
             Shadow(color: Cyber.cyan.withValues(alpha: 0.55), blurRadius: 14),
           ],

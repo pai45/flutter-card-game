@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -76,7 +77,7 @@ class DailyMysteryCoinHint extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.label(6.5, color: Cyber.muted),
+                style: Cyber.label(StatOzTypography.p6_5, color: Cyber.muted),
               ),
               SizedBox(height: compact ? 4 : 6),
               Row(
@@ -92,7 +93,7 @@ class DailyMysteryCoinHint extends StatelessWidget {
                       revealed ? value : status,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.label(7.5, color: accent),
+                      style: Cyber.label(StatOzTypography.p7_5, color: accent),
                     ),
                   ),
                 ],
@@ -433,7 +434,7 @@ class _SystemStrip extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(label, style: Cyber.display(8.5, color: Cyber.success)),
+          Text(label, style: Cyber.display(StatOzTypography.p8_5, color: Cyber.success)),
           const SizedBox(width: 10),
           Expanded(
             child: Container(height: 1, color: accent.withValues(alpha: 0.2)),
@@ -442,7 +443,7 @@ class _SystemStrip extends StatelessWidget {
           Flexible(
             child: FittedBox(
               fit: BoxFit.scaleDown,
-              child: Text(code, style: Cyber.label(7.5, color: Cyber.muted)),
+              child: Text(code, style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted)),
             ),
           ),
         ],
@@ -506,8 +507,7 @@ class _LandingHero extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: Cyber.display(
-                  17,
+                style: Cyber.display(StatOzTypography.p17,
                   color: AppTheme.textPrimary,
                   letterSpacing: 1.1,
                 ),
@@ -515,9 +515,7 @@ class _LandingHero extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 description,
-                style: Cyber.bodyFor(
-                  context,
-                  11.5,
+                style: Cyber.bodyFor(context, StatOzTypography.p11_5,
                   color: Cyber.muted,
                   height: 1.3,
                 ),
@@ -561,8 +559,7 @@ class DailyMysteryStatTile extends StatelessWidget {
           Text(
             value,
             maxLines: 1,
-            style: Cyber.display(
-              16,
+            style: Cyber.display(StatOzTypography.p16,
               color: accent,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
@@ -571,7 +568,7 @@ class DailyMysteryStatTile extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.label(7, color: Cyber.muted, letterSpacing: 0.7),
+            style: Cyber.label(StatOzTypography.p7, color: Cyber.muted, letterSpacing: 0.7),
           ),
         ],
       ),
@@ -607,7 +604,7 @@ class _AllTimeStrip extends StatelessWidget {
               'ALL-TIME ARCHIVE',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.label(8.5, color: Cyber.muted),
+              style: Cyber.label(StatOzTypography.p8_5, color: Cyber.muted),
             ),
           ),
           const SizedBox(width: 8),
@@ -617,8 +614,7 @@ class _AllTimeStrip extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: Text(
                 '$wins WINS  //  $played PLAYED',
-                style: Cyber.display(
-                  8.5,
+                style: Cyber.display(StatOzTypography.p8_5,
                   color: accent,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
@@ -664,7 +660,7 @@ class DailyMysteryArchiveLink extends StatelessWidget {
               Expanded(
                 child: Text(
                   'OPEN 30-DAY ARCHIVE',
-                  style: Cyber.display(10.5, color: accent),
+                  style: Cyber.display(StatOzTypography.p10_5, color: accent),
                 ),
               ),
               const Icon(Icons.chevron_right, color: Cyber.cyan),
@@ -802,7 +798,7 @@ class DailyMysteryPlayLayout extends StatelessWidget {
                             SizedBox(height: compact ? 12 : 20),
                             Text(
                               searchLabel,
-                              style: Cyber.label(8, color: Cyber.muted),
+                              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                             ),
                             SizedBox(height: compact ? 4 : 8),
                             DailyMysteryAutocomplete(
@@ -1442,11 +1438,9 @@ class DailyMysteryAutocomplete extends StatelessWidget {
               controller: textController,
               focusNode: fieldFocus,
               textInputAction: TextInputAction.search,
-              style: Cyber.bodyFor(
-                context,
-                12,
+              style: Cyber.bodyFor(context, StatOzTypography.p12,
                 color: AppTheme.textPrimary,
-                weight: FontWeight.w700,
+                weight: StatOzTypography.bold,
               ),
               onChanged: (_) {
                 if (selected != null) onCleared();
@@ -1460,7 +1454,7 @@ class DailyMysteryAutocomplete extends StatelessWidget {
               },
               decoration: InputDecoration(
                 hintText: hintText,
-                hintStyle: Cyber.label(8, color: Cyber.muted),
+                hintStyle: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                 filled: true,
                 fillColor: Cyber.panel,
                 isDense: true,
@@ -1548,11 +1542,9 @@ class DailyMysteryAutocomplete extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   option,
-                                  style: Cyber.bodyFor(
-                                    context,
-                                    12,
+                                  style: Cyber.bodyFor(context, StatOzTypography.p12,
                                     color: AppTheme.textPrimary,
-                                    weight: FontWeight.w700,
+                                    weight: StatOzTypography.bold,
                                   ),
                                 ),
                               ),
@@ -1587,7 +1579,7 @@ class DailyMysteryGuessTrail extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('ATTEMPT LOG', style: Cyber.label(7.5, color: Cyber.muted)),
+        Text('ATTEMPT LOG', style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted)),
         const SizedBox(height: 6),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -1688,12 +1680,11 @@ class DailyMysteryAttemptMeter extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('LIVES', style: Cyber.label(7.5, color: Cyber.muted)),
+              Text('LIVES', style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted)),
               const Spacer(),
               Text(
                 '$value / $maximum',
-                style: Cyber.display(
-                  9,
+                style: Cyber.display(StatOzTypography.p9,
                   color: Cyber.cyan,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
@@ -1883,13 +1874,12 @@ class _ArchiveMetric extends StatelessWidget {
         children: [
           Text(
             value,
-            style: Cyber.display(
-              17,
+            style: Cyber.display(StatOzTypography.p17,
               color: accent,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
           const SizedBox(height: 3),
-          Text(label, style: Cyber.label(8, color: Cyber.muted)),
+          Text(label, style: Cyber.label(StatOzTypography.p8, color: Cyber.muted)),
         ],
       ),
     );
@@ -1965,25 +1955,23 @@ class _ArchiveCard extends StatelessWidget {
                           const Spacer(),
                           Text(
                             statusLabel,
-                            style: Cyber.label(7, color: statusAccent),
+                            style: Cyber.label(StatOzTypography.p7, color: statusAccent),
                           ),
                         ],
                       ),
                       const SizedBox(height: 9),
                       Text(
                         _formatDate(entry.dayKey),
-                        style: Cyber.display(11.5, color: AppTheme.textPrimary),
+                        style: Cyber.display(StatOzTypography.p11_5, color: AppTheme.textPrimary),
                       ),
                       const SizedBox(height: 6),
                       Text(
                         entry.prompt,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.bodyFor(
-                          context,
-                          10.5,
+                        style: Cyber.bodyFor(context, StatOzTypography.p10_5,
                           color: AppTheme.textPrimary,
-                          weight: FontWeight.w700,
+                          weight: StatOzTypography.bold,
                           height: 1.15,
                         ),
                       ),
@@ -1992,7 +1980,7 @@ class _ArchiveCard extends StatelessWidget {
                         entry.detail,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.label(7, color: Cyber.muted),
+                        style: Cyber.label(StatOzTypography.p7, color: Cyber.muted),
                       ),
                     ],
                   ),
@@ -2011,7 +1999,7 @@ class _ArchiveCard extends StatelessWidget {
                             : '${entry.heartsRemaining} LIVES · ${entry.answer}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.label(7, color: Cyber.muted),
+                        style: Cyber.label(StatOzTypography.p7, color: Cyber.muted),
                       ),
                     ),
                     if (onTap != null)
@@ -2095,7 +2083,7 @@ class _DailyMysteryDebriefState extends State<DailyMysteryDebrief> {
     final answer = Text(
       widget.answer.toUpperCase(),
       textAlign: TextAlign.center,
-      style: Cyber.display(21, color: AppTheme.textPrimary),
+      style: Cyber.display(StatOzTypography.p21, color: AppTheme.textPrimary),
     );
     final answerReveal = reducedMotion || !_fresh
         ? answer
@@ -2109,8 +2097,7 @@ class _DailyMysteryDebriefState extends State<DailyMysteryDebrief> {
                     ? _encryptedAnswer(widget.answer)
                     : widget.answer.toUpperCase(),
                 textAlign: TextAlign.center,
-                style: Cyber.display(
-                  21,
+                style: Cyber.display(StatOzTypography.p21,
                   color: AppTheme.textPrimary.withValues(
                     alpha: 0.45 + value * 0.55,
                   ),
@@ -2163,7 +2150,7 @@ class _DailyMysteryDebriefState extends State<DailyMysteryDebrief> {
           Text(
             widget.won ? 'IDENTITY CONFIRMED' : 'IDENTITY DECLASSIFIED',
             textAlign: TextAlign.center,
-            style: Cyber.display(18, color: resultAccent),
+            style: Cyber.display(StatOzTypography.p18, color: resultAccent),
           ),
           const SizedBox(height: 8),
           answerReveal,
@@ -2180,13 +2167,13 @@ class _DailyMysteryDebriefState extends State<DailyMysteryDebrief> {
                 Text(
                   widget.promptTitle,
                   textAlign: TextAlign.center,
-                  style: Cyber.display(11, color: widget.accent),
+                  style: Cyber.display(StatOzTypography.p11, color: widget.accent),
                 ),
                 const SizedBox(height: 5),
                 Text(
                   widget.promptDetail,
                   textAlign: TextAlign.center,
-                  style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
                 ),
               ],
             ),

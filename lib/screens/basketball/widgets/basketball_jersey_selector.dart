@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -54,8 +55,7 @@ class BasketballJerseySelector extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.end,
-                  style: Cyber.label(
-                    7.5,
+                  style: Cyber.label(StatOzTypography.p7_5,
                     color: Cyber.cyan,
                     letterSpacing: 1.1,
                   ),
@@ -66,7 +66,7 @@ class BasketballJerseySelector extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'FREE JERSEYS',
-            style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.6),
+            style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1.6),
           ),
           const SizedBox(height: 8),
           _JerseyGrid(
@@ -78,7 +78,7 @@ class BasketballJerseySelector extends StatelessWidget {
             const SizedBox(height: 14),
             Text(
               'YOUR JERSEYS',
-              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.6),
+              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1.6),
             ),
             const SizedBox(height: 8),
             _JerseyGrid(
@@ -99,7 +99,7 @@ class BasketballJerseySelector extends StatelessWidget {
                 ),
                 child: Text(
                   'BROWSE MORE JERSEYS IN SHOP',
-                  style: Cyber.label(8, color: Cyber.cyan, letterSpacing: 1.2),
+                  style: Cyber.label(StatOzTypography.p8, color: Cyber.cyan, letterSpacing: 1.2),
                 ),
               ),
             ),
@@ -215,8 +215,7 @@ class BasketballJerseyTile extends StatelessWidget {
                       top: 6,
                       child: Text(
                         '${index + 1}'.padLeft(2, '0'),
-                        style: Cyber.label(
-                          6.5,
+                        style: Cyber.label(StatOzTypography.p6_5,
                           color: selected ? Cyber.cyan : Cyber.muted,
                           letterSpacing: 0.8,
                           fontFeatures: const [FontFeature.tabularFigures()],
@@ -249,8 +248,7 @@ class BasketballJerseyTile extends StatelessWidget {
                         child: Text(
                           team.name.toUpperCase(),
                           maxLines: 1,
-                          style: Cyber.label(
-                            7.5,
+                          style: Cyber.label(StatOzTypography.p7_5,
                             color: selected ? Colors.white : Cyber.muted,
                             letterSpacing: 0.8,
                           ),
@@ -335,7 +333,7 @@ class BasketballJerseyPreviewPainter extends CustomPainter {
       color: team.accent,
       fontFamily: Cyber.displayFont,
       fontSize: size.height * 0.22,
-      fontWeight: FontWeight.w900,
+      fontWeight: StatOzTypography.black,
       letterSpacing: -0.5,
     );
     final tp = TextPainter(

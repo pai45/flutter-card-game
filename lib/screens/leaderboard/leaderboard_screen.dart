@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -888,8 +889,8 @@ class _TournamentBoardTabs extends StatelessWidget {
                     style: TextStyle(
                       color: active == item.board ? accent : Cyber.muted,
                       fontFamily: Cyber.displayFont,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
+                      fontSize: StatOzTypography.p10,
+                      fontWeight: StatOzTypography.black,
                       letterSpacing: 0.8,
                     ),
                   ),
@@ -988,8 +989,8 @@ class _ScopeRow extends StatelessWidget {
                               ? accent
                               : Cyber.muted,
                           fontFamily: Cyber.displayFont,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
+                          fontSize: StatOzTypography.p10,
+                          fontWeight: StatOzTypography.black,
                           letterSpacing: 0.8,
                         ),
                       ),
@@ -1048,8 +1049,8 @@ class _ModeTabs extends StatelessWidget {
                     style: TextStyle(
                       color: mode == item.mode ? accent : Cyber.muted,
                       fontFamily: Cyber.displayFont,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
+                      fontSize: StatOzTypography.p10,
+                      fontWeight: StatOzTypography.black,
                       letterSpacing: 0.8,
                     ),
                   ),
@@ -1207,8 +1208,8 @@ class _EmptyState extends StatelessWidget {
                     style: const TextStyle(
                       color: Colors.white,
                       fontFamily: Cyber.displayFont,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
+                      fontSize: StatOzTypography.p16,
+                      fontWeight: StatOzTypography.black,
                       letterSpacing: 1.2,
                     ),
                   ),
@@ -1219,7 +1220,7 @@ class _EmptyState extends StatelessWidget {
                     style: TextStyle(
                       color: Cyber.muted,
                       fontFamily: Cyber.bodyFontFor(context),
-                      fontSize: 13,
+                      fontSize: StatOzTypography.p13,
                       height: 1.4,
                     ),
                   ),
@@ -1240,8 +1241,8 @@ class _EmptyState extends StatelessWidget {
                           style: const TextStyle(
                             color: Cyber.bg,
                             fontFamily: Cyber.displayFont,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
+                            fontSize: StatOzTypography.p12,
+                            fontWeight: StatOzTypography.black,
                             letterSpacing: 1.2,
                           ),
                         ),

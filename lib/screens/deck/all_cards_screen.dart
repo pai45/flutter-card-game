@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import '../../models/pitch_duel_rules.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -250,7 +251,7 @@ class _SportCollectionTab extends StatelessWidget {
               ? Center(
                   child: Text(
                     'NO ${sportModuleFor(sport).label.toUpperCase()} CARDS YET',
-                    style: Cyber.label(10, color: Cyber.muted),
+                    style: Cyber.label(StatOzTypography.p10, color: Cyber.muted),
                   ),
                 )
               : _CardGrid(
@@ -310,9 +311,9 @@ class _FilterRow extends StatelessWidget {
             '$count cards',
             style: const TextStyle(
               color: Cyber.muted,
-              fontFamily: 'Orbitron',
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
+              fontFamily: StatOzTypography.displayFont,
+              fontSize: StatOzTypography.p10,
+              fontWeight: StatOzTypography.bold,
             ),
           ),
         ],
@@ -351,9 +352,9 @@ class _FilterChip extends StatelessWidget {
           label,
           style: TextStyle(
             color: selected ? color : color.withValues(alpha: 0.6),
-            fontFamily: 'Orbitron',
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
+            fontFamily: StatOzTypography.displayFont,
+            fontSize: StatOzTypography.p10,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 0.8,
           ),
         ),
@@ -630,9 +631,9 @@ class _PlayerCardDetailOverlayState extends State<_PlayerCardDetailOverlay>
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontFamily: 'Orbitron',
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 16,
+                                  fontFamily: StatOzTypography.displayFont,
+                                  fontWeight: StatOzTypography.black,
+                                  fontSize: StatOzTypography.p16,
                                   letterSpacing: 0.8,
                                 ),
                               ),
@@ -641,9 +642,9 @@ class _PlayerCardDetailOverlayState extends State<_PlayerCardDetailOverlay>
                                 '${card.position}  ·  ${card.country}',
                                 style: TextStyle(
                                   color: Cyber.muted,
-                                  fontFamily: 'Orbitron',
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
+                                  fontFamily: StatOzTypography.displayFont,
+                                  fontSize: StatOzTypography.p10,
+                                  fontWeight: StatOzTypography.bold,
                                   letterSpacing: 1.4,
                                 ),
                               ),
@@ -677,9 +678,7 @@ class _PlayerCardDetailOverlayState extends State<_PlayerCardDetailOverlay>
                                 Text(
                                   pitchPlayerAbility(card),
                                   textAlign: TextAlign.center,
-                                  style: Cyber.bodyFor(
-                                    context,
-                                    12,
+                                  style: Cyber.bodyFor(context, StatOzTypography.p12,
                                     color: Cyber.cyan,
                                   ),
                                 ),
@@ -872,9 +871,9 @@ class _ActionCardDetailOverlayState extends State<_ActionCardDetailOverlay>
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontFamily: 'Orbitron',
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 16,
+                                  fontFamily: StatOzTypography.displayFont,
+                                  fontWeight: StatOzTypography.black,
+                                  fontSize: StatOzTypography.p16,
                                   letterSpacing: 0.8,
                                 ),
                               ),
@@ -895,7 +894,7 @@ class _ActionCardDetailOverlayState extends State<_ActionCardDetailOverlay>
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     color: Colors.white70,
-                                    fontSize: 12,
+                                    fontSize: StatOzTypography.p12,
                                     height: 1.5,
                                   ),
                                 ),
@@ -990,9 +989,9 @@ class _RarityHeader extends StatelessWidget {
             label,
             style: TextStyle(
               color: color,
-              fontFamily: 'Orbitron',
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
+              fontFamily: StatOzTypography.displayFont,
+              fontSize: StatOzTypography.p10,
+              fontWeight: StatOzTypography.black,
               letterSpacing: 2.4,
             ),
           ),
@@ -1035,9 +1034,9 @@ class _StatBadge extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: color.withValues(alpha: 0.75),
-              fontFamily: 'Orbitron',
-              fontSize: 9,
-              fontWeight: FontWeight.w900,
+              fontFamily: StatOzTypography.displayFont,
+              fontSize: StatOzTypography.p9,
+              fontWeight: StatOzTypography.black,
               letterSpacing: 1.2,
             ),
           ),
@@ -1048,9 +1047,9 @@ class _StatBadge extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: color,
-              fontFamily: 'Orbitron',
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
+              fontFamily: StatOzTypography.displayFont,
+              fontSize: StatOzTypography.p14,
+              fontWeight: StatOzTypography.black,
             ),
           ),
         ],

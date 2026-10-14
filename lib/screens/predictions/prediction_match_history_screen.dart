@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -434,8 +435,7 @@ class _MatchCardBody extends StatelessWidget {
           item.entry.league?.shortCode ?? match.leagueId.toUpperCase(),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.label(
-            8,
+          style: Cyber.label(StatOzTypography.p8,
             color: Cyber.muted.withValues(alpha: 0.85),
             letterSpacing: 1.2,
           ),
@@ -530,11 +530,9 @@ class _TeamColumn extends StatelessWidget {
           team.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.bodyFor(
-            context,
-            15,
+          style: Cyber.bodyFor(context, StatOzTypography.p15,
             color: color,
-            weight: FontWeight.w700,
+            weight: StatOzTypography.bold,
           ),
         ),
       ],
@@ -554,8 +552,7 @@ class _ScoreCentre extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Text(
           '${match.homeScore ?? '-'}  -  ${match.awayScore ?? '-'}',
-          style: Cyber.display(
-            21,
+          style: Cyber.display(StatOzTypography.p21,
             color: Colors.white,
             letterSpacing: 0.5,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -570,8 +567,8 @@ class _ScoreCentre extends StatelessWidget {
         style: TextStyle(
           color: Cyber.muted,
           fontFamily: Cyber.displayFont,
-          fontSize: 18,
-          fontWeight: FontWeight.w900,
+          fontSize: StatOzTypography.p18,
+          fontWeight: StatOzTypography.black,
           decoration: TextDecoration.none,
         ),
       ),
@@ -593,8 +590,7 @@ class _MatchHistoryStrip extends StatelessWidget {
             children: [
               Text(
                 'QUIZ ${item.answered}/${item.total}',
-                style: Cyber.label(
-                  9,
+                style: Cyber.label(StatOzTypography.p9,
                   color: Cyber.muted,
                   letterSpacing: 0.8,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -603,8 +599,7 @@ class _MatchHistoryStrip extends StatelessWidget {
               const Spacer(),
               Text(
                 'POTENTIAL +${item.potentialXp} XP',
-                style: Cyber.label(
-                  9,
+                style: Cyber.label(StatOzTypography.p9,
                   color: Cyber.cyan.withValues(alpha: 0.85),
                   letterSpacing: 0.8,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -617,8 +612,7 @@ class _MatchHistoryStrip extends StatelessWidget {
         return FixtureCardStrip(
           child: Text(
             'LOCKED · ${item.answered}/${item.total} ANSWERS IN',
-            style: Cyber.label(
-              9,
+            style: Cyber.label(StatOzTypography.p9,
               color: Cyber.muted,
               letterSpacing: 0.8,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -634,11 +628,9 @@ class _MatchHistoryStrip extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 '+${item.prediction.rewardEarned} XP',
-                style: Cyber.bodyFor(
-                  context,
-                  12,
+                style: Cyber.bodyFor(context, StatOzTypography.p12,
                   color: Cyber.success,
-                  weight: FontWeight.w800,
+                  weight: StatOzTypography.bold,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
@@ -657,8 +649,7 @@ class _MatchHistoryStrip extends StatelessWidget {
             children: [
               Text(
                 '${item.correct}/${item.total} CORRECT',
-                style: Cyber.label(
-                  9,
+                style: Cyber.label(StatOzTypography.p9,
                   color: Cyber.muted,
                   letterSpacing: 0.8,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -685,7 +676,7 @@ class _MatchHistoryStrip extends StatelessWidget {
                   'RESULTS READY — TAP TO REVEAL',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1)
+                  style: Cyber.label(StatOzTypography.p9, color: Cyber.gold, letterSpacing: 1)
                       .copyWith(
                         shadows: [
                           Shadow(

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -496,7 +497,7 @@ class _PlayerRow extends StatelessWidget {
                     color: accent.withValues(alpha: 0.14),
                     child: Text(
                       player.jersey?.isNotEmpty == true ? player.jersey! : '--',
-                      style: Cyber.display(12, color: accent),
+                      style: Cyber.display(StatOzTypography.p12, color: accent),
                     ),
                   ),
                 ),
@@ -509,17 +510,15 @@ class _PlayerRow extends StatelessWidget {
                       player.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.bodyFor(
-                        context,
-                        13,
+                      style: Cyber.bodyFor(context, StatOzTypography.p13,
                         color: AppTheme.whiteColor,
-                        weight: FontWeight.w700,
+                        weight: StatOzTypography.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       player.displayRole,
-                      style: Cyber.label(8, color: Cyber.muted),
+                      style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                     ),
                   ],
                 ),
@@ -602,14 +601,13 @@ class _SyncStrip extends StatelessWidget {
                 refreshing
                     ? 'SYNCING LATEST ESPN TEAM DATA'
                     : 'LIVE REFRESH OFFLINE // USING BUNDLED DATA',
-                style: Cyber.label(
-                  8,
+                style: Cyber.label(StatOzTypography.p8,
                   color: refreshing ? Cyber.cyan : Cyber.amber,
                   letterSpacing: 1,
                 ),
               ),
             ),
-            if (failed) Text('RETRY', style: Cyber.label(8, color: Cyber.cyan)),
+            if (failed) Text('RETRY', style: Cyber.label(StatOzTypography.p8, color: Cyber.cyan)),
           ],
         ),
       ),
@@ -636,7 +634,7 @@ class _HubLoader extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           'READING ESPN SEASON PACKAGE',
-          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+          style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.2),
         ),
       ],
     ),

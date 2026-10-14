@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../config/enums.dart';
@@ -185,7 +186,7 @@ class _NavItem extends StatelessWidget {
                   style: Cyber.label(
                     active ? spec.activeFontSize : 10,
                     color: color,
-                    weight: active ? FontWeight.w900 : FontWeight.w600,
+                    weight: active ? StatOzTypography.black : StatOzTypography.semibold,
                     letterSpacing: 0,
                     height: active ? 1.25 : 1.5,
                   ),

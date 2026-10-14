@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../blocs/guess_player/guess_player_cubit.dart';
@@ -151,12 +152,12 @@ class _ArchiveMetric extends StatelessWidget {
         children: [
           Text(
             value,
-            style: Cyber.display(17, color: accent).copyWith(
+            style: Cyber.display(StatOzTypography.p17, color: accent).copyWith(
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
           const SizedBox(height: 3),
-          Text(label, style: Cyber.label(8, color: Cyber.muted)),
+          Text(label, style: Cyber.label(StatOzTypography.p8, color: Cyber.muted)),
         ],
       ),
     );
@@ -244,22 +245,21 @@ class _ArchiveCard extends StatelessWidget {
                           if (isToday)
                             Text(
                               'TODAY',
-                              style: Cyber.label(7.5, color: Cyber.magenta),
+                              style: Cyber.label(StatOzTypography.p7_5, color: Cyber.magenta),
                             ),
                         ],
                       ),
                       const SizedBox(height: 9),
                       Text(
                         _formatDate(dayKey),
-                        style: Cyber.display(
-                          12.5,
+                        style: Cyber.display(StatOzTypography.p12_5,
                           color: AppTheme.textPrimary,
                         ),
                       ),
                       const Spacer(),
                       Text(
                         label,
-                        style: Cyber.label(8, color: accent),
+                        style: Cyber.label(StatOzTypography.p8, color: accent),
                       ),
                     ],
                   ),
@@ -279,7 +279,7 @@ class _ArchiveCard extends StatelessWidget {
                         _detail(record, status),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.label(7.5, color: Cyber.muted),
+                        style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted),
                       ),
                     ),
                     if (tappable)

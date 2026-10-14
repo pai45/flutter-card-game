@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -139,8 +140,7 @@ class _FriendRequestSentAnimationState extends State<FriendRequestSentAnimation>
                                       alignment: Alignment.centerLeft,
                                       child: Text(
                                         '// OUTBOUND SOCIAL LINK',
-                                        style: Cyber.label(
-                                          9,
+                                        style: Cyber.label(StatOzTypography.p9,
                                           color: Cyber.muted,
                                           letterSpacing: 1.8,
                                         ),
@@ -159,8 +159,7 @@ class _FriendRequestSentAnimationState extends State<FriendRequestSentAnimation>
                                         children: [
                                           Text(
                                             'REQUEST SENT',
-                                            style: Cyber.display(
-                                              20,
+                                            style: Cyber.display(StatOzTypography.p20,
                                               color: Cyber.cyan,
                                               letterSpacing: 2.2,
                                             ),
@@ -170,8 +169,7 @@ class _FriendRequestSentAnimationState extends State<FriendRequestSentAnimation>
                                             widget.friendName.toUpperCase(),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: Cyber.label(
-                                              11,
+                                            style: Cyber.label(StatOzTypography.p11,
                                               color: Cyber.muted,
                                               letterSpacing: 1.6,
                                             ),

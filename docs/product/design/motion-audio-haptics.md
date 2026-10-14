@@ -38,20 +38,20 @@ shootout, and matchmaking.
 
 ### Game discovery illustration loops [BUILT]
 
-Games hero cards, Quick Play tiles, and curated Trending game cards use a
-4.8-second local illustration loop: shot/pass trajectories, rotating aim
-reticles, a circuit marker and speed rails, a racket drift, answer-node
-selection, grid linkage, or a dossier scan. Only the isolated `CustomPainter`
-repaints on each tick, inside a `RepaintBoundary`; labels and the card layout do
-not rebuild with the loop. The controller is disposed with the card.
+Games hero cards, Quick Play tiles, and Trending cards use identical shared
+4.8-second normalized keyframes in Flutter and web. Each scene performs one
+small gameplay action, settles and holds, then smoothly returns to its initial
+pose. Only the action SVG layer transforms; static layers and labels remain stable.
 
-Platform reduced motion, a disabled route `TickerMode`, and locked-card state
-stop the controller and show a readable fixed simulation pose. Removing the
-restriction resumes the loop. The 120 ms press scale and hover/focus arrow shift
-become immediate under reduced motion; their readable outline/rail feedback
-remains. Tapping confirms with the existing selection haptic and launches
-through the existing callback. Ambient loops do not play sound, award rewards,
-or delay navigation.
+Reduced motion, covered routes (TickerMode), locked state, background lifecycle,
+and offscreen scroll positions stop Flutter's controller. Web uses reduced-motion
+media queries, IntersectionObserver and document visibility. Static poses use phase
+0.28. Optional explicit phase inputs support deterministic review and seeking.
+Both evaluators interpolate transforms and opacity with smoothstep.
+
+The 120 ms press and art emphasis become immediate/static under reduced motion.
+Readable focus/outline/rail feedback remains. Taps retain selection haptics and
+existing navigation guards. Loops are silent and never award a reward or delay play.
 
 ### Pitch Duel contribution reveal and timing [BUILT]
 
@@ -148,3 +148,10 @@ shared/participating surfaces. Reward persistence belongs to settlement systems.
 - [`test/grand_prix_presentation_test.dart`](../../../test/grand_prix_presentation_test.dart)
 - [`test/game_audio_mappings_test.dart`](../../../test/game_audio_mappings_test.dart)
 - [`test/basketball_action_cue_test.dart`](../../../test/basketball_action_cue_test.dart)
+
+Match Trending uses manual carousel navigation, brief 120ms press scaling, keyboard focus and selection haptics. Editorial borders never pulse. Sport-quiz artwork retains the shared discovery renderer’s reduced-motion, route/offscreen and lifecycle shutdown behavior.
+
+
+### Match discovery card entrance
+
+Cards enter once when at least 8% visible: 420ms easeOutCubic, opacity 0 to 1, translation 12px to 0, and the short signal rail extends from 20% to full width. Viewport bands stagger by 48ms, capped at three bands. Motion pauses offscreen, on inactive routes/pages and in the background. Reduced motion shows the final pose immediately. Stable card identities retain the entered state when returning; focus or press settles the entrance immediately so navigation never waits. This adds no ambient border pulse or audio.

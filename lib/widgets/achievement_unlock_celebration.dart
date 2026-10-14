@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -173,8 +174,7 @@ class _AchievementUnlockCelebrationState
                           child: Text(
                             'ACHIEVEMENT UNLOCKED',
                             style:
-                                Cyber.label(
-                                  13,
+                                Cyber.label(StatOzTypography.p13,
                                   color: tier,
                                   letterSpacing: 3.4,
                                 ).copyWith(
@@ -213,8 +213,7 @@ class _AchievementUnlockCelebrationState
                                   achievement.title.toUpperCase(),
                                   textAlign: TextAlign.center,
                                   style:
-                                      Cyber.display(
-                                        32,
+                                      Cyber.display(StatOzTypography.p32,
                                         color: Colors.white,
                                         letterSpacing: 1.5,
                                       ).copyWith(
@@ -234,9 +233,7 @@ class _AchievementUnlockCelebrationState
                                   child: Text(
                                     achievement.description,
                                     textAlign: TextAlign.center,
-                                    style: Cyber.bodyFor(
-                                      context,
-                                      14,
+                                    style: Cyber.bodyFor(context, StatOzTypography.p14,
                                       color: Cyber.muted,
                                     ),
                                   ),
@@ -267,8 +264,7 @@ class _AchievementUnlockCelebrationState
                   child: Center(
                     child: Text(
                       'TAP TO CONTINUE',
-                      style: Cyber.label(
-                        11,
+                      style: Cyber.label(StatOzTypography.p11,
                         color: Cyber.muted,
                         letterSpacing: 2,
                       ),

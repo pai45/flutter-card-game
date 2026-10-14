@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -77,13 +78,13 @@ class MatchPulseHeader extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.end,
-                    style: Cyber.label(10, color: Cyber.muted),
+                    style: Cyber.label(StatOzTypography.p10, color: Cyber.muted),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            Text(title, style: Cyber.display(18, letterSpacing: 0.5)),
+            Text(title, style: Cyber.display(StatOzTypography.p18, letterSpacing: 0.5)),
             const SizedBox(height: 12),
             _HeroFigure(
               value: heroValue,
@@ -98,11 +99,9 @@ class MatchPulseHeader extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 subtitle!,
-                style: Cyber.bodyFor(
-                  context,
-                  12,
+                style: Cyber.bodyFor(context, StatOzTypography.p12,
                   color: Cyber.muted,
-                  weight: FontWeight.w700,
+                  weight: StatOzTypography.bold,
                 ),
               ),
             ],
@@ -167,8 +166,7 @@ class _HeroFigure extends StatelessWidget {
               child: Text(
                 value,
                 maxLines: 1,
-                style: Cyber.display(
-                  34,
+                style: Cyber.display(StatOzTypography.p34,
                   color: color,
                   letterSpacing: 0,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -185,15 +183,14 @@ class _HeroFigure extends StatelessWidget {
                 label.toUpperCase(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.label(10, color: Colors.white, letterSpacing: 1),
+                style: Cyber.label(StatOzTypography.p10, color: Colors.white, letterSpacing: 1),
               ),
               const SizedBox(height: 4),
               Text(
                 caption.toUpperCase(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.label(
-                  8,
+                style: Cyber.label(StatOzTypography.p8,
                   color: Cyber.muted.withValues(alpha: 0.8),
                   letterSpacing: 1.4,
                 ),
@@ -285,8 +282,7 @@ class StatComparisonRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final homeLeads = stat.homeShare >= 0.5;
-    final valueStyle = Cyber.display(
-      16,
+    final valueStyle = Cyber.display(StatOzTypography.p16,
       letterSpacing: 0,
     ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
 
@@ -315,7 +311,7 @@ class StatComparisonRow extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1),
+                  style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1),
                 ),
               ),
               SizedBox(
@@ -409,13 +405,13 @@ class TeamLegendMark extends StatelessWidget {
       children: [
         Text(
           team.shortName.toUpperCase(),
-          style: Cyber.display(13, color: color),
+          style: Cyber.display(StatOzTypography.p13, color: color),
         ),
         Text(
           team.name.toUpperCase(),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.8),
+          style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 0.8),
         ),
       ],
     );

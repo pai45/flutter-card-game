@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -165,8 +166,7 @@ class _DossierHero extends StatelessWidget {
             bottom: -28,
             child: Text(
               profile.jersey ?? '•',
-              style: Cyber.display(
-                112,
+              style: Cyber.display(StatOzTypography.p112,
                 color: accent.withValues(alpha: 0.1),
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
@@ -184,8 +184,7 @@ class _DossierHero extends StatelessWidget {
                   const SizedBox(width: 6),
                   Text(
                     status,
-                    style: Cyber.label(
-                      8.5,
+                    style: Cyber.label(StatOzTypography.p8_5,
                       color: loading ? Cyber.gold : Cyber.success,
                       letterSpacing: 1.5,
                     ),
@@ -193,8 +192,7 @@ class _DossierHero extends StatelessWidget {
                   const Spacer(),
                   Text(
                     'ESPN // SOCCER',
-                    style: Cyber.label(
-                      8,
+                    style: Cyber.label(StatOzTypography.p8,
                       color: Cyber.muted,
                       letterSpacing: 1.2,
                     ),
@@ -214,8 +212,7 @@ class _DossierHero extends StatelessWidget {
                           profile.name.toUpperCase(),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.display(
-                            19,
+                          style: Cyber.display(StatOzTypography.p19,
                             color: Colors.white,
                             letterSpacing: 0.25,
                           ),
@@ -230,8 +227,7 @@ class _DossierHero extends StatelessWidget {
                           ].join('  //  '),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.label(
-                            8.5,
+                          style: Cyber.label(StatOzTypography.p8_5,
                             color: Cyber.muted,
                             letterSpacing: 1.05,
                           ),
@@ -286,8 +282,7 @@ class _IdentityEmblem extends StatelessWidget {
             children: [
               Text(
                 initials.isEmpty ? '?' : initials,
-                style: Cyber.display(
-                  19,
+                style: Cyber.display(StatOzTypography.p19,
                   color: Colors.white,
                   letterSpacing: 0.8,
                 ),
@@ -388,14 +383,14 @@ class _IntelCell extends StatelessWidget {
       children: [
         Text(
           data.label,
-          style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.3),
+          style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1.3),
         ),
         const SizedBox(height: 4),
         Text(
           data.value.toUpperCase(),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.bodyFor(context, 12, weight: FontWeight.w700),
+          style: Cyber.bodyFor(context, StatOzTypography.p12, weight: StatOzTypography.bold),
         ),
       ],
     ),
@@ -468,7 +463,7 @@ class _SeasonStatSheet extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Text(
             'Season stat split is waiting on the ESPN feed.',
-            style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+            style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
           ),
         ),
       );
@@ -524,7 +519,7 @@ class _SeasonStatSheet extends StatelessWidget {
                         ? 'COLLAPSE TO ACTIVE SIGNALS'
                         : 'OPEN ALL ${group.stats.length} ESPN SIGNALS',
                     textAlign: TextAlign.center,
-                    style: Cyber.label(8.5, color: accent, letterSpacing: 1.25),
+                    style: Cyber.label(StatOzTypography.p8_5, color: accent, letterSpacing: 1.25),
                   ),
                 ),
               ),
@@ -567,13 +562,12 @@ class _SeasonStatCell extends StatelessWidget {
             stat.label.toUpperCase(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.0),
+            style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1.0),
           ),
           const SizedBox(height: 3),
           Text(
             stat.displayValue,
-            style: Cyber.display(
-              15,
+            style: Cyber.display(StatOzTypography.p15,
               color: accent ?? Colors.white,
               letterSpacing: 0.4,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -600,11 +594,9 @@ class _OfflineFeedNote extends StatelessWidget {
         Expanded(
           child: Text(
             'ESPN’s live dossier could not be reached. The verified leaderboard identity remains available; reopen when the feed is online for the full season split.',
-            style: Cyber.bodyFor(
-              context,
-              12,
+            style: Cyber.bodyFor(context, StatOzTypography.p12,
               color: Cyber.muted,
-              weight: FontWeight.w600,
+              weight: StatOzTypography.semibold,
               height: 1.35,
             ),
           ),

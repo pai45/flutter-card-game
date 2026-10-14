@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -256,8 +257,8 @@ class _BattingOrderPanel extends StatelessWidget {
                       'CHASE SQUAD',
                       style: TextStyle(
                         color: Cyber.cyan.withValues(alpha: 0.75),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
+                        fontSize: StatOzTypography.p10,
+                        fontWeight: StatOzTypography.bold,
                         letterSpacing: 2,
                       ),
                     ),
@@ -267,7 +268,7 @@ class _BattingOrderPanel extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontFamily: Cyber.displayFont,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: StatOzTypography.black,
                         letterSpacing: 1.2,
                       ),
                     ),
@@ -362,7 +363,7 @@ class _CricketTelemetry extends StatelessWidget {
       child: card == null
           ? Text(
               'BAT ${slotIndex + 1} // ASSIGN A FINISHER',
-              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.1),
+              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1.1),
             )
           : Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -371,7 +372,7 @@ class _CricketTelemetry extends StatelessWidget {
                   '${card.trait.toUpperCase()} // CREASE TELEMETRY',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.label(8, color: Cyber.cyan, letterSpacing: 1),
+                  style: Cyber.label(StatOzTypography.p8, color: Cyber.cyan, letterSpacing: 1),
                 ),
                 const SizedBox(height: 7),
                 Row(
@@ -382,11 +383,11 @@ class _CricketTelemetry extends StatelessWidget {
                           children: [
                             Text(
                               '${stat.$2}',
-                              style: Cyber.display(13, color: Cyber.cyan),
+                              style: Cyber.display(StatOzTypography.p13, color: Cyber.cyan),
                             ),
                             Text(
                               stat.$1,
-                              style: Cyber.label(6, color: Cyber.muted),
+                              style: Cyber.label(StatOzTypography.p6, color: Cyber.muted),
                             ),
                           ],
                         ),
@@ -433,8 +434,7 @@ class _BatsmanSlot extends StatelessWidget {
           children: [
             Text(
               'BAT ${index + 1}',
-              style: Cyber.label(
-                9,
+              style: Cyber.label(StatOzTypography.p9,
                 color: selected ? Cyber.cyan : Cyber.muted,
                 letterSpacing: 1.2,
               ),
@@ -529,8 +529,8 @@ class _BatsmanPickerPanel extends StatelessWidget {
                     style: const TextStyle(
                       color: Colors.white,
                       fontFamily: Cyber.displayFont,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
+                      fontSize: StatOzTypography.p12,
+                      fontWeight: StatOzTypography.black,
                     ),
                   ),
                 ),
@@ -588,8 +588,7 @@ class _SlotChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: Cyber.label(
-            10,
+          style: Cyber.label(StatOzTypography.p10,
             color: selected ? Cyber.cyan : Cyber.muted,
             letterSpacing: 1,
           ),

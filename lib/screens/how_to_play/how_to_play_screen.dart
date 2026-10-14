@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../config/enums.dart';
@@ -242,9 +243,9 @@ class _OverviewStat extends StatelessWidget {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,
-                fontFamily: 'Orbitron',
-                fontSize: 9,
-                fontWeight: FontWeight.w900,
+                fontFamily: StatOzTypography.displayFont,
+                fontSize: StatOzTypography.p9,
+                fontWeight: StatOzTypography.black,
                 letterSpacing: 0.8,
               ),
             ),
@@ -254,8 +255,8 @@ class _OverviewStat extends StatelessWidget {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Cyber.muted,
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
+                fontSize: StatOzTypography.p9,
+                fontWeight: StatOzTypography.semibold,
               ),
             ),
           ],
@@ -290,10 +291,10 @@ class _StepCarousel extends StatelessWidget {
                 'HOW IT WORKS',
                 style: TextStyle(
                   color: Cyber.cyan.withValues(alpha: 0.7),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
+                  fontSize: StatOzTypography.p10,
+                  fontWeight: StatOzTypography.black,
                   letterSpacing: 2,
-                  fontFamily: 'Orbitron',
+                  fontFamily: StatOzTypography.displayFont,
                 ),
               ),
               const Spacer(),
@@ -301,9 +302,9 @@ class _StepCarousel extends StatelessWidget {
                 '${page + 1} / ${_steps.length}',
                 style: const TextStyle(
                   color: Cyber.muted,
-                  fontFamily: 'Orbitron',
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
+                  fontFamily: StatOzTypography.displayFont,
+                  fontSize: StatOzTypography.p10,
+                  fontWeight: StatOzTypography.bold,
                 ),
               ),
             ],
@@ -386,9 +387,9 @@ class _StepCard extends StatelessWidget {
                         'STEP ${step.index.toString().padLeft(2, '0')}',
                         style: TextStyle(
                           color: step.color,
-                          fontFamily: 'Orbitron',
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
+                          fontFamily: StatOzTypography.displayFont,
+                          fontSize: StatOzTypography.p9,
+                          fontWeight: StatOzTypography.black,
                           letterSpacing: 1.8,
                         ),
                       ),
@@ -398,9 +399,9 @@ class _StepCard extends StatelessWidget {
                       step.title.toUpperCase(),
                       style: const TextStyle(
                         color: Colors.white,
-                        fontFamily: 'Orbitron',
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
+                        fontFamily: StatOzTypography.displayFont,
+                        fontSize: StatOzTypography.p15,
+                        fontWeight: StatOzTypography.black,
                         letterSpacing: 0.8,
                         height: 1.1,
                       ),
@@ -415,8 +416,8 @@ class _StepCard extends StatelessWidget {
             step.body,
             style: const TextStyle(
               color: Color(0xffd1d5db),
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontSize: StatOzTypography.p13,
+              fontWeight: StatOzTypography.semibold,
               height: 1.45,
             ),
           ),
@@ -430,9 +431,9 @@ class _StepCard extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: step.color.withValues(alpha: 0.9),
-                fontFamily: 'Orbitron',
-                fontSize: 9,
-                fontWeight: FontWeight.w900,
+                fontFamily: StatOzTypography.displayFont,
+                fontSize: StatOzTypography.p9,
+                fontWeight: StatOzTypography.black,
                 letterSpacing: 1.3,
               ),
             ),
@@ -487,8 +488,8 @@ class _PowerFormula extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Cyber.muted,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+              fontSize: StatOzTypography.p11,
+              fontWeight: StatOzTypography.semibold,
               height: 1.4,
             ),
           ),
@@ -528,9 +529,9 @@ class _FormulaChip extends StatelessWidget {
           label,
           style: TextStyle(
             color: color.withValues(alpha: 0.9),
-            fontFamily: 'Orbitron',
-            fontSize: 7,
-            fontWeight: FontWeight.w900,
+            fontFamily: StatOzTypography.displayFont,
+            fontSize: StatOzTypography.p7,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 0.8,
           ),
         ),
@@ -550,8 +551,8 @@ class _Op extends StatelessWidget {
       text,
       style: const TextStyle(
         color: Cyber.muted,
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
+        fontSize: StatOzTypography.p18,
+        fontWeight: StatOzTypography.bold,
       ),
     );
   }
@@ -612,8 +613,8 @@ class _FaqTileState extends State<_FaqTile> {
                   style: const TextStyle(
                     color: Colors.white,
                     fontFamily: Cyber.gameBodyFont,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontSize: StatOzTypography.p12,
+                    fontWeight: StatOzTypography.bold,
                   ),
                 ),
               ),
@@ -633,8 +634,8 @@ class _FaqTileState extends State<_FaqTile> {
                 widget.faq.answer,
                 style: const TextStyle(
                   color: Cyber.muted,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
+                  fontSize: StatOzTypography.p11,
+                  fontWeight: StatOzTypography.semibold,
                   height: 1.4,
                 ),
               ),

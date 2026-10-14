@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -298,19 +299,19 @@ class _TurnRoleBanner extends StatelessWidget {
                   children: [
                     Text(
                       shooting ? 'ATTACK' : 'DEFEND',
-                      style: Cyber.label(8, color: accent, letterSpacing: 1.8),
+                      style: Cyber.label(StatOzTypography.p8, color: accent, letterSpacing: 1.8),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       shooting ? 'YOUR SHOT' : 'YOU’RE IN GOAL',
-                      style: Cyber.display(14, color: Colors.white),
+                      style: Cyber.display(StatOzTypography.p14, color: Colors.white),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       shooting
                           ? 'Tap where you want to shoot.'
                           : 'Choose where your keeper dives.',
-                      style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
                     ),
                   ],
                 ),
@@ -360,7 +361,7 @@ class _DuelPlayerSummary extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: textAlign,
-                style: Cyber.label(8, color: accent, letterSpacing: 1.4),
+                style: Cyber.label(StatOzTypography.p8, color: accent, letterSpacing: 1.4),
               ),
               const SizedBox(height: 4),
               Text(
@@ -368,7 +369,7 @@ class _DuelPlayerSummary extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: textAlign,
-                style: Cyber.display(13, letterSpacing: 0.6),
+                style: Cyber.display(StatOzTypography.p13, letterSpacing: 0.6),
               ),
               const SizedBox(height: 3),
               Text(
@@ -378,8 +379,8 @@ class _DuelPlayerSummary extends StatelessWidget {
                 textAlign: textAlign,
                 style: const TextStyle(
                   color: Cyber.muted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
+                  fontSize: StatOzTypography.p10,
+                  fontWeight: StatOzTypography.bold,
                   fontFeatures: [FontFeature.tabularFigures()],
                 ),
               ),
@@ -410,7 +411,7 @@ class _VersusBadge extends StatelessWidget {
       ),
       child: Text(
         'VS',
-        style: Cyber.label(9, color: accent, letterSpacing: 0.8),
+        style: Cyber.label(StatOzTypography.p9, color: accent, letterSpacing: 0.8),
       ),
     );
   }
@@ -495,7 +496,7 @@ class _KickTable extends StatelessWidget {
               'SHOT: ${_dirLabel(kick.shootDirection)} · '
               'DIVE: ${_dirLabel(kick.diveDirection)}',
               textAlign: TextAlign.center,
-              style: Cyber.display(13, letterSpacing: 1),
+              style: Cyber.display(StatOzTypography.p13, letterSpacing: 1),
             ),
           ),
           const SizedBox(height: 10),
@@ -567,18 +568,16 @@ class _KickTableCell extends StatelessWidget {
                 heading,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.label(8, color: headingColor, letterSpacing: 1.2),
+                style: Cyber.label(StatOzTypography.p8, color: headingColor, letterSpacing: 1.2),
               ),
               const SizedBox(height: 3),
               Text(
                 '${playerName?.toUpperCase() ?? 'PLAYER'} · $action $direction',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.bodyFor(
-                  context,
-                  10,
+                style: Cyber.bodyFor(context, StatOzTypography.p10,
                   color: Colors.white70,
-                  weight: FontWeight.w700,
+                  weight: StatOzTypography.bold,
                 ),
               ),
             ],
@@ -684,7 +683,7 @@ class _NextKickActionState extends State<_NextKickAction> {
                 ),
                 child: Text(
                   'RESOLVING KICK…',
-                  style: Cyber.label(11, color: Cyber.muted),
+                  style: Cyber.label(StatOzTypography.p11, color: Cyber.muted),
                 ),
               ),
             ),
@@ -776,9 +775,9 @@ class _PenaltySideHistory extends StatelessWidget {
           label,
           style: TextStyle(
             color: alignEnd ? Cyber.amber : Cyber.cyan,
-            fontFamily: 'Orbitron',
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
+            fontFamily: StatOzTypography.displayFont,
+            fontSize: StatOzTypography.p10,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 1.5,
           ),
         ),
@@ -882,9 +881,9 @@ class _WinnerBanner extends StatelessWidget {
         textAlign: TextAlign.center,
         style: TextStyle(
           color: color,
-          fontFamily: 'Orbitron',
-          fontSize: 16,
-          fontWeight: FontWeight.w900,
+          fontFamily: StatOzTypography.displayFont,
+          fontSize: StatOzTypography.p16,
+          fontWeight: StatOzTypography.black,
           letterSpacing: 1.2,
         ),
       ),

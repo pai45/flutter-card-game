@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -103,16 +104,16 @@ class _GameMatchHistoryPage extends StatelessWidget {
                         children: [
                           Text(
                             'MATCH HISTORY',
-                            style: Cyber.display(18, color: Colors.white)
+                            style: Cyber.display(StatOzTypography.p18, color: Colors.white)
                                 .copyWith(
-                                  fontWeight: FontWeight.w900,
+                                  fontWeight: StatOzTypography.black,
                                   letterSpacing: 1.2,
                                 ),
                           ),
                           const SizedBox(height: 2),
                           Text(
                             '// $label',
-                            style: Cyber.label(9, color: Cyber.muted),
+                            style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
                           ),
                         ],
                       ),
@@ -149,9 +150,7 @@ class _GameMatchHistoryPage extends StatelessWidget {
                           padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
                           child: Text(
                             'No $label matches yet.',
-                            style: Cyber.bodyFor(
-                              context,
-                              12,
+                            style: Cyber.bodyFor(context, StatOzTypography.p12,
                               color: Cyber.muted,
                             ),
                           ),
@@ -218,15 +217,13 @@ class _MatchHistoryRecordStrip extends StatelessWidget {
                 children: [
                   Text(
                     '$winPct%',
-                    style: Cyber.display(
-                      24,
+                    style: Cyber.display(StatOzTypography.p24,
                       color: wins > losses ? Cyber.success : Cyber.muted,
                     ),
                   ),
                   Text(
                     'WIN RATE',
-                    style: Cyber.label(
-                      9,
+                    style: Cyber.label(StatOzTypography.p9,
                       color: Cyber.muted,
                       letterSpacing: 1.5,
                     ),
@@ -336,9 +333,9 @@ class _MatchHistoryArchivePageState extends State<_MatchHistoryArchivePage> {
                         'MATCH ARCHIVE',
                         style: TextStyle(
                           color: Colors.white,
-                          fontFamily: 'Orbitron',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
+                          fontFamily: StatOzTypography.displayFont,
+                          fontSize: StatOzTypography.p18,
+                          fontWeight: StatOzTypography.black,
                           letterSpacing: 1.2,
                         ),
                       ),
@@ -373,8 +370,7 @@ class _MatchHistoryArchivePageState extends State<_MatchHistoryArchivePage> {
                         children: [
                           Text(
                             '$winPct%',
-                            style: Cyber.display(
-                              24,
+                            style: Cyber.display(StatOzTypography.p24,
                               color: wins > losses
                                   ? Cyber.success
                                   : Cyber.muted,
@@ -384,8 +380,8 @@ class _MatchHistoryArchivePageState extends State<_MatchHistoryArchivePage> {
                             'WIN RATE',
                             style: TextStyle(
                               color: Cyber.muted,
-                              fontFamily: 'Orbitron',
-                              fontSize: 9,
+                              fontFamily: StatOzTypography.displayFont,
+                              fontSize: StatOzTypography.p9,
                               letterSpacing: 1.5,
                             ),
                           ),
@@ -428,7 +424,7 @@ class _MatchHistoryArchivePageState extends State<_MatchHistoryArchivePage> {
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
                   child: Text(
                     'No $sportLabel games archived yet.',
-                    style: const TextStyle(color: Cyber.muted, fontSize: 12),
+                    style: const TextStyle(color: Cyber.muted, fontSize: StatOzTypography.p12),
                   ),
                 ),
               // ── list ────────────────────────────────────────────────────────
@@ -527,9 +523,9 @@ class _MatchHistoryDetailPage extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontFamily: 'Orbitron',
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
+                          fontFamily: StatOzTypography.displayFont,
+                          fontSize: StatOzTypography.p16,
+                          fontWeight: StatOzTypography.black,
                           letterSpacing: 1,
                         ),
                       ),
@@ -567,9 +563,9 @@ class _MatchHistoryDetailPage extends StatelessWidget {
                       'ROUND LOG',
                       style: TextStyle(
                         color: Cyber.cyan,
-                        fontFamily: 'Orbitron',
-                        fontWeight: FontWeight.w900,
-                        fontSize: 11,
+                        fontFamily: StatOzTypography.displayFont,
+                        fontWeight: StatOzTypography.black,
+                        fontSize: StatOzTypography.p11,
                         letterSpacing: 2,
                       ),
                     ),
@@ -578,8 +574,8 @@ class _MatchHistoryDetailPage extends StatelessWidget {
                       '${entry.rounds.length} ROUNDS',
                       style: const TextStyle(
                         color: Cyber.muted,
-                        fontSize: 10,
-                        fontFamily: 'Orbitron',
+                        fontSize: StatOzTypography.p10,
+                        fontFamily: StatOzTypography.displayFont,
                       ),
                     ),
                   ],
@@ -671,9 +667,9 @@ class _HeroScoreline extends StatelessWidget {
                     entry.resultLabel.toUpperCase(),
                     style: TextStyle(
                       color: resultColor,
-                      fontFamily: 'Orbitron',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
+                      fontFamily: StatOzTypography.displayFont,
+                      fontSize: StatOzTypography.p13,
+                      fontWeight: StatOzTypography.black,
                       letterSpacing: 2,
                     ),
                   ),
@@ -684,8 +680,8 @@ class _HeroScoreline extends StatelessWidget {
                 historyTimestampLabel(entry.timestampIso),
                 style: const TextStyle(
                   color: Cyber.muted,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
+                  fontSize: StatOzTypography.p10,
+                  fontWeight: StatOzTypography.bold,
                 ),
               ),
               if (entry.isShootout) ...[
@@ -705,9 +701,9 @@ class _HeroScoreline extends StatelessWidget {
                     'PENALTY SHOOTOUT',
                     style: TextStyle(
                       color: Cyber.violet,
-                      fontFamily: 'Orbitron',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
+                      fontFamily: StatOzTypography.displayFont,
+                      fontSize: StatOzTypography.p10,
+                      fontWeight: StatOzTypography.black,
                     ),
                   ),
                 ),
@@ -729,9 +725,9 @@ class _HeroScoreline extends StatelessWidget {
                     'PEN  ${entry.penaltyPlayerScore} – ${entry.penaltyOpponentScore}',
                     style: const TextStyle(
                       color: Cyber.violet,
-                      fontFamily: 'Orbitron',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
+                      fontFamily: StatOzTypography.displayFont,
+                      fontSize: StatOzTypography.p10,
+                      fontWeight: StatOzTypography.black,
                     ),
                   ),
                 ),
@@ -747,14 +743,14 @@ class _HeroScoreline extends StatelessWidget {
                 children: [
                   Text(
                     '${entry.playerScore}',
-                    style: Cyber.display(52, color: Cyber.cyan),
+                    style: Cyber.display(StatOzTypography.p52, color: Cyber.cyan),
                   ),
                   Text(
                     'YOU',
                     style: TextStyle(
                       color: Cyber.cyan.withValues(alpha: 0.6),
-                      fontFamily: 'Orbitron',
-                      fontSize: 9,
+                      fontFamily: StatOzTypography.displayFont,
+                      fontSize: StatOzTypography.p9,
                       letterSpacing: 1.5,
                     ),
                   ),
@@ -762,20 +758,20 @@ class _HeroScoreline extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text('–', style: Cyber.display(28, color: Cyber.muted)),
+                child: Text('–', style: Cyber.display(StatOzTypography.p28, color: Cyber.muted)),
               ),
               Column(
                 children: [
                   Text(
                     '${entry.opponentScore}',
-                    style: Cyber.display(52, color: Cyber.danger),
+                    style: Cyber.display(StatOzTypography.p52, color: Cyber.danger),
                   ),
                   Text(
                     'CPU',
                     style: TextStyle(
                       color: Cyber.danger.withValues(alpha: 0.6),
-                      fontFamily: 'Orbitron',
-                      fontSize: 9,
+                      fontFamily: StatOzTypography.displayFont,
+                      fontSize: StatOzTypography.p9,
                       letterSpacing: 1.5,
                     ),
                   ),
@@ -804,8 +800,8 @@ class _GoalTrail extends StatelessWidget {
           'GOALS',
           style: TextStyle(
             color: Cyber.muted.withValues(alpha: 0.6),
-            fontFamily: 'Orbitron',
-            fontSize: 9,
+            fontFamily: StatOzTypography.displayFont,
+            fontSize: StatOzTypography.p9,
             letterSpacing: 1.5,
           ),
         ),
@@ -936,9 +932,9 @@ class _RoundLogItem extends StatelessWidget {
                       '${round.round}',
                       style: TextStyle(
                         color: oColor,
-                        fontFamily: 'Orbitron',
-                        fontWeight: FontWeight.w900,
-                        fontSize: 14,
+                        fontFamily: StatOzTypography.displayFont,
+                        fontWeight: StatOzTypography.black,
+                        fontSize: StatOzTypography.p14,
                       ),
                     ),
                   ),
@@ -958,9 +954,9 @@ class _RoundLogItem extends StatelessWidget {
                               round.scenarioTitle.toUpperCase(),
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontFamily: 'Orbitron',
-                                fontSize: 11,
-                                fontWeight: FontWeight.w900,
+                                fontFamily: StatOzTypography.displayFont,
+                                fontSize: StatOzTypography.p11,
+                                fontWeight: StatOzTypography.black,
                                 letterSpacing: 0.5,
                                 height: 1.3,
                               ),
@@ -988,9 +984,9 @@ class _RoundLogItem extends StatelessWidget {
                                   round.outcomeLabel.toUpperCase(),
                                   style: TextStyle(
                                     color: oColor,
-                                    fontSize: 9,
-                                    fontFamily: 'Orbitron',
-                                    fontWeight: FontWeight.w900,
+                                    fontSize: StatOzTypography.p9,
+                                    fontFamily: StatOzTypography.displayFont,
+                                    fontWeight: StatOzTypography.black,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -1029,9 +1025,9 @@ class _RoundLogItem extends StatelessWidget {
                                   round.playerAttacking ? 'ATK' : 'DEF',
                                   style: TextStyle(
                                     color: roleColor,
-                                    fontSize: 9,
-                                    fontFamily: 'Orbitron',
-                                    fontWeight: FontWeight.w900,
+                                    fontSize: StatOzTypography.p9,
+                                    fontFamily: StatOzTypography.displayFont,
+                                    fontWeight: StatOzTypography.black,
                                   ),
                                 ),
                               ],
@@ -1043,34 +1039,34 @@ class _RoundLogItem extends StatelessWidget {
                             'YOU ',
                             style: TextStyle(
                               color: Cyber.cyan.withValues(alpha: 0.7),
-                              fontSize: 10,
-                              fontFamily: 'Orbitron',
-                              fontWeight: FontWeight.w900,
+                              fontSize: StatOzTypography.p10,
+                              fontFamily: StatOzTypography.displayFont,
+                              fontWeight: StatOzTypography.black,
                             ),
                           ),
                           Text(
                             '$playerGoals',
-                            style: Cyber.display(14, color: Cyber.cyan),
+                            style: Cyber.display(StatOzTypography.p14, color: Cyber.cyan),
                           ),
                           Text(
                             ' : ',
                             style: const TextStyle(
                               color: Cyber.muted,
-                              fontFamily: 'Orbitron',
-                              fontSize: 12,
+                              fontFamily: StatOzTypography.displayFont,
+                              fontSize: StatOzTypography.p12,
                             ),
                           ),
                           Text(
                             '$cpuGoals',
-                            style: Cyber.display(14, color: Cyber.danger),
+                            style: Cyber.display(StatOzTypography.p14, color: Cyber.danger),
                           ),
                           Text(
                             ' CPU',
                             style: TextStyle(
                               color: Cyber.danger.withValues(alpha: 0.7),
-                              fontSize: 10,
-                              fontFamily: 'Orbitron',
-                              fontWeight: FontWeight.w900,
+                              fontSize: StatOzTypography.p10,
+                              fontFamily: StatOzTypography.displayFont,
+                              fontWeight: StatOzTypography.black,
                             ),
                           ),
                         ],
@@ -1142,15 +1138,15 @@ class _StatBox extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(value, style: Cyber.display(22, color: color)),
+          Text(value, style: Cyber.display(StatOzTypography.p22, color: color)),
           const SizedBox(height: 2),
           Text(
             label,
             style: TextStyle(
               color: color.withValues(alpha: 0.7),
-              fontFamily: 'Orbitron',
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
+              fontFamily: StatOzTypography.displayFont,
+              fontSize: StatOzTypography.p10,
+              fontWeight: StatOzTypography.extrabold,
               letterSpacing: 1,
             ),
           ),

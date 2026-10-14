@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -194,8 +195,8 @@ class _DailyDropButtonState extends State<DailyDropButton>
                                       color: ready
                                           ? Cyber.bg.withValues(alpha: 0.72)
                                           : Cyber.muted,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
+                                      fontSize: StatOzTypography.p10,
+                                      fontWeight: StatOzTypography.bold,
                                       letterSpacing: 2,
                                     ),
                                   ),
@@ -204,10 +205,10 @@ class _DailyDropButtonState extends State<DailyDropButton>
                                     primary,
                                     style: TextStyle(
                                       color: ready ? Cyber.bg : Colors.white70,
-                                      fontFamily: 'Orbitron',
-                                      fontWeight: FontWeight.w900,
+                                      fontFamily: StatOzTypography.displayFont,
+                                      fontWeight: StatOzTypography.black,
                                       letterSpacing: 0.9,
-                                      fontSize: 12,
+                                      fontSize: StatOzTypography.p12,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
@@ -217,8 +218,8 @@ class _DailyDropButtonState extends State<DailyDropButton>
                                       color: ready
                                           ? Cyber.bg.withValues(alpha: 0.62)
                                           : Cyber.muted,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
+                                      fontSize: StatOzTypography.p10,
+                                      fontWeight: StatOzTypography.bold,
                                     ),
                                   ),
                                 ],

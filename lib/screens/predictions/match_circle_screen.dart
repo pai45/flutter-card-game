@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -216,7 +217,7 @@ class _MatchCircleScreenState extends State<MatchCircleScreen> {
                 ..hideCurrentSnackBar()
                 ..showSnackBar(
                   SnackBar(
-                    content: Text(message, style: Cyber.bodyFor(context, 13)),
+                    content: Text(message, style: Cyber.bodyFor(context, StatOzTypography.p13)),
                     backgroundColor: const Color(0xff311922),
                   ),
                 );
@@ -309,7 +310,7 @@ class _MatchCircleTopBar extends StatelessWidget {
               'BACK TO MATCHES',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.bodyFor(context, 14, weight: FontWeight.w800),
+              style: Cyber.bodyFor(context, StatOzTypography.p14, weight: StatOzTypography.bold),
             ),
           ),
           const SizedBox(
@@ -585,13 +586,13 @@ class _PostTile extends StatelessWidget {
                           context,
                           compact ? 12 : 13,
                           color: post.isDeleted ? Cyber.muted : Colors.white,
-                          weight: FontWeight.w800,
+                          weight: StatOzTypography.bold,
                         ),
                       ),
                     ),
                     Text(
                       _relativeTime(post.createdAt),
-                      style: Cyber.bodyFor(context, 10, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, StatOzTypography.p10, color: Cyber.muted),
                     ),
                     if (!post.isDeleted && owned) ...[
                       const SizedBox(width: 2),
@@ -613,8 +614,8 @@ class _PostTile extends StatelessWidget {
                         compact ? 12 : 13,
                         color: post.isDeleted ? Cyber.muted : Colors.white,
                         weight: post.isDeleted
-                            ? FontWeight.w500
-                            : FontWeight.w600,
+                            ? StatOzTypography.medium
+                            : StatOzTypography.semibold,
                         height: 1.45,
                       ).copyWith(
                         fontStyle: post.isDeleted
@@ -656,8 +657,7 @@ class _PostTile extends StatelessWidget {
                           ),
                           child: Text(
                             'EDITED',
-                            style: Cyber.label(
-                              8,
+                            style: Cyber.label(StatOzTypography.p8,
                               color: Cyber.muted,
                               letterSpacing: 0.8,
                             ),
@@ -771,8 +771,7 @@ class _PostAction extends StatelessWidget {
                 const SizedBox(width: 5),
                 Text(
                   label,
-                  style: Cyber.label(
-                    9,
+                  style: Cyber.label(StatOzTypography.p9,
                     color: enabled ? color : Cyber.border,
                     letterSpacing: 0.7,
                   ),
@@ -837,7 +836,7 @@ class _OwnedPostMenu extends StatelessWidget {
                 children: [
                   const Icon(Icons.edit_outlined, color: Cyber.cyan, size: 18),
                   const SizedBox(width: 10),
-                  Text('EDIT', style: Cyber.label(10, letterSpacing: 1)),
+                  Text('EDIT', style: Cyber.label(StatOzTypography.p10, letterSpacing: 1)),
                 ],
               ),
             ),
@@ -854,8 +853,7 @@ class _OwnedPostMenu extends StatelessWidget {
                   const SizedBox(width: 10),
                   Text(
                     'DELETE',
-                    style: Cyber.label(
-                      10,
+                    style: Cyber.label(StatOzTypography.p10,
                       color: Cyber.danger,
                       letterSpacing: 1,
                     ),
@@ -940,9 +938,7 @@ class _MatchCircleComposer extends StatelessWidget {
                       Expanded(
                         child: Text(
                           error,
-                          style: Cyber.bodyFor(
-                            context,
-                            11,
+                          style: Cyber.bodyFor(context, StatOzTypography.p11,
                             color: Cyber.danger,
                           ),
                         ),
@@ -971,7 +967,7 @@ class _MatchCircleComposer extends StatelessWidget {
                           keyboardType: TextInputType.multiline,
                           textInputAction: TextInputAction.newline,
                           onChanged: onChanged,
-                          style: Cyber.bodyFor(context, 13, height: 1.35),
+                          style: Cyber.bodyFor(context, StatOzTypography.p13, height: 1.35),
                           cursorColor: Cyber.cyan,
                           buildCounter:
                               (
@@ -986,9 +982,7 @@ class _MatchCircleComposer extends StatelessWidget {
                                 : replyingTo != null
                                 ? 'Write a reply'
                                 : 'Join the Match Circle',
-                            hintStyle: Cyber.bodyFor(
-                              context,
-                              13,
+                            hintStyle: Cyber.bodyFor(context, StatOzTypography.p13,
                               color: Cyber.muted,
                             ),
                             filled: true,
@@ -1023,9 +1017,7 @@ class _MatchCircleComposer extends StatelessWidget {
                             alignment: Alignment.centerRight,
                             child: Text(
                               '${controller.text.length}/$matchCirclePostMaxLength',
-                              style: Cyber.bodyFor(
-                                context,
-                                9,
+                              style: Cyber.bodyFor(context, StatOzTypography.p9,
                                 color: controller.text.length >= 450
                                     ? Cyber.gold
                                     : Cyber.muted,
@@ -1124,7 +1116,7 @@ class _ComposerModeBanner extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.label(9, color: Cyber.cyan, letterSpacing: 0.9),
+              style: Cyber.label(StatOzTypography.p9, color: Cyber.cyan, letterSpacing: 0.9),
             ),
           ),
           Semantics(

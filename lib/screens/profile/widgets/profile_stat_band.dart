@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -67,7 +68,7 @@ class ProfileStatBand extends StatelessWidget {
               const SizedBox(width: 9),
               Text(
                 title,
-                style: Cyber.display(15, color: accent, letterSpacing: 1),
+                style: Cyber.display(StatOzTypography.p15, color: accent, letterSpacing: 1),
               ),
               if (streak > 0) ...[
                 const SizedBox(width: 8),
@@ -82,8 +83,7 @@ class ProfileStatBand extends StatelessWidget {
                     children: [
                       Text(
                         'HISTORY',
-                        style: Cyber.label(
-                          10,
+                        style: Cyber.label(StatOzTypography.p10,
                           color: accent.withValues(alpha: 0.9),
                           letterSpacing: 1.4,
                         ),

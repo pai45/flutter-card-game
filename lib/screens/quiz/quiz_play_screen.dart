@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -229,7 +230,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         title: Text(
           'EXIT QUIZ?',
-          style: Cyber.display(17, color: Colors.white),
+          style: Cyber.display(StatOzTypography.p17, color: Colors.white),
         ),
         content: Text(
           _freeEntry
@@ -237,7 +238,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
               : banked > 0
               ? 'Your +$banked XP is banked, but SET $_setNumber will not clear and the $kQuizEntryCost coin entry fee will not be refunded.'
               : 'SET $_setNumber will not clear and the $kQuizEntryCost coin entry fee will not be refunded.',
-          style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+          style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
         ),
         actions: [
           TextButton(
@@ -576,8 +577,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
                                 Text(
                                   'SET NOT WRITTEN YET',
                                   textAlign: TextAlign.center,
-                                  style: Cyber.label(
-                                    11,
+                                  style: Cyber.label(StatOzTypography.p11,
                                     color: Cyber.muted,
                                     letterSpacing: 1.6,
                                   ),
@@ -587,9 +587,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
                                   'This ladder is still being built. '
                                   'Pick another set or sport.',
                                   textAlign: TextAlign.center,
-                                  style: Cyber.bodyFor(
-                                    context,
-                                    12,
+                                  style: Cyber.bodyFor(context, StatOzTypography.p12,
                                     color: Cyber.muted,
                                   ),
                                 ),
@@ -660,7 +658,7 @@ class _TopBar extends StatelessWidget {
               '${sport.name.toUpperCase()} QUIZ',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.display(15, color: Colors.white, letterSpacing: 1.2),
+              style: Cyber.display(StatOzTypography.p15, color: Colors.white, letterSpacing: 1.2),
             ),
           ),
           const SizedBox(width: 8),
@@ -819,7 +817,7 @@ class _HudMetric extends StatelessWidget {
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 0.7),
+                style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted, letterSpacing: 0.7),
               ),
             ),
           ],
@@ -828,8 +826,7 @@ class _HudMetric extends StatelessWidget {
         Text(
           value,
           maxLines: 1,
-          style: Cyber.display(
-            11.5,
+          style: Cyber.display(StatOzTypography.p11_5,
             color: color,
             letterSpacing: 0.5,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -929,8 +926,7 @@ class _QuestionPanel extends StatelessWidget {
                     : scanning
                     ? 'VERIFYING SIGNAL...'
                     : 'SELECT ONE ANSWER',
-                style: Cyber.label(
-                  8.5,
+                style: Cyber.label(StatOzTypography.p8_5,
                   color: scanning ? Cyber.cyan : mode.accent,
                   letterSpacing: 1.4,
                 ),
@@ -938,8 +934,7 @@ class _QuestionPanel extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 question.prompt,
-                style: Cyber.display(
-                  18,
+                style: Cyber.display(StatOzTypography.p18,
                   letterSpacing: 0.2,
                 ).copyWith(height: 1.32),
               ),
@@ -982,7 +977,7 @@ class _QuestionPanel extends StatelessWidget {
             ),
             child: Text(
               number.toString().padLeft(2, '0'),
-              style: Cyber.display(14, color: mode.accent),
+              style: Cyber.display(StatOzTypography.p14, color: mode.accent),
             ),
           ),
         ),
@@ -1112,8 +1107,7 @@ class _OptionTileState extends State<_OptionTile> {
             child: verdict == null
                 ? Text(
                     widget.letter,
-                    style: Cyber.display(
-                      12,
+                    style: Cyber.display(StatOzTypography.p12,
                       color: selected || widget.isAnswerKey
                           ? accent
                           : Cyber.muted,
@@ -1129,13 +1123,11 @@ class _OptionTileState extends State<_OptionTile> {
           Expanded(
             child: Text(
               widget.label,
-              style: Cyber.bodyFor(
-                context,
-                14.5,
+              style: Cyber.bodyFor(context, StatOzTypography.p14_5,
                 color: locked || selected
                     ? Colors.white
                     : const Color(0xffc8d3e2),
-                weight: locked || selected ? FontWeight.w700 : FontWeight.w600,
+                weight: locked || selected ? StatOzTypography.bold : StatOzTypography.semibold,
               ),
             ),
           ),
@@ -1143,7 +1135,7 @@ class _OptionTileState extends State<_OptionTile> {
             const SizedBox(width: 8),
             Text(
               '// CORRECT',
-              style: Cyber.label(8, color: accent, letterSpacing: 1.2),
+              style: Cyber.label(StatOzTypography.p8, color: accent, letterSpacing: 1.2),
             ),
           ] else ...[
             const SizedBox(width: 8),
@@ -1344,9 +1336,7 @@ class _BottomDock extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.bodyFor(
-                    context,
-                    11,
+                  style: Cyber.bodyFor(context, StatOzTypography.p11,
                     color: const Color(0xFF90A1B9),
                   ),
                 ),

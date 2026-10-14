@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import '../../../config/game_ladder.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -156,8 +157,7 @@ class _GuessPlayerResultViewState extends State<GuessPlayerResultView> {
                             Text(
                               title,
                               textAlign: TextAlign.center,
-                              style: Cyber.display(
-                                21,
+                              style: Cyber.display(StatOzTypography.p21,
                                 color: accent,
                                 letterSpacing: 1.7,
                               ),
@@ -171,9 +171,7 @@ class _GuessPlayerResultViewState extends State<GuessPlayerResultView> {
                                   ? 'The remaining intel has been unlocked.'
                                   : 'No attempts remain. Study the debrief and return tomorrow.',
                               textAlign: TextAlign.center,
-                              style: Cyber.bodyFor(
-                                context,
-                                12.5,
+                              style: Cyber.bodyFor(context, StatOzTypography.p12_5,
                                 color: Cyber.muted,
                               ),
                             ),
@@ -199,8 +197,7 @@ class _GuessPlayerResultViewState extends State<GuessPlayerResultView> {
                     Text(
                       target.name.toUpperCase(),
                       textAlign: TextAlign.center,
-                      style: Cyber.display(
-                        19,
+                      style: Cyber.display(StatOzTypography.p19,
                         color: AppTheme.textPrimary,
                         letterSpacing: 1.2,
                       ),
@@ -243,7 +240,7 @@ class _GuessPlayerResultViewState extends State<GuessPlayerResultView> {
                         child: Text(
                           'LEGACY LOG · DETAILED GUESSES AND SCORE WERE NOT STORED IN V1.',
                           textAlign: TextAlign.center,
-                          style: Cyber.label(8.5, color: Cyber.muted),
+                          style: Cyber.label(StatOzTypography.p8_5, color: Cyber.muted),
                         ),
                       ),
                     ],
@@ -281,7 +278,7 @@ class _GuessPlayerResultViewState extends State<GuessPlayerResultView> {
                               const SizedBox(width: 8),
                               Text(
                                 'SHARE SPOILER-FREE RESULT',
-                                style: Cyber.label(9, color: Cyber.magenta),
+                                style: Cyber.label(StatOzTypography.p9, color: Cyber.magenta),
                               ),
                             ],
                           ),
@@ -389,7 +386,7 @@ class _Metric extends StatelessWidget {
           else
             _MetricValue(value: value, accent: accent),
           const SizedBox(height: 4),
-          Text(label, style: Cyber.label(7.5, color: Cyber.muted)),
+          Text(label, style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted)),
         ],
       ),
     );
@@ -407,8 +404,7 @@ class _MetricValue extends StatelessWidget {
     return Text(
       value,
       maxLines: 1,
-      style: Cyber.display(
-        13,
+      style: Cyber.display(StatOzTypography.p13,
         color: accent,
       ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
     );
@@ -461,13 +457,12 @@ class _XpProgressPanel extends StatelessWidget {
             children: [
               Text(
                 'LEVEL ${progress.level}',
-                style: Cyber.display(10.5, color: Cyber.gold),
+                style: Cyber.display(StatOzTypography.p10_5, color: Cyber.gold),
               ),
               const Spacer(),
               Text(
                 '${progress.intoLevel}/${progress.levelSpan} XP',
-                style: Cyber.label(
-                  8.5,
+                style: Cyber.label(StatOzTypography.p8_5,
                   color: Cyber.muted,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
@@ -507,7 +502,7 @@ class _StreakBeat extends StatelessWidget {
                 won
                     ? 'SOLVE STREAK · $solveStreak ${solveStreak == 1 ? 'DAY' : 'DAYS'}'
                     : 'DAILY GAME STREAK · ACTIVITY RECORDED',
-                style: Cyber.label(8.5, color: Cyber.amber),
+                style: Cyber.label(StatOzTypography.p8_5, color: Cyber.amber),
               ),
             ),
           ],
@@ -533,7 +528,7 @@ class _ClueDebrief extends StatelessWidget {
         children: [
           Text(
             'FULL CAREER INTEL',
-            style: Cyber.display(11, color: Cyber.magenta),
+            style: Cyber.display(StatOzTypography.p11, color: Cyber.magenta),
           ),
           const SizedBox(height: 10),
           for (var index = 0; index < clues.length; index++)
@@ -552,20 +547,20 @@ class _ClueDebrief extends StatelessWidget {
                     width: 24,
                     child: Text(
                       '${index + 1}',
-                      style: Cyber.display(10, color: Cyber.cyan),
+                      style: Cyber.display(StatOzTypography.p10, color: Cyber.cyan),
                     ),
                   ),
                   Expanded(
                     child: Text(
                       clues[index].label,
-                      style: Cyber.label(8, color: Cyber.muted),
+                      style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                     ),
                   ),
                   Flexible(
                     child: Text(
                       clues[index].value,
                       textAlign: TextAlign.right,
-                      style: Cyber.display(9.5, color: AppTheme.textPrimary),
+                      style: Cyber.display(StatOzTypography.p9_5, color: AppTheme.textPrimary),
                     ),
                   ),
                 ],
@@ -593,7 +588,7 @@ class _GuessDebrief extends StatelessWidget {
         children: [
           Text(
             'SCAN HISTORY',
-            style: Cyber.display(11, color: AppTheme.textPrimary),
+            style: Cyber.display(StatOzTypography.p11, color: AppTheme.textPrimary),
           ),
           const SizedBox(height: 8),
           for (var index = 0; index < state.guesses.length; index++)
@@ -614,17 +609,15 @@ class _GuessDebrief extends StatelessWidget {
                   Expanded(
                     child: Text(
                       state.guesses[index].name.toUpperCase(),
-                      style: Cyber.bodyFor(
-                        context,
-                        11.5,
+                      style: Cyber.bodyFor(context, StatOzTypography.p11_5,
                         color: AppTheme.textPrimary,
-                        weight: FontWeight.w700,
+                        weight: StatOzTypography.bold,
                       ),
                     ),
                   ),
                   Text(
                     'TRY ${index + 1}',
-                    style: Cyber.label(8, color: Cyber.muted),
+                    style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                   ),
                 ],
               ),

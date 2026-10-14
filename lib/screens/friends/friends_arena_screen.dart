@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -171,13 +172,12 @@ class _FriendsArenaScreenState extends State<FriendsArenaScreen> {
                         const SizedBox(width: 9),
                         Text(
                           'FRIENDS LEADERBOARD',
-                          style: Cyber.display(15, letterSpacing: 1),
+                          style: Cyber.display(StatOzTypography.p15, letterSpacing: 1),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           '// ${friends.length}',
-                          style: Cyber.label(
-                            10,
+                          style: Cyber.label(StatOzTypography.p10,
                             color: Cyber.muted,
                             letterSpacing: 1,
                           ),
@@ -201,7 +201,7 @@ class _FriendsArenaScreenState extends State<FriendsArenaScreen> {
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
                           'Search a tag or username above to add your first rival.',
-                          style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+                          style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
                         ),
                       ),
                   ],
@@ -269,7 +269,7 @@ class _SearchNotice extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+              style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
             ),
           ),
         ],
@@ -330,8 +330,7 @@ class _FriendLeaderRow extends StatelessWidget {
               width: 30,
               child: Text(
                 '#$rank',
-                style: Cyber.label(
-                  14,
+                style: Cyber.label(StatOzTypography.p14,
                   color: rankColor,
                   letterSpacing: 0.5,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -357,9 +356,7 @@ class _FriendLeaderRow extends StatelessWidget {
                           seed.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.bodyFor(
-                            context,
-                            15,
+                          style: Cyber.bodyFor(context, StatOzTypography.p15,
                             color: Colors.white,
                           ),
                         ),
@@ -374,8 +371,7 @@ class _FriendLeaderRow extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     '${_formatInt(seed.base)} XP',
-                    style: Cyber.label(
-                      10,
+                    style: Cyber.label(StatOzTypography.p10,
                       color: Cyber.muted,
                       letterSpacing: 1,
                       fontFeatures: const [FontFeature.tabularFigures()],
@@ -423,7 +419,7 @@ class _ChallengeChip extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               'VS',
-              style: Cyber.label(12, color: Cyber.cyan, letterSpacing: 1.4),
+              style: Cyber.label(StatOzTypography.p12, color: Cyber.cyan, letterSpacing: 1.4),
             ),
           ],
         ),
@@ -448,7 +444,7 @@ class _MiniTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Cyber.label(9, color: color, letterSpacing: 1.2),
+        style: Cyber.label(StatOzTypography.p9, color: color, letterSpacing: 1.2),
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -153,8 +154,7 @@ class _PlayerIdentity extends StatelessWidget {
                       player.name.toUpperCase(),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.display(
-                        16,
+                      style: Cyber.display(StatOzTypography.p16,
                         color: Colors.white,
                         letterSpacing: 0.3,
                       ),
@@ -165,8 +165,7 @@ class _PlayerIdentity extends StatelessWidget {
                       '${squad.abbreviation.toUpperCase()}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.label(
-                        8.5,
+                      style: Cyber.label(StatOzTypography.p8_5,
                         color: Cyber.muted,
                         letterSpacing: 1.1,
                       ),
@@ -178,8 +177,7 @@ class _PlayerIdentity extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   headline,
-                  style: Cyber.display(
-                    20,
+                  style: Cyber.display(StatOzTypography.p20,
                     color: accent,
                     letterSpacing: 0.4,
                   ).copyWith(
@@ -210,7 +208,7 @@ class _PlayerIdentity extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               player.styleLine.toUpperCase(),
-              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.2),
+              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1.2),
             ),
           ],
         ],
@@ -455,12 +453,12 @@ class _StatPill extends StatelessWidget {
           children: [
             Text(
               label,
-              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.2),
+              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1.2),
             ),
             const SizedBox(width: 8),
             Text(
               text,
-              style: Cyber.display(13, color: colour).copyWith(
+              style: Cyber.display(StatOzTypography.p13, color: colour).copyWith(
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),

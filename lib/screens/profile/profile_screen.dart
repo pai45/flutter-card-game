@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -545,8 +546,7 @@ class _TimeZoneSetupCardState extends State<_TimeZoneSetupCard> {
                 children: [
                   Text(
                     'SET UP YOUR LOCAL TIME ZONE',
-                    style: Cyber.label(
-                      11,
+                    style: Cyber.label(StatOzTypography.p11,
                       color: Colors.white,
                       letterSpacing: 1.3,
                     ),
@@ -556,9 +556,7 @@ class _TimeZoneSetupCardState extends State<_TimeZoneSetupCard> {
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.bodyFor(
-                      context,
-                      12,
+                    style: Cyber.bodyFor(context, StatOzTypography.p12,
                       color: hasSelection ? Cyber.cyan : Cyber.muted,
                     ),
                   ),
@@ -606,8 +604,7 @@ class _TimeZonePickerSheet extends StatelessWidget {
                       Expanded(
                         child: Text(
                           'SELECT TIME ZONE',
-                          style: Cyber.label(
-                            11,
+                          style: Cyber.label(StatOzTypography.p11,
                             color: Cyber.cyan,
                             letterSpacing: 2,
                           ),
@@ -641,8 +638,8 @@ class _TimeZonePickerSheet extends StatelessWidget {
                           'OR CHOOSE A CITY',
                           style: TextStyle(
                             color: Cyber.muted,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
+                            fontSize: StatOzTypography.p10,
+                            fontWeight: StatOzTypography.bold,
                             letterSpacing: 1.5,
                           ),
                         ),
@@ -696,17 +693,15 @@ class _TimeZoneOptionTile extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: Cyber.bodyFor(
-                        context,
-                        14,
+                      style: Cyber.bodyFor(context, StatOzTypography.p14,
                         color: selected ? Cyber.cyan : Colors.white,
-                        weight: FontWeight.w600,
+                        weight: StatOzTypography.semibold,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       subtitle,
-                      style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
                     ),
                   ],
                 ),
@@ -792,13 +787,12 @@ class _ProfileHeroCard extends StatelessWidget {
                         children: [
                           Text(
                             displayName,
-                            style: Cyber.display(24, letterSpacing: 1.2),
+                            style: Cyber.display(StatOzTypography.p24, letterSpacing: 1.2),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'OPERATIVE // ID 0001',
-                            style: Cyber.label(
-                              10,
+                            style: Cyber.label(StatOzTypography.p10,
                               color: Cyber.muted,
                               letterSpacing: 1.6,
                             ),
@@ -891,10 +885,8 @@ class _PlayerTagPillState extends State<_PlayerTagPill> {
               tag,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.bodyFor(
-                context,
-                16,
-                weight: FontWeight.w600,
+              style: Cyber.bodyFor(context, StatOzTypography.p16,
+                weight: StatOzTypography.semibold,
                 height: 1,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
@@ -951,7 +943,7 @@ class _FriendsPill extends StatelessWidget {
               children: [
                 const Icon(Icons.groups_rounded, color: Cyber.cyan, size: 17),
                 const SizedBox(width: 7),
-                Text('FRIENDS', style: Cyber.display(12, letterSpacing: 1)),
+                Text('FRIENDS', style: Cyber.display(StatOzTypography.p12, letterSpacing: 1)),
                 const SizedBox(width: 8),
                 _CountBadge(value: friends.length, color: Cyber.violet),
                 if (online > 0) ...[
@@ -1003,8 +995,7 @@ class _CountBadge extends StatelessWidget {
           ],
           Text(
             '$value',
-            style: Cyber.label(
-              11,
+            style: Cyber.label(StatOzTypography.p11,
               color: color,
               letterSpacing: 0.5,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -1041,7 +1032,7 @@ class _DialogAction extends StatelessWidget {
           child: Text(
             label.toUpperCase(),
             textAlign: TextAlign.center,
-            style: Cyber.label(11, color: color, letterSpacing: 2),
+            style: Cyber.label(StatOzTypography.p11, color: color, letterSpacing: 2),
           ),
         ),
       ),
@@ -1076,8 +1067,7 @@ class _ProfileSettingsSheet extends StatelessWidget {
                     const SizedBox(width: 9),
                     Text(
                       'SETTINGS',
-                      style: Cyber.label(
-                        11,
+                      style: Cyber.label(StatOzTypography.p11,
                         color: Cyber.cyan,
                         letterSpacing: 2.1,
                       ),
@@ -1147,12 +1137,12 @@ class _SettingsActionRow extends StatelessWidget {
                   children: [
                     Text(
                       label.toUpperCase(),
-                      style: Cyber.label(12, color: color, letterSpacing: 1.6),
+                      style: Cyber.label(StatOzTypography.p12, color: color, letterSpacing: 1.6),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
                     ),
                   ],
                 ),
@@ -1195,8 +1185,7 @@ class _LogoutConfirmDialog extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           'LOG OUT',
-                          style: Cyber.label(
-                            11,
+                          style: Cyber.label(StatOzTypography.p11,
                             color: Cyber.red,
                             letterSpacing: 2.2,
                           ),
@@ -1206,14 +1195,12 @@ class _LogoutConfirmDialog extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text(
                       'SWITCH PLAYER PROFILE?',
-                      style: Cyber.display(16, letterSpacing: 1.1),
+                      style: Cyber.display(StatOzTypography.p16, letterSpacing: 1.1),
                     ),
                     const SizedBox(height: 10),
                     Text(
                       'Choose a first-time setup or resume your saved career. Your cards, coins, matches, predictions, and picks stay on this device.',
-                      style: Cyber.bodyFor(
-                        context,
-                        13,
+                      style: Cyber.bodyFor(context, StatOzTypography.p13,
                         color: Cyber.muted,
                         height: 1.35,
                       ),
@@ -1553,7 +1540,7 @@ class _AvatarEditScreenState extends State<_AvatarEditScreen>
                       Expanded(
                         child: Text(
                           'CUSTOMISE PROFILE',
-                          style: Cyber.display(19, letterSpacing: 1.1),
+                          style: Cyber.display(StatOzTypography.p19, letterSpacing: 1.1),
                         ),
                       ),
                       IconButton(
@@ -1708,7 +1695,7 @@ class _AvatarEditScreenState extends State<_AvatarEditScreen>
               owned.isEmpty
                   ? 'UNLOCK TEAM FRAMES IN THE SHOP'
                   : 'GET MORE TEAM FRAMES IN THE SHOP',
-              style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.1),
+              style: Cyber.label(StatOzTypography.p10, color: Cyber.muted, letterSpacing: 1.1),
             ),
           ],
         ),
@@ -1760,12 +1747,11 @@ class _AvatarEditorTabs extends StatelessWidget {
                           alignment: Alignment.center,
                           child: Text(
                             _labels[i],
-                            style: Cyber.label(
-                              10,
+                            style: Cyber.label(StatOzTypography.p10,
                               color: activeTab == i
                                   ? Cyber.cyan
                                   : AppTheme.slate400,
-                              weight: FontWeight.w900,
+                              weight: StatOzTypography.black,
                               letterSpacing: 1.2,
                             ),
                           ),
@@ -1896,8 +1882,7 @@ class _EditableFrameTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
-                    style: Cyber.label(
-                      8,
+                    style: Cyber.label(StatOzTypography.p8,
                       color: selected ? Cyber.lime : Cyber.muted,
                       letterSpacing: 0.6,
                     ),
@@ -1954,7 +1939,7 @@ class _BannerEditScreenState extends State<_BannerEditScreen> {
                       Expanded(
                         child: Text(
                           'CHOOSE YOUR BANNER',
-                          style: Cyber.display(19, letterSpacing: 1.1),
+                          style: Cyber.display(StatOzTypography.p19, letterSpacing: 1.1),
                         ),
                       ),
                       IconButton(
@@ -2091,8 +2076,7 @@ class _AvatarTossCtaState extends State<_AvatarTossCta>
                   ),
                   Text(
                     widget.label,
-                    style: Cyber.display(
-                      15,
+                    style: Cyber.display(StatOzTypography.p15,
                       color: _avatarCtaInk,
                       letterSpacing: 3,
                     ),
@@ -2291,7 +2275,7 @@ class _FollowingBandState extends State<_FollowingBand> {
                   child: entries.isEmpty
                       ? Text(
                           'Pick the teams and clubs you follow.',
-                          style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+                          style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
                         )
                       : Wrap(
                           spacing: 10,
@@ -2359,12 +2343,12 @@ class _FollowedLeagueChip extends StatelessWidget {
             children: [
               Text(
                 entry.league.shortCode,
-                style: Cyber.display(12, color: Colors.white),
+                style: Cyber.display(StatOzTypography.p12, color: Colors.white),
               ),
               const SizedBox(height: 2),
               Text(
                 'NO CLUB',
-                style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.8),
+                style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 0.8),
               ),
             ],
           ),
@@ -2443,12 +2427,12 @@ class _FollowedTeamChip extends StatelessWidget {
                   team.shortName.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.display(12, color: teamColor),
+                  style: Cyber.display(StatOzTypography.p12, color: teamColor),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   entry.league.shortCode,
-                  style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.1),
+                  style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1.1),
                 ),
               ],
             ),
@@ -2594,7 +2578,7 @@ class _FollowingEditorSheetState extends State<_FollowingEditorSheet> {
                   children: [
                     Text(
                       'EDIT CLUBS',
-                      style: Cyber.display(16, color: Cyber.cyan),
+                      style: Cyber.display(StatOzTypography.p16, color: Cyber.cyan),
                     ),
                     const Spacer(),
                     IconButton(
@@ -2684,7 +2668,7 @@ class _FollowingEditorSheetState extends State<_FollowingEditorSheet> {
                   onPressed: _saving ? null : _save,
                   child: Text(
                     _saving ? 'SAVING' : 'SAVE',
-                    style: Cyber.display(13, color: Cyber.bg),
+                    style: Cyber.display(StatOzTypography.p13, color: Cyber.bg),
                   ),
                 ),
               ),
@@ -2737,8 +2721,7 @@ class _EditableSportPill extends StatelessWidget {
               const SizedBox(width: 7),
               Text(
                 module.label.toUpperCase(),
-                style: Cyber.label(
-                  10,
+                style: Cyber.label(StatOzTypography.p10,
                   color: selected ? Colors.white : Cyber.muted,
                   letterSpacing: 1.0,
                 ),
@@ -2790,8 +2773,7 @@ class _EditableLeaguePill extends StatelessWidget {
                 Expanded(
                   child: Text(
                     entry.league.shortCode,
-                    style: Cyber.display(
-                      13,
+                    style: Cyber.display(StatOzTypography.p13,
                       color: active ? accent : Cyber.muted,
                     ),
                   ),
@@ -2812,7 +2794,7 @@ class _EditableLeaguePill extends StatelessWidget {
               entry.league.name.toUpperCase(),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.4),
+              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 0.4),
             ),
           ],
         ),
@@ -2879,8 +2861,7 @@ class _EditableFollowTeamTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
-                    style: Cyber.label(
-                      8,
+                    style: Cyber.label(StatOzTypography.p8,
                       color: selected ? Colors.white : teamColor,
                       letterSpacing: 0.3,
                     ),
@@ -2929,7 +2910,7 @@ class _NavRow extends StatelessWidget {
                   const SizedBox(width: 12),
                   Text(
                     label,
-                    style: Cyber.bodyFor(context, 15, weight: FontWeight.w600),
+                    style: Cyber.bodyFor(context, StatOzTypography.p15, weight: StatOzTypography.semibold),
                   ),
                 ],
               ),

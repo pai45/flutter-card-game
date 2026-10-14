@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
@@ -94,8 +95,7 @@ class DailyCaseLobby extends StatelessWidget {
                                   children: [
                                     Text(
                                       '$sportLabel // DAILY INTEL',
-                                      style: Cyber.label(
-                                        9,
+                                      style: Cyber.label(StatOzTypography.p9,
                                         color: Cyber.cyan,
                                         letterSpacing: 1.2,
                                       ),
@@ -103,8 +103,7 @@ class DailyCaseLobby extends StatelessWidget {
                                     const SizedBox(height: 8),
                                     Text(
                                       title,
-                                      style: Cyber.display(
-                                        18,
+                                      style: Cyber.display(StatOzTypography.p18,
                                         color: AppTheme.whiteColor,
                                       ),
                                     ),
@@ -116,9 +115,7 @@ class DailyCaseLobby extends StatelessWidget {
                           const SizedBox(height: 20),
                           Text(
                             description,
-                            style: Cyber.bodyFor(
-                              context,
-                              14,
+                            style: Cyber.bodyFor(context, StatOzTypography.p14,
                               color: Cyber.muted,
                             ),
                           ),
@@ -148,8 +145,7 @@ class DailyCaseLobby extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   'NEXT CASE IN',
-                                  style: Cyber.label(
-                                    9,
+                                  style: Cyber.label(StatOzTypography.p9,
                                     color: Cyber.muted,
                                     letterSpacing: 1,
                                   ),
@@ -157,7 +153,7 @@ class DailyCaseLobby extends StatelessWidget {
                               ),
                               Text(
                                 resetLabel,
-                                style: Cyber.display(12, color: Cyber.cyan)
+                                style: Cyber.display(StatOzTypography.p12, color: Cyber.cyan)
                                     .copyWith(
                                       fontFeatures: const [
                                         FontFeature.tabularFigures(),
@@ -221,7 +217,7 @@ class DailyCaseLobby extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   '$solvedCount SOLVED / $playedCount PLAYED',
-                  style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
                 ),
                 const SizedBox(height: 12),
                 CyberActionButton(
@@ -258,7 +254,7 @@ class _Metric extends StatelessWidget {
     children: [
       Text(
         label,
-        style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.5),
+        style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 0.5),
       ),
       const SizedBox(height: 8),
       SizedBox(
@@ -269,8 +265,7 @@ class _Metric extends StatelessWidget {
           child: Text(
             value,
             maxLines: 1,
-            style: Cyber.display(
-              17,
+            style: Cyber.display(StatOzTypography.p17,
               color: AppTheme.whiteColor,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
@@ -147,7 +148,7 @@ class _Initials extends StatelessWidget {
           padding: const EdgeInsets.all(10),
           child: Text(
             initials,
-            style: Cyber.display(20, color: accent, letterSpacing: 0.5),
+            style: Cyber.display(StatOzTypography.p20, color: accent, letterSpacing: 0.5),
           ),
         ),
       ),

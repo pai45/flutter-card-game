@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -53,8 +54,7 @@ class ReferralInviteCard extends StatelessWidget {
                         Text(
                           'INVITE FRIENDS',
                           maxLines: 1,
-                          style: Cyber.display(
-                            14,
+                          style: Cyber.display(StatOzTypography.p14,
                             color: Colors.white,
                             letterSpacing: 1.1,
                           ),
@@ -63,8 +63,7 @@ class ReferralInviteCard extends StatelessWidget {
                         Text(
                           'EARN 500 OZ COINS',
                           maxLines: 1,
-                          style: Cyber.display(
-                            15,
+                          style: Cyber.display(StatOzTypography.p15,
                             color: Cyber.gold,
                             letterSpacing: 0.8,
                           ),
@@ -77,7 +76,7 @@ class ReferralInviteCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 'Share your link. Earn when your friend joins.',
-                style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
               ),
               const SizedBox(height: 13),
               Container(
@@ -92,8 +91,7 @@ class ReferralInviteCard extends StatelessWidget {
                   children: [
                     Text(
                       'INVITE & EARN',
-                      style: Cyber.label(
-                        10,
+                      style: Cyber.label(StatOzTypography.p10,
                         color: Cyber.cyan,
                         letterSpacing: 1.1,
                       ),

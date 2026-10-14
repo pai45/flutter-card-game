@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -134,12 +135,12 @@ class _MatchIntelPanel extends StatelessWidget {
         children: [
           Text(
             details?.league.toUpperCase() ?? match.leagueId.toUpperCase(),
-            style: Cyber.display(15, letterSpacing: 0.8),
+            style: Cyber.display(StatOzTypography.p15, letterSpacing: 0.8),
           ),
           const SizedBox(height: 4),
           Text(
             details?.season ?? 'Live competition feed',
-            style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+            style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
           ),
           const SizedBox(height: 16),
           _IntelCell(
@@ -175,7 +176,7 @@ class _FeedStatePanel extends StatelessWidget {
         children: [
           Text(
             _feedMessage(match),
-            style: Cyber.bodyFor(context, 12.5, color: Colors.white70),
+            style: Cyber.bodyFor(context, StatOzTypography.p12_5, color: Colors.white70),
           ),
           const SizedBox(height: 12),
           _FeedFact(
@@ -207,14 +208,14 @@ class _FeedFact extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 0.8),
+              style: Cyber.label(StatOzTypography.p8_5, color: Cyber.muted, letterSpacing: 0.8),
             ),
           ),
           const SizedBox(width: 12),
           Text(
             value,
             textAlign: TextAlign.right,
-            style: Cyber.bodyFor(context, 11, color: Colors.white70),
+            style: Cyber.bodyFor(context, StatOzTypography.p11, color: Colors.white70),
           ),
         ],
       ),
@@ -256,8 +257,7 @@ class _IntelCell extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     label,
-                    style: Cyber.label(
-                      8.5,
+                    style: Cyber.label(StatOzTypography.p8_5,
                       color: Cyber.muted,
                       letterSpacing: 1,
                     ),
@@ -273,8 +273,8 @@ class _IntelCell extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style:
                 (numeric
-                        ? Cyber.display(13, letterSpacing: 0.6)
-                        : Cyber.bodyFor(context, 11.5, weight: FontWeight.w700))
+                        ? Cyber.display(StatOzTypography.p13, letterSpacing: 0.6)
+                        : Cyber.bodyFor(context, StatOzTypography.p11_5, weight: StatOzTypography.bold))
                     .copyWith(
                       fontFeatures: numeric
                           ? const [FontFeature.tabularFigures()]
@@ -545,7 +545,7 @@ class _GoalMarkerChip extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             '${goal.clock} ${goal.player}',
-            style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 0.4),
+            style: Cyber.label(StatOzTypography.p8_5, color: Cyber.muted, letterSpacing: 0.4),
           ),
         ],
       ),
@@ -715,8 +715,7 @@ class _MinuteSpine extends StatelessWidget {
                   event.minuteLabel,
                   maxLines: 1,
                   style:
-                      Cyber.display(
-                        10.5,
+                      Cyber.display(StatOzTypography.p10_5,
                         color: isGoal ? accent : Cyber.muted,
                       ).copyWith(
                         fontFeatures: const [FontFeature.tabularFigures()],
@@ -756,7 +755,7 @@ class _EventBody extends StatelessWidget {
         Text(
           event.playerName.toUpperCase(),
           textAlign: align,
-          style: Cyber.display(11, color: Cyber.lime, letterSpacing: 0.4),
+          style: Cyber.display(StatOzTypography.p11, color: Cyber.lime, letterSpacing: 0.4),
         ),
       );
       lines.add(const SizedBox(height: 2));
@@ -764,7 +763,7 @@ class _EventBody extends StatelessWidget {
         Text(
           event.secondaryPlayerName!.toUpperCase(),
           textAlign: align,
-          style: Cyber.display(11, color: Cyber.danger, letterSpacing: 0.4),
+          style: Cyber.display(StatOzTypography.p11, color: Cyber.danger, letterSpacing: 0.4),
         ),
       );
     } else {
@@ -775,7 +774,7 @@ class _EventBody extends StatelessWidget {
                   : event.playerName)
               .toUpperCase(),
           textAlign: align,
-          style: Cyber.display(11.5, letterSpacing: 0.4),
+          style: Cyber.display(StatOzTypography.p11_5, letterSpacing: 0.4),
         ),
       );
       if (event.type == MatchEventType.goal && event.scoreDisplay != null) {
@@ -784,8 +783,7 @@ class _EventBody extends StatelessWidget {
           Text(
             event.scoreDisplay!,
             textAlign: align,
-            style: Cyber.display(
-              11,
+            style: Cyber.display(StatOzTypography.p11,
               color: accent,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
@@ -797,7 +795,7 @@ class _EventBody extends StatelessWidget {
           Text(
             'ASSIST ${event.secondaryPlayerName!.toUpperCase()}',
             textAlign: align,
-            style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.6),
+            style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 0.6),
           ),
         );
       }
@@ -907,7 +905,7 @@ class _EventReport extends StatelessWidget {
           child: Text(
             text,
             textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-            style: Cyber.bodyFor(context, 11.5, color: Cyber.muted),
+            style: Cyber.bodyFor(context, StatOzTypography.p11_5, color: Cyber.muted),
           ),
         ),
       ),
@@ -934,7 +932,7 @@ class _PeriodMarker extends StatelessWidget {
             '${event.label ?? _eventLabel(event.type)} ${event.scoreDisplay ?? ''}'
                 .trim()
                 .toUpperCase(),
-            style: Cyber.label(9, color: Cyber.cyan, letterSpacing: 1),
+            style: Cyber.label(StatOzTypography.p9, color: Cyber.cyan, letterSpacing: 1),
           ),
           const SizedBox(width: 10),
           Expanded(child: Divider(color: Cyber.cyan.withValues(alpha: 0.24))),
@@ -1025,15 +1023,14 @@ class _CommentaryRow extends StatelessWidget {
               children: [
                 Text(
                   item.minute.isEmpty ? '—' : item.minute,
-                  style: Cyber.display(11, color: Cyber.cyan).copyWith(
+                  style: Cyber.display(StatOzTypography.p11, color: Cyber.cyan).copyWith(
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   'SEQ ${sequence.toString().padLeft(3, '0')}',
-                  style: Cyber.label(
-                    7.5,
+                  style: Cyber.label(StatOzTypography.p7_5,
                     color: Cyber.muted,
                     letterSpacing: 0.5,
                   ),
@@ -1058,8 +1055,7 @@ class _CommentaryRow extends StatelessWidget {
                       if (item.teamName != null) item.teamName!.toUpperCase(),
                       if (item.kind != null) item.kind!.toUpperCase(),
                     ].join(' // '),
-                    style: Cyber.label(
-                      8,
+                    style: Cyber.label(StatOzTypography.p8,
                       color: Cyber.cyan,
                       letterSpacing: 0.7,
                     ),
@@ -1068,14 +1064,13 @@ class _CommentaryRow extends StatelessWidget {
                 ],
                 Text(
                   item.text,
-                  style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
                 ),
                 if (item.players.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
                     'PLAYERS // ${item.players.join(' · ')}',
-                    style: Cyber.label(
-                      7.5,
+                    style: Cyber.label(StatOzTypography.p7_5,
                       color: Cyber.muted,
                       letterSpacing: 0.5,
                     ),
@@ -1107,8 +1102,7 @@ class _LogHeader extends StatelessWidget {
       label: title,
       trailing: Text(
         '${count.toString().padLeft(3, '0')} $suffix',
-        style: Cyber.label(
-          8.5,
+        style: Cyber.label(StatOzTypography.p8_5,
           color: Cyber.muted,
           letterSpacing: 0.8,
           fontFeatures: const [FontFeature.tabularFigures()],

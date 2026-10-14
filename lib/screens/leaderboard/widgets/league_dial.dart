@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -194,8 +195,7 @@ class _LeagueDialState extends State<LeagueDial>
                           child: Text(
                             league.shortCode,
                             maxLines: 1,
-                            style: Cyber.display(
-                              11,
+                            style: Cyber.display(StatOzTypography.p11,
                               color: Color.lerp(
                                 Cyber.muted,
                                 league.accent,

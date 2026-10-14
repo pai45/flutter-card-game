@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -93,7 +94,7 @@ class _BasketballOverview extends StatelessWidget {
             children: [
               Text(
                 details?.league.toUpperCase() ?? match.leagueId.toUpperCase(),
-                style: Cyber.display(15, letterSpacing: 0.8),
+                style: Cyber.display(StatOzTypography.p15, letterSpacing: 0.8),
               ),
               const SizedBox(height: 10),
               Wrap(
@@ -232,7 +233,7 @@ class _QuarterRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 42,
-            child: Text(label, style: Cyber.label(10, color: accent)),
+            child: Text(label, style: Cyber.label(StatOzTypography.p10, color: accent)),
           ),
           for (var index = 0; index < values.length; index++)
             Expanded(
@@ -240,7 +241,7 @@ class _QuarterRow extends StatelessWidget {
                 children: [
                   Text(
                     'Q${index + 1}',
-                    style: Cyber.label(7, color: Cyber.muted),
+                    style: Cyber.label(StatOzTypography.p7, color: Cyber.muted),
                   ),
                   const SizedBox(height: 2),
                   Text('${values[index]}', style: _numberStyle(12)),
@@ -347,7 +348,7 @@ class _LeaderPanel extends StatelessWidget {
                   children: [
                     Text(
                       group.team.toUpperCase(),
-                      style: Cyber.label(9, color: accent),
+                      style: Cyber.label(StatOzTypography.p9, color: accent),
                     ),
                     const SizedBox(height: 8),
                     for (final leader in group.leaders)
@@ -504,18 +505,18 @@ class _BasketballFlowState extends State<_BasketballFlow> {
                   width: 52,
                   child: Text(
                     'Q${point.period}\n${point.clock}',
-                    style: Cyber.label(8, color: Cyber.muted),
+                    style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                   ),
                 ),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(point.text, style: Cyber.bodyFor(context, 12)),
+                      Text(point.text, style: Cyber.bodyFor(context, StatOzTypography.p12)),
                       const SizedBox(height: 3),
                       Text(
                         '${match.away.shortName} ${point.awayScore} // ${match.home.shortName} ${point.homeScore}',
-                        style: Cyber.label(7.5, color: Cyber.muted),
+                        style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted),
                       ),
                     ],
                   ),
@@ -584,12 +585,12 @@ class _ScoringMapPanel extends StatelessWidget {
               Expanded(
                 child: Text(
                   'SCORING MAP',
-                  style: Cyber.label(10, color: Cyber.cyan),
+                  style: Cyber.label(StatOzTypography.p10, color: Cyber.cyan),
                 ),
               ),
               Text(
                 '${plays.length} BUCKETS',
-                style: Cyber.label(9, color: Cyber.muted),
+                style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
               ),
             ],
           ),
@@ -617,7 +618,7 @@ class _ScoringMapPanel extends StatelessWidget {
                   Center(
                     child: Text(
                       'NO PLOTTED SHOTS IN THIS FILTER',
-                      style: Cyber.label(8, color: Cyber.muted),
+                      style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                     ),
                   ),
               ],
@@ -634,7 +635,7 @@ class _ScoringMapPanel extends StatelessWidget {
           Text(
             'COORDINATE-BEARING MADE FIELD GOALS // FREE THROWS EXCLUDED',
             textAlign: TextAlign.center,
-            style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 0.7),
+            style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted, letterSpacing: 0.7),
           ),
         ],
       ),
@@ -691,7 +692,7 @@ class _BasketballPlays extends StatelessWidget {
                         children: [
                           Text(
                             'Q${play.period}',
-                            style: Cyber.label(8, color: accent),
+                            style: Cyber.label(StatOzTypography.p8, color: accent),
                           ),
                           Text(play.clock, style: _numberStyle(11)),
                         ],
@@ -703,14 +704,14 @@ class _BasketballPlays extends StatelessWidget {
                         children: [
                           Text(
                             play.label.toUpperCase(),
-                            style: Cyber.label(8, color: accent),
+                            style: Cyber.label(StatOzTypography.p8, color: accent),
                           ),
                           const SizedBox(height: 4),
-                          Text(play.text, style: Cyber.bodyFor(context, 12)),
+                          Text(play.text, style: Cyber.bodyFor(context, StatOzTypography.p12)),
                           const SizedBox(height: 5),
                           Text(
                             '${match.away.shortName} ${play.awayScore} // ${match.home.shortName} ${play.homeScore}',
-                            style: Cyber.label(7.2, color: Cyber.muted),
+                            style: Cyber.label(StatOzTypography.p7_2, color: Cyber.muted),
                           ),
                         ],
                       ),
@@ -892,7 +893,7 @@ class _RosterRow extends StatelessWidget {
               children: [
                 Text(
                   player.name,
-                  style: Cyber.bodyFor(context, 13, weight: FontWeight.w700),
+                  style: Cyber.bodyFor(context, StatOzTypography.p13, weight: StatOzTypography.bold),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -901,7 +902,7 @@ class _RosterRow extends StatelessWidget {
                       : player.didNotPlay
                       ? 'DNP ${player.reason ?? ''}'
                       : 'ROTATION'}',
-                  style: Cyber.label(7.5, color: Cyber.muted),
+                  style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted),
                 ),
               ],
             ),
@@ -910,7 +911,7 @@ class _RosterRow extends StatelessWidget {
             Text(
               '${player.points} PTS\n${player.rebounds} REB',
               textAlign: TextAlign.right,
-              style: Cyber.label(8, color: accent),
+              style: Cyber.label(StatOzTypography.p8, color: accent),
             ),
         ],
       ),
@@ -934,10 +935,10 @@ class _InfoLine extends StatelessWidget {
             width: 96,
             child: Text(
               label.toUpperCase(),
-              style: Cyber.label(7.5, color: Cyber.muted),
+              style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted),
             ),
           ),
-          Expanded(child: Text(value, style: Cyber.bodyFor(context, 11.5))),
+          Expanded(child: Text(value, style: Cyber.bodyFor(context, StatOzTypography.p11_5))),
         ],
       ),
     );
@@ -959,7 +960,7 @@ class _CountStrip extends StatelessWidget {
           const SizedBox(width: 8),
           Text('$count', style: _numberStyle(12, color: Cyber.cyan)),
           const SizedBox(width: 6),
-          Text(label, style: Cyber.label(8, color: Cyber.muted)),
+          Text(label, style: Cyber.label(StatOzTypography.p8, color: Cyber.muted)),
         ],
       ),
     );
@@ -1022,7 +1023,7 @@ class _ScoringMapKey extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 6),
-        Text(label, style: Cyber.label(8, color: Cyber.muted)),
+        Text(label, style: Cyber.label(StatOzTypography.p8, color: Cyber.muted)),
       ],
     );
   }

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -131,7 +132,7 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
         Text(
           'YOU WON THE TOSS',
           textAlign: TextAlign.center,
-          style: Cyber.display(26, color: Cyber.cyan, letterSpacing: 2)
+          style: Cyber.display(StatOzTypography.p26, color: Cyber.cyan, letterSpacing: 2)
               .copyWith(
                 shadows: [
                   Shadow(
@@ -145,7 +146,7 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
         Text(
           'CHOOSE YOUR ROLE FOR ROUND $round',
           textAlign: TextAlign.center,
-          style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+          style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
         ),
         const SizedBox(height: 16),
         Row(
@@ -184,7 +185,7 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
           Text(
             '$opponent WON THE TOSS',
             textAlign: TextAlign.center,
-            style: Cyber.display(26, color: Cyber.danger, letterSpacing: 2),
+            style: Cyber.display(StatOzTypography.p26, color: Cyber.danger, letterSpacing: 2),
           ),
           const SizedBox(height: 4),
           AnimatedSwitcher(
@@ -195,7 +196,7 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
                   : '$opponent IS DECIDING TO ATTACK OR DEFEND',
               key: ValueKey(_cpuFinalized),
               textAlign: TextAlign.center,
-              style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+              style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
             ),
           ),
           const SizedBox(height: 16),
@@ -230,7 +231,7 @@ class _CpuDecisionMeter extends StatelessWidget {
                 ? 'NEXT: SCENARIO BRIEFING'
                 : 'OPPONENT DECISION PROTOCOL',
             textAlign: TextAlign.center,
-            style: Cyber.label(10, color: Cyber.muted, letterSpacing: 2),
+            style: Cyber.label(StatOzTypography.p10, color: Cyber.muted, letterSpacing: 2),
           ),
           const SizedBox(height: 10),
           SizedBox(
@@ -329,12 +330,12 @@ class _RoleChoiceButtonState extends State<_RoleChoiceButton>
                 const SizedBox(height: 10),
                 Text(
                   widget.label,
-                  style: Cyber.display(20, color: accent, letterSpacing: 2),
+                  style: Cyber.display(StatOzTypography.p20, color: accent, letterSpacing: 2),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   widget.sub,
-                  style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.5),
+                  style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.5),
                 ),
               ],
             ),
@@ -583,7 +584,7 @@ class ScenarioBriefingCard extends StatelessWidget {
               t: decodeT,
               textAlign: TextAlign.center,
               maxLines: 2,
-              style: Cyber.display(26, color: accent, letterSpacing: 1.3)
+              style: Cyber.display(StatOzTypography.p26, color: accent, letterSpacing: 1.3)
                   .copyWith(
                     shadows: [
                       Shadow(
@@ -601,11 +602,9 @@ class ScenarioBriefingCard extends StatelessWidget {
                 child: Text(
                   scenario.description,
                   textAlign: TextAlign.center,
-                  style: Cyber.bodyFor(
-                    context,
-                    13,
+                  style: Cyber.bodyFor(context, StatOzTypography.p13,
                     color: Colors.white.withValues(alpha: 0.82),
-                    weight: FontWeight.w700,
+                    weight: StatOzTypography.bold,
                   ),
                 ),
               ),
@@ -648,7 +647,7 @@ class ScenarioBriefingCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               'SCENARIO MATCH +6',
-              style: Cyber.label(10, color: Cyber.cyan),
+              style: Cyber.label(StatOzTypography.p10, color: Cyber.cyan),
             ),
             const SizedBox(height: 4),
             Text(
@@ -657,7 +656,7 @@ class ScenarioBriefingCard extends StatelessWidget {
                 attacking: attacking,
               ).join(' • '),
               textAlign: TextAlign.center,
-              style: Cyber.bodyFor(context, 12, color: AppTheme.whiteColor),
+              style: Cyber.bodyFor(context, StatOzTypography.p12, color: AppTheme.whiteColor),
             ),
             const SizedBox(height: 16),
             Opacity(
@@ -701,8 +700,7 @@ class ScenarioBriefingCard extends StatelessWidget {
                           textAlign: TextAlign.center,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.display(
-                            16,
+                          style: Cyber.display(StatOzTypography.p16,
                             color: accent,
                             letterSpacing: 1.5,
                           ),
@@ -812,9 +810,9 @@ class BonusChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(label, style: Cyber.label(12, color: accent)),
+            Text(label, style: Cyber.label(StatOzTypography.p12, color: accent)),
             const SizedBox(width: 8),
-            Text(value, style: Cyber.label(12, color: Colors.white)),
+            Text(value, style: Cyber.label(StatOzTypography.p12, color: Colors.white)),
           ],
         ),
       ),
@@ -1093,8 +1091,7 @@ class _ShotMeterOverlayState extends State<ShotMeterOverlay>
                             widget.attacking
                                 ? 'TIME YOUR STRIKE'
                                 : 'TIME YOUR BLOCK',
-                            style: Cyber.display(
-                              18,
+                            style: Cyber.display(StatOzTypography.p18,
                               color: AppTheme.whiteColor,
                             ),
                           ),
@@ -1127,7 +1124,7 @@ class _ShotMeterOverlayState extends State<ShotMeterOverlay>
                           Center(
                             child: Text(
                               'PERFECT +${ShotTimingQuality.perfect.bonus}',
-                              style: Cyber.label(10, color: Cyber.cyan),
+                              style: Cyber.label(StatOzTypography.p10, color: Cyber.cyan),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -1157,19 +1154,18 @@ class _ShotMeterOverlayState extends State<ShotMeterOverlay>
                             children: [
                               Text(
                                 'EARLY +0',
-                                style: Cyber.label(8, color: Cyber.muted),
+                                style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                               ),
                               Text(
                                 'GOOD +${ShotTimingQuality.good.bonus}  ·  GREAT +${ShotTimingQuality.great.bonus}',
-                                style: Cyber.label(
-                                  8,
+                                style: Cyber.label(StatOzTypography.p8,
                                   color: Cyber.cyan,
                                   letterSpacing: 0.5,
                                 ),
                               ),
                               Text(
                                 'LATE +0',
-                                style: Cyber.label(8, color: Cyber.muted),
+                                style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                               ),
                             ],
                           ),
@@ -1178,8 +1174,7 @@ class _ShotMeterOverlayState extends State<ShotMeterOverlay>
                             Text(
                               '${result.label}  +${result.bonus}',
                               textAlign: TextAlign.center,
-                              style: Cyber.display(
-                                24,
+                              style: Cyber.display(StatOzTypography.p24,
                                 color: result.bonus > 0
                                     ? Cyber.cyan
                                     : Cyber.muted,
@@ -1189,8 +1184,7 @@ class _ShotMeterOverlayState extends State<ShotMeterOverlay>
                             Text(
                               'FINAL POWER ${widget.power.base + result.bonus}',
                               textAlign: TextAlign.center,
-                              style: Cyber.label(
-                                11,
+                              style: Cyber.label(StatOzTypography.p11,
                                 color: AppTheme.whiteColor,
                               ),
                             ),
@@ -1248,13 +1242,12 @@ class _TimingStat extends StatelessWidget {
     children: [
       Text(
         label,
-        style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.5),
+        style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 0.5),
       ),
       const SizedBox(height: 6),
       Text(
         value,
-        style: Cyber.display(
-          17,
+        style: Cyber.display(StatOzTypography.p17,
           color: color,
           letterSpacing: 0,
         ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -1430,8 +1423,7 @@ class NextRoundCountdownState extends State<NextRoundCountdown> {
       children: [
         Text(
           'NEXT ROUND // ${_seconds > 0 ? '0$_seconds' : 'GO'}',
-          style: Cyber.label(
-            12,
+          style: Cyber.label(StatOzTypography.p12,
             color: Cyber.muted,
             letterSpacing: 2.2,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -1439,8 +1431,7 @@ class NextRoundCountdownState extends State<NextRoundCountdown> {
         const SizedBox(height: 6),
         Text(
           _seconds > 0 ? '$_seconds' : 'GO!',
-          style: Cyber.display(
-            44,
+          style: Cyber.display(StatOzTypography.p44,
             color: Cyber.cyan,
             letterSpacing: 4,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -314,8 +315,8 @@ class _RosterPanel extends StatelessWidget {
                       'HOOP DUEL ROSTER',
                       style: TextStyle(
                         color: Cyber.gold.withValues(alpha: 0.78),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
+                        fontSize: StatOzTypography.p10,
+                        fontWeight: StatOzTypography.bold,
                         letterSpacing: 2,
                       ),
                     ),
@@ -325,7 +326,7 @@ class _RosterPanel extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontFamily: Cyber.displayFont,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: StatOzTypography.black,
                         letterSpacing: 1.2,
                       ),
                     ),
@@ -452,8 +453,7 @@ class _RosterSlot extends StatelessWidget {
               children: [
                 Text(
                   _label,
-                  style: Cyber.label(
-                    9,
+                  style: Cyber.label(StatOzTypography.p9,
                     color: selected ? Cyber.gold : Cyber.muted,
                     letterSpacing: 1.2,
                   ),
@@ -500,8 +500,7 @@ class _RosterSlot extends StatelessWidget {
                   child: Text(
                     starter ? '★ STARTER' : 'SET STARTER',
                     textAlign: TextAlign.center,
-                    style: Cyber.label(
-                      7,
+                    style: Cyber.label(StatOzTypography.p7,
                       color: starter ? Cyber.bg : Cyber.muted,
                       letterSpacing: 0.7,
                     ),
@@ -595,8 +594,8 @@ class _BasketballPickerPanel extends StatelessWidget {
                     style: const TextStyle(
                       color: Colors.white,
                       fontFamily: Cyber.displayFont,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
+                      fontSize: StatOzTypography.p12,
+                      fontWeight: StatOzTypography.black,
                     ),
                   ),
                 ),
@@ -614,7 +613,7 @@ class _BasketballPickerPanel extends StatelessWidget {
                 ? Center(
                     child: Text(
                       'No owned cards for this slot yet.',
-                      style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
                     ),
                   )
                 : SingleChildScrollView(
@@ -680,7 +679,7 @@ class _BasketballTelemetry extends StatelessWidget {
             '${basketballArchetypeLabel(athlete.archetype)} // ROLE RATINGS',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.label(7, color: Cyber.gold, letterSpacing: 0.8),
+            style: Cyber.label(StatOzTypography.p7, color: Cyber.gold, letterSpacing: 0.8),
           ),
           const SizedBox(height: 7),
           Row(
@@ -691,9 +690,9 @@ class _BasketballTelemetry extends StatelessWidget {
                     children: [
                       Text(
                         '${stat.$2}',
-                        style: Cyber.display(13, color: Cyber.gold),
+                        style: Cyber.display(StatOzTypography.p13, color: Cyber.gold),
                       ),
-                      Text(stat.$1, style: Cyber.label(6, color: Cyber.muted)),
+                      Text(stat.$1, style: Cyber.label(StatOzTypography.p6, color: Cyber.muted)),
                     ],
                   ),
                 ),
@@ -730,8 +729,7 @@ class _SlotChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: Cyber.label(
-            10,
+          style: Cyber.label(StatOzTypography.p10,
             color: selected ? Cyber.cyan : Cyber.muted,
             letterSpacing: 1,
           ),

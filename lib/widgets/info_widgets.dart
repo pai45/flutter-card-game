@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
@@ -93,9 +94,9 @@ class AppInfoTile extends StatelessWidget {
                   item.title.toUpperCase(),
                   style: TextStyle(
                     color: Colors.white,
-                    fontFamily: 'Orbitron',
+                    fontFamily: StatOzTypography.displayFont,
                     fontSize: compact ? 12 : 13,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: StatOzTypography.black,
                     letterSpacing: 1,
                   ),
                 ),
@@ -105,7 +106,7 @@ class AppInfoTile extends StatelessWidget {
                   style: TextStyle(
                     color: Cyber.muted,
                     fontSize: compact ? 11 : 12,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: StatOzTypography.semibold,
                     height: 1.42,
                   ),
                 ),
@@ -142,8 +143,8 @@ class ProcedureStepTile extends StatelessWidget {
             '$index',
             style: const TextStyle(
               color: Cyber.cyan,
-              fontFamily: 'Orbitron',
-              fontWeight: FontWeight.w900,
+              fontFamily: StatOzTypography.displayFont,
+              fontWeight: StatOzTypography.black,
             ),
           ),
         ),
@@ -155,8 +156,8 @@ class ProcedureStepTile extends StatelessWidget {
               body,
               style: const TextStyle(
                 color: Color(0xffd1d5db),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+                fontSize: StatOzTypography.p12,
+                fontWeight: StatOzTypography.semibold,
                 height: 1.45,
               ),
             ),
@@ -183,8 +184,8 @@ class MiniStat extends StatelessWidget {
           label,
           style: const TextStyle(
             color: Colors.grey,
-            fontSize: 9,
-            fontWeight: FontWeight.w700,
+            fontSize: StatOzTypography.p9,
+            fontWeight: StatOzTypography.bold,
             letterSpacing: 1.4,
           ),
         ),
@@ -193,9 +194,9 @@ class MiniStat extends StatelessWidget {
           value,
           style: TextStyle(
             color: ok ? Cyber.cyan : Cyber.amber,
-            fontFamily: 'Orbitron',
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
+            fontFamily: StatOzTypography.displayFont,
+            fontSize: StatOzTypography.p18,
+            fontWeight: StatOzTypography.black,
           ),
         ),
       ],

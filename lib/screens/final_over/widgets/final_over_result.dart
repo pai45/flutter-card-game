@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import '../../../config/game_ladder.dart';
 import 'dart:async';
 
@@ -115,8 +116,7 @@ class _FinalOverResultOverlayState extends State<FinalOverResultOverlay> {
                                 s.resultLabel,
                                 textAlign: TextAlign.center,
                                 style:
-                                    Cyber.display(
-                                      30,
+                                    Cyber.display(StatOzTypography.p30,
                                       color: accent,
                                       letterSpacing: 3,
                                     ).copyWith(
@@ -132,9 +132,7 @@ class _FinalOverResultOverlayState extends State<FinalOverResultOverlay> {
                               Text(
                                 _reason(s),
                                 textAlign: TextAlign.center,
-                                style: Cyber.bodyFor(
-                                  context,
-                                  12,
+                                style: Cyber.bodyFor(context, StatOzTypography.p12,
                                   color: Cyber.muted,
                                 ),
                               ),
@@ -155,8 +153,7 @@ class _FinalOverResultOverlayState extends State<FinalOverResultOverlay> {
                                     Text(
                                       s.scoreLine,
                                       style:
-                                          Cyber.display(
-                                            38,
+                                          Cyber.display(StatOzTypography.p38,
                                             color: Colors.white,
                                           ).copyWith(
                                             fontFeatures: const [
@@ -166,8 +163,7 @@ class _FinalOverResultOverlayState extends State<FinalOverResultOverlay> {
                                     ),
                                     Text(
                                       'CHASING ${s.target}',
-                                      style: Cyber.label(
-                                        9,
+                                      style: Cyber.label(StatOzTypography.p9,
                                         color: Cyber.muted,
                                         letterSpacing: 1.6,
                                       ),
@@ -240,8 +236,7 @@ class _FinalOverResultOverlayState extends State<FinalOverResultOverlay> {
                                 'BEST ${widget.stats.bestScore}  ·  '
                                 '${widget.stats.wins}/${widget.stats.chases} CHASES WON',
                                 textAlign: TextAlign.center,
-                                style: Cyber.label(
-                                  9,
+                                style: Cyber.label(StatOzTypography.p9,
                                   color: Cyber.muted,
                                   letterSpacing: 1.4,
                                 ),
@@ -258,8 +253,7 @@ class _FinalOverResultOverlayState extends State<FinalOverResultOverlay> {
                                 onPressed: widget.onExit,
                                 child: Text(
                                   'BACK TO FINAL OVER',
-                                  style: Cyber.label(
-                                    10,
+                                  style: Cyber.label(StatOzTypography.p10,
                                     color: Cyber.muted,
                                     letterSpacing: 1.6,
                                   ),
@@ -343,7 +337,7 @@ class _GradePlate extends StatelessWidget {
       ),
       child: Text(
         grade,
-        style: Cyber.display(34, color: accent, letterSpacing: 1),
+        style: Cyber.display(StatOzTypography.p34, color: accent, letterSpacing: 1),
       ),
     ),
   );
@@ -376,7 +370,7 @@ class _HistoryToken extends StatelessWidget {
         color: color.withValues(alpha: 0.14),
         border: Border.all(color: color.withValues(alpha: 0.6)),
       ),
-      child: Text(label, style: Cyber.display(13, color: color)),
+      child: Text(label, style: Cyber.display(StatOzTypography.p13, color: color)),
     );
   }
 }
@@ -394,15 +388,14 @@ class _Stat extends StatelessWidget {
       children: [
         Text(
           value,
-          style: Cyber.display(
-            16,
+          style: Cyber.display(StatOzTypography.p16,
             color: color ?? Colors.white,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 1),
+          style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted, letterSpacing: 1),
         ),
       ],
     ),
@@ -422,7 +415,7 @@ class _XpLine extends StatelessWidget {
     builder: (context, t, _) => Text(
       '+${(xp * t).round()} XP',
       textAlign: TextAlign.center,
-      style: Cyber.display(26, color: Cyber.violet, letterSpacing: 2).copyWith(
+      style: Cyber.display(StatOzTypography.p26, color: Cyber.violet, letterSpacing: 2).copyWith(
         fontFeatures: const [FontFeature.tabularFigures()],
         shadows: [
           Shadow(color: Cyber.violet.withValues(alpha: 0.5), blurRadius: 18),

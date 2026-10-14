@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -113,7 +114,7 @@ class _CompactBeginnerQuestCard extends StatelessWidget {
                   Expanded(
                     child: Text(
                       questTitle,
-                      style: Cyber.label(10, color: accent, letterSpacing: 1.5),
+                      style: Cyber.label(StatOzTypography.p10, color: accent, letterSpacing: 1.5),
                     ),
                   ),
                   Semantics(
@@ -121,7 +122,7 @@ class _CompactBeginnerQuestCard extends StatelessWidget {
                     excludeSemantics: true,
                     child: Text(
                       '${cleared.toString().padLeft(2, '0')}/${total.toString().padLeft(2, '0')}',
-                      style: Cyber.display(11, color: Colors.white).copyWith(
+                      style: Cyber.display(StatOzTypography.p11, color: Colors.white).copyWith(
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
@@ -154,21 +155,19 @@ class _CompactBeginnerQuestCard extends StatelessWidget {
                               (cleared == 0
                                   ? 'CHOOSE YOUR FIRST GAME'
                                   : 'CHOOSE YOUR NEXT GAME'),
-                          style: Cyber.display(18),
+                          style: Cyber.display(StatOzTypography.p18),
                         ),
                         const SizedBox(height: 5),
                         Text(
                           step?.questRequirement ??
                               'Pick any unfinished game to begin your route.',
-                          style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+                          style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
                         ),
                         if (step?.isQuiz == true) ...[
                           const SizedBox(height: 5),
                           Text(
                             'Free beginner attempts until cleared',
-                            style: Cyber.bodyFor(
-                              context,
-                              12,
+                            style: Cyber.bodyFor(context, StatOzTypography.p12,
                               color: Cyber.success,
                             ),
                           ),
@@ -281,8 +280,7 @@ class _QuestRewardRail extends StatelessWidget {
         child: Text(
           label,
           softWrap: true,
-          style: Cyber.label(
-            10,
+          style: Cyber.label(StatOzTypography.p10,
             color: color,
             letterSpacing: 0.8,
           ).copyWith(height: 1.25),
@@ -351,7 +349,7 @@ class _QuestChapterMap extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('YOUR ROUTE', style: Cyber.label(10, color: accent)),
+        Text('YOUR ROUTE', style: Cyber.label(StatOzTypography.p10, color: accent)),
         const SizedBox(height: 12),
         for (final chapter in [
           (
@@ -388,8 +386,7 @@ class _QuestChapterMap extends StatelessWidget {
               Expanded(
                 child: Text(
                   chapter.name,
-                  style: Cyber.display(
-                    11,
+                  style: Cyber.display(StatOzTypography.p11,
                     color: cleared >= chapter.end
                         ? Cyber.success
                         : Colors.white,
@@ -398,8 +395,7 @@ class _QuestChapterMap extends StatelessWidget {
               ),
               Text(
                 chapter.reward,
-                style: Cyber.label(
-                  9,
+                style: Cyber.label(StatOzTypography.p9,
                   color: chapter.start > 0 || total == beginnerChapterLength
                       ? Cyber.gold
                       : accent,
@@ -445,7 +441,7 @@ class SportQuestList extends StatelessWidget {
           children: [
             const Icon(Icons.flag_rounded, size: 15, color: Cyber.cyan),
             const SizedBox(width: 8),
-            Text('SPORT QUESTS', style: Cyber.display(11, letterSpacing: 1.8)),
+            Text('SPORT QUESTS', style: Cyber.display(StatOzTypography.p11, letterSpacing: 1.8)),
             const SizedBox(width: 10),
             const Expanded(child: HudLine()),
           ],
@@ -468,12 +464,12 @@ class SportQuestList extends StatelessWidget {
                     children: [
                       Text(
                         'ALL SPORT QUESTS CLEARED',
-                        style: Cyber.display(12, color: Colors.white),
+                        style: Cyber.display(StatOzTypography.p12, color: Colors.white),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Every unlocked sport is fully operational.',
-                        style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+                        style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
                       ),
                     ],
                   ),
@@ -485,7 +481,7 @@ class SportQuestList extends StatelessWidget {
           for (var index = 0; index < sports.length; index++) ...[
             Text(
               sportModuleFor(sports[index]).label.toUpperCase(),
-              style: Cyber.label(12, color: Cyber.cyan),
+              style: Cyber.label(StatOzTypography.p12, color: Cyber.cyan),
             ),
             const SizedBox(height: 8),
             BeginnerQuestCard(
@@ -528,8 +524,7 @@ class _RookieLadder extends StatelessWidget {
             Expanded(
               child: Text(
                 'GAME BOARD',
-                style: Cyber.label(
-                  10,
+                style: Cyber.label(StatOzTypography.p10,
                   color: module.accent,
                   letterSpacing: 1.4,
                 ),
@@ -537,8 +532,7 @@ class _RookieLadder extends StatelessWidget {
             ),
             Text(
               '$cleared / ${ladder.length}',
-              style: Cyber.display(
-                11,
+              style: Cyber.display(StatOzTypography.p11,
                 color: Cyber.muted,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
@@ -769,7 +763,7 @@ class _ActiveMissionContent extends StatelessWidget {
     children: [
       Text(
         'LIVE CONTRACT // $missionNumber',
-        style: Cyber.label(9, color: accent, letterSpacing: 1.2),
+        style: Cyber.label(StatOzTypography.p9, color: accent, letterSpacing: 1.2),
       ),
       const SizedBox(height: 10),
       Row(
@@ -777,13 +771,13 @@ class _ActiveMissionContent extends StatelessWidget {
         children: [
           _MissionIconPlate(game: game, color: accent),
           const SizedBox(width: 8),
-          Expanded(child: Text(game.title, style: Cyber.display(13))),
+          Expanded(child: Text(game.title, style: Cyber.display(StatOzTypography.p13))),
         ],
       ),
       const SizedBox(height: 10),
       Text(
         game.questRequirement,
-        style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+        style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
       ),
       const SizedBox(height: 12),
       const HudLine(),
@@ -800,7 +794,7 @@ class _ActiveMissionContent extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('PLAY', style: Cyber.label(10, color: Cyber.bg)),
+                Text('PLAY', style: Cyber.label(StatOzTypography.p10, color: Cyber.bg)),
                 const SizedBox(width: 4),
                 const Icon(
                   Icons.arrow_forward_rounded,
@@ -839,8 +833,7 @@ class _CompactMissionContent extends StatelessWidget {
           Expanded(
             child: Text(
               game.title,
-              style: Cyber.display(
-                11.5,
+              style: Cyber.display(StatOzTypography.p11_5,
                 color: cleared ? AppTheme.textContrast : Cyber.muted,
               ),
             ),
@@ -856,7 +849,7 @@ class _CompactMissionContent extends StatelessWidget {
       const SizedBox(height: 8),
       Text(
         cleared ? 'CLEARED · REPLAY' : 'LOCKED',
-        style: Cyber.label(8.5, color: color),
+        style: Cyber.label(StatOzTypography.p8_5, color: color),
       ),
     ],
   );
@@ -906,8 +899,7 @@ class _MissionRewardEmblem extends StatelessWidget {
       const SizedBox(width: 5),
       Text(
         '+$beginnerQuestStepXp XP',
-        style: Cyber.display(
-          10,
+        style: Cyber.display(StatOzTypography.p10,
           color: Cyber.gold,
         ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
       ),
@@ -1023,8 +1015,7 @@ class BeginnerQuestStrip extends StatelessWidget {
                       Expanded(
                         child: Text(
                           "BEGINNER'S QUEST",
-                          style: Cyber.label(
-                            10,
+                          style: Cyber.label(StatOzTypography.p10,
                             color: accent,
                             letterSpacing: 1.8,
                           ),
@@ -1033,7 +1024,7 @@ class BeginnerQuestStrip extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         '$cleared / ${ladder.length}',
-                        style: Cyber.display(11, color: Colors.white).copyWith(
+                        style: Cyber.display(StatOzTypography.p11, color: Colors.white).copyWith(
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
@@ -1049,7 +1040,7 @@ class BeginnerQuestStrip extends StatelessWidget {
                               : 'VIEW QUEST - ${step.title}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.display(13, color: Colors.white),
+                          style: Cyber.display(StatOzTypography.p13, color: Colors.white),
                         ),
                       ),
                       Icon(Icons.chevron_right_rounded, color: accent),

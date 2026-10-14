@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -97,7 +98,7 @@ class StatOzTopBar extends StatelessWidget {
               style: TextStyle(
                 color: Colors.white,
                 fontFamily: Cyber.displayFont,
-                fontWeight: FontWeight.w900,
+                fontWeight: StatOzTypography.black,
                 // A back action costs the title 40px of the bar's width.
                 fontSize: leading == null ? 22 : 19,
                 height: 1,
@@ -168,8 +169,7 @@ class _TopBarRookiePath extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 '$cleared/$total',
-                style: Cyber.display(
-                  13,
+                style: Cyber.display(StatOzTypography.p13,
                   color: Colors.white,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
@@ -295,8 +295,7 @@ class _TopBarStreak extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 value,
-                style: Cyber.display(
-                  15,
+                style: Cyber.display(StatOzTypography.p15,
                   letterSpacing: 0,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
@@ -342,8 +341,8 @@ class _TopBarCoinPill extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white,
                 fontFamily: Cyber.displayFont,
-                fontSize: 15,
-                fontWeight: FontWeight.w900,
+                fontSize: StatOzTypography.p15,
+                fontWeight: StatOzTypography.black,
                 fontFeatures: [FontFeature.tabularFigures()],
               ),
             ),

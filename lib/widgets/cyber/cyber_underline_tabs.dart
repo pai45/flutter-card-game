@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -240,8 +241,8 @@ class _UnderlineTabState extends State<_UnderlineTab> {
                           style: TextStyle(
                             color: labelColor,
                             fontFamily: Cyber.displayFont,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
+                            fontSize: StatOzTypography.p10,
+                            fontWeight: StatOzTypography.black,
                             letterSpacing: 1.2,
                           ),
                         ),

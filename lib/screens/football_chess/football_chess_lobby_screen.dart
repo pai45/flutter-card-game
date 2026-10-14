@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -247,8 +248,7 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
                                                     Text(
                                                       '5V5 FOOTBALL CHESS',
                                                       style:
-                                                          Cyber.display(
-                                                            22,
+                                                          Cyber.display(StatOzTypography.p22,
                                                             letterSpacing: 1.2,
                                                           ).copyWith(
                                                             shadows: [
@@ -271,9 +271,9 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
                                                         color: Cyber.muted,
                                                         fontFamily:
                                                             Cyber.displayFont,
-                                                        fontSize: 9,
+                                                        fontSize: StatOzTypography.p9,
                                                         fontWeight:
-                                                            FontWeight.w800,
+                                                            StatOzTypography.extrabold,
                                                         letterSpacing: 2.4,
                                                       ),
                                                     ),
@@ -486,8 +486,8 @@ class _ChessLobbyStatusBar extends StatelessWidget {
           style: TextStyle(
             color: Cyber.success,
             fontFamily: Cyber.displayFont,
-            fontSize: 9,
-            fontWeight: FontWeight.w900,
+            fontSize: StatOzTypography.p9,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 2,
           ),
         ),
@@ -504,8 +504,8 @@ class _ChessLobbyStatusBar extends StatelessWidget {
           style: TextStyle(
             color: Cyber.muted,
             fontFamily: Cyber.displayFont,
-            fontSize: 8.5,
-            fontWeight: FontWeight.w800,
+            fontSize: StatOzTypography.p8_5,
+            fontWeight: StatOzTypography.extrabold,
             letterSpacing: 1.2,
           ),
         ),
@@ -672,8 +672,8 @@ class _HudStat extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white,
                 fontFamily: Cyber.displayFont,
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
+                fontSize: StatOzTypography.p16,
+                fontWeight: StatOzTypography.black,
                 fontFeatures: [FontFeature.tabularFigures()],
               ),
             ),
@@ -686,8 +686,8 @@ class _HudStat extends StatelessWidget {
             style: const TextStyle(
               color: Cyber.muted,
               fontFamily: Cyber.displayFont,
-              fontSize: 7.5,
-              fontWeight: FontWeight.w800,
+              fontSize: StatOzTypography.p7_5,
+              fontWeight: StatOzTypography.extrabold,
               letterSpacing: 0.8,
             ),
           ),
@@ -713,8 +713,8 @@ class _HudLink extends StatelessWidget {
         style: TextStyle(
           color: Cyber.cyan,
           fontFamily: Cyber.displayFont,
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
+          fontSize: StatOzTypography.p11,
+          fontWeight: StatOzTypography.black,
           letterSpacing: 1.4,
         ),
       ),

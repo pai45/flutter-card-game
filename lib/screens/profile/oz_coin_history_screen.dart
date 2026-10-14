@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -239,8 +240,7 @@ class _CoinHistoryTile extends StatelessWidget {
                   entry.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.display(
-                    13,
+                  style: Cyber.display(StatOzTypography.p13,
                     color: Colors.white,
                     letterSpacing: 0.6,
                   ),
@@ -253,7 +253,7 @@ class _CoinHistoryTile extends StatelessWidget {
                   ].join(' - '),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
                 ),
               ],
             ),
@@ -264,15 +264,14 @@ class _CoinHistoryTile extends StatelessWidget {
             children: [
               Text(
                 '${positive ? '+' : '-'}${formatOzGrouped(entry.delta.abs())}',
-                style: Cyber.display(
-                  16,
+                style: Cyber.display(StatOzTypography.p16,
                   color: color,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
               const SizedBox(height: 4),
               Text(
                 '${formatOzCompact(entry.balanceAfter)} BAL',
-                style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.8),
+                style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 0.8),
               ),
             ],
           ),
@@ -295,7 +294,7 @@ class _EmptyCoinHistory extends StatelessWidget {
         child: Text(
           hasAny ? 'No coin moves match this filter.' : 'No coin history yet.',
           textAlign: TextAlign.center,
-          style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+          style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
         ),
       ),
     );

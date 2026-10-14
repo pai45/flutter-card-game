@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -149,8 +150,7 @@ class _PlayerIdentity extends StatelessWidget {
             top: -18,
             child: Text(
               '${player.number}',
-              style: Cyber.display(
-                86,
+              style: Cyber.display(StatOzTypography.p86,
                 color: accent.withValues(alpha: 0.1),
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
@@ -174,8 +174,7 @@ class _PlayerIdentity extends StatelessWidget {
                       player.name.toUpperCase(),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.display(
-                        16,
+                      style: Cyber.display(StatOzTypography.p16,
                         color: Colors.white,
                         letterSpacing: 0.3,
                       ),
@@ -185,8 +184,7 @@ class _PlayerIdentity extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.label(
-                        8.5,
+                      style: Cyber.label(StatOzTypography.p8_5,
                         color: Cyber.muted,
                         letterSpacing: 1.1,
                       ),
@@ -350,8 +348,7 @@ class _HeatmapPanel extends StatelessWidget {
                       'TRACKED TOUCH DENSITY  //  ATTACKING →',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.label(
-                        7.5,
+                      style: Cyber.label(StatOzTypography.p7_5,
                         color: Cyber.muted,
                         letterSpacing: 1.1,
                       ),
@@ -359,8 +356,7 @@ class _HeatmapPanel extends StatelessWidget {
                   ),
                   Text(
                     'BOX ${stats.boxTouches}',
-                    style: Cyber.label(
-                      7.5,
+                    style: Cyber.label(StatOzTypography.p7_5,
                       color: Cyber.amber,
                       letterSpacing: 1.1,
                     ),
@@ -469,12 +465,12 @@ class _StatPill extends StatelessWidget {
           children: [
             Text(
               label,
-              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.2),
+              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1.2),
             ),
             const SizedBox(width: 8),
             Text(
               '$value',
-              style: Cyber.display(13, color: colour).copyWith(
+              style: Cyber.display(StatOzTypography.p13, color: colour).copyWith(
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),

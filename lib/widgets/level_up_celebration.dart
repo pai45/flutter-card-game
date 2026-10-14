@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -391,13 +392,12 @@ class _PromotionTelemetry extends StatelessWidget {
           children: [
             Text(
               'PROMOTION CONFIRMED',
-              style: Cyber.label(10, color: Cyber.cyan, letterSpacing: 2.4),
+              style: Cyber.label(StatOzTypography.p10, color: Cyber.cyan, letterSpacing: 2.4),
             ),
             const Spacer(),
             Text(
               '$counter // $total',
-              style: Cyber.label(
-                10,
+              style: Cyber.label(StatOzTypography.p10,
                 color: Cyber.muted,
                 letterSpacing: 1.4,
                 fontFeatures: const [FontFeature.tabularFigures()],
@@ -463,8 +463,7 @@ class _PromotionHero extends StatelessWidget {
                 if (trackLabel != null && trackLabel!.isNotEmpty) ...[
                   Text(
                     trackLabel!,
-                    style: Cyber.label(
-                      11,
+                    style: Cyber.label(StatOzTypography.p11,
                       color: Cyber.gold,
                       letterSpacing: 2.2,
                     ),
@@ -524,8 +523,7 @@ class _TransitionLevel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       'LVL ${level.toString().padLeft(2, '0')}',
-      style: Cyber.label(
-        11,
+      style: Cyber.label(StatOzTypography.p11,
         color: active ? Cyber.gold : Cyber.muted,
         letterSpacing: 1.6,
         fontFeatures: const [FontFeature.tabularFigures()],
@@ -648,8 +646,7 @@ class _LevelCore extends StatelessWidget {
                         ),
                         Text(
                           impact < 0.25 ? 'CALIBRATING' : 'PROMOTED',
-                          style: Cyber.label(
-                            9,
+                          style: Cyber.label(StatOzTypography.p9,
                             color: impact < 0.25 ? Cyber.muted : Cyber.gold,
                             letterSpacing: 2,
                           ),
@@ -700,8 +697,7 @@ class _XpSummaryPanel extends StatelessWidget {
                 children: [
                   Text(
                     'MATCH XP',
-                    style: Cyber.label(
-                      9,
+                    style: Cyber.label(StatOzTypography.p9,
                       color: Cyber.muted,
                       letterSpacing: 1.8,
                     ),
@@ -734,8 +730,7 @@ class _XpSummaryPanel extends StatelessWidget {
                       'NEXT // LVL ${progression.playerLevel + 1}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.label(
-                        9,
+                      style: Cyber.label(StatOzTypography.p9,
                         color: Cyber.cyan,
                         letterSpacing: 1.5,
                         fontFeatures: const [FontFeature.tabularFigures()],

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:final_over/final_over.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -264,7 +265,7 @@ class _SwingAimPainter extends CustomPainter {
     final painter = TextPainter(
       text: TextSpan(
         text: text,
-        style: Cyber.label(9, color: accent, letterSpacing: 1.4),
+        style: Cyber.label(StatOzTypography.p9, color: accent, letterSpacing: 1.4),
       ),
       textDirection: TextDirection.ltr,
     )..layout();

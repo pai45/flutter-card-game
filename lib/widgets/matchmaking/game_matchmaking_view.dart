@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -267,8 +268,7 @@ class _SearchingStatus extends StatelessWidget {
             Text(
               'SEARCHING FOR\nOPPONENT...',
               textAlign: TextAlign.center,
-              style: Cyber.display(
-                24,
+              style: Cyber.display(StatOzTypography.p24,
                 color: Colors.white,
                 letterSpacing: 1.5,
               ).copyWith(height: 1.18),
@@ -288,7 +288,7 @@ class _SearchingStatus extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               queueLabel,
-              style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 1.5),
+              style: Cyber.label(StatOzTypography.p8_5, color: Cyber.muted, letterSpacing: 1.5),
             ),
           ],
         );
@@ -348,8 +348,7 @@ class _MatchmakingVsMedallion extends StatelessWidget {
                 ),
                 child: Text(
                   'VS',
-                  style: Cyber.display(
-                    28,
+                  style: Cyber.display(StatOzTypography.p28,
                     color: Colors.white,
                     letterSpacing: 0,
                   ),

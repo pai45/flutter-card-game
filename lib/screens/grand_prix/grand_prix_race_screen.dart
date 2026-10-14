@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 
 import 'package:flame/game.dart';
@@ -514,8 +515,7 @@ class _LightsRig extends StatelessWidget {
                   : state.lightsOut
                   ? 'GO GO GO!'
                   : 'WAIT FOR LIGHTS OUT…',
-              style: Cyber.label(
-                10,
+              style: Cyber.label(StatOzTypography.p10,
                 color: state.lightsOut ? Cyber.success : Cyber.muted,
                 letterSpacing: 2.4,
               ),
@@ -597,7 +597,7 @@ class _LaunchGradeFlash extends StatelessWidget {
               ),
               child: Text(
                 label,
-                style: Cyber.display(15, color: color, letterSpacing: 2),
+                style: Cyber.display(StatOzTypography.p15, color: color, letterSpacing: 2),
               ),
             ),
           ),
@@ -680,8 +680,7 @@ class _LapFlashState extends State<_LapFlash> {
           ),
           child: Text(
             finalLap ? 'FINAL LAP' : 'LAP $_shownLap / ${widget.game.laps}',
-            style: Cyber.display(
-              15,
+            style: Cyber.display(StatOzTypography.p15,
               color: color,
               letterSpacing: 2,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -730,8 +729,7 @@ class _StuckWarning extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'GET BACK ON TRACK',
-                  style: Cyber.display(
-                    16,
+                  style: Cyber.display(StatOzTypography.p16,
                     color: Cyber.danger,
                     letterSpacing: 2,
                   ),
@@ -739,7 +737,7 @@ class _StuckWarning extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   'RETIRING IN ${remaining.ceil()}s',
-                  style: Cyber.label(11, color: Cyber.danger, letterSpacing: 2)
+                  style: Cyber.label(StatOzTypography.p11, color: Cyber.danger, letterSpacing: 2)
                       .copyWith(
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
@@ -795,7 +793,7 @@ class _OvertakeToast extends StatelessWidget {
               child: Text(
                 'P${overtake.overtakenPosition} ▲ PASSED '
                 '${overtake.overtakenName.toUpperCase()}',
-                style: Cyber.label(9, color: Cyber.cyan, letterSpacing: 1.4),
+                style: Cyber.label(StatOzTypography.p9, color: Cyber.cyan, letterSpacing: 1.4),
               ),
             ),
           ),

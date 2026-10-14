@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -42,14 +43,13 @@ class GrandPrixMomentToast extends StatelessWidget {
                       children: [
                         Text(
                           value.label,
-                          style: Cyber.display(14, color: Cyber.cyan),
+                          style: Cyber.display(StatOzTypography.p14, color: Cyber.cyan),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           value.detail.toUpperCase(),
                           textAlign: TextAlign.center,
-                          style: Cyber.label(
-                            8,
+                          style: Cyber.label(StatOzTypography.p8,
                             color: Cyber.muted,
                             letterSpacing: 1,
                           ),
@@ -84,12 +84,12 @@ class GrandPrixGridCoach extends StatelessWidget {
               children: [
                 Text(
                   'FIND YOUR RACING LINE',
-                  style: Cyber.display(20, color: Cyber.cyan),
+                  style: Cyber.display(StatOzTypography.p20, color: Cyber.cyan),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Twenty cars. Every corner is a chance to move up.',
-                  style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
                 ),
                 const SizedBox(height: 20),
                 for (final step in const [
@@ -125,14 +125,12 @@ class GrandPrixGridCoach extends StatelessWidget {
                           children: [
                             Text(
                               step.$2,
-                              style: Cyber.label(9, color: AppTheme.whiteColor),
+                              style: Cyber.label(StatOzTypography.p9, color: AppTheme.whiteColor),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               step.$3,
-                              style: Cyber.bodyFor(
-                                context,
-                                12,
+                              style: Cyber.bodyFor(context, StatOzTypography.p12,
                                 color: Cyber.muted,
                               ),
                             ),
@@ -152,7 +150,7 @@ class GrandPrixGridCoach extends StatelessWidget {
                 Text(
                   'KEYBOARD: WASD / ARROWS · SPACE ERS · ESC PAUSE',
                   textAlign: TextAlign.center,
-                  style: Cyber.label(7, color: Cyber.muted, letterSpacing: 0.6),
+                  style: Cyber.label(StatOzTypography.p7, color: Cyber.muted, letterSpacing: 0.6),
                 ),
               ],
             ),
@@ -238,7 +236,7 @@ class _GrandPrixPauseLayerState extends State<GrandPrixPauseLayer>
                     const SizedBox(height: 20),
                     Text(
                       'BACK TO THE RACE',
-                      style: Cyber.label(10, color: Cyber.muted),
+                      style: Cyber.label(StatOzTypography.p10, color: Cyber.muted),
                     ),
                   ],
                 )
@@ -254,14 +252,12 @@ class _GrandPrixPauseLayerState extends State<GrandPrixPauseLayer>
                         children: [
                           Text(
                             'RACE PAUSED',
-                            style: Cyber.display(24, color: Cyber.cyan),
+                            style: Cyber.display(StatOzTypography.p24, color: Cyber.cyan),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Take a breath. Your race is waiting.',
-                            style: Cyber.bodyFor(
-                              context,
-                              12,
+                            style: Cyber.bodyFor(context, StatOzTypography.p12,
                               color: Cyber.muted,
                             ),
                           ),
@@ -344,9 +340,9 @@ class _Preference extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              Text(label, style: Cyber.label(9, color: Cyber.muted)),
+              Text(label, style: Cyber.label(StatOzTypography.p9, color: Cyber.muted)),
               const Spacer(),
-              Text(value, style: Cyber.label(9, color: Cyber.cyan)),
+              Text(value, style: Cyber.label(StatOzTypography.p9, color: Cyber.cyan)),
             ],
           ),
         ),

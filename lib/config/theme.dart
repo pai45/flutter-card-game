@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -392,94 +393,7 @@ class AppTheme {
     );
   }
 
-  static TextTheme get _baseTextTheme {
-    return const TextTheme(
-      headlineLarge: TextStyle(
-        fontFamily: 'Onest',
-        color: whiteColor,
-        fontSize: 24,
-        fontWeight: FontWeight.w700,
-      ),
-      headlineMedium: TextStyle(
-        fontFamily: 'Onest',
-        color: whiteColor,
-        fontSize: 12,
-        fontWeight: FontWeight.w700,
-      ),
-      headlineSmall: TextStyle(
-        fontFamily: 'Onest',
-        color: textMedium,
-        fontSize: 16,
-        fontWeight: FontWeight.w400,
-      ),
-      labelLarge: TextStyle(
-        fontFamily: 'Onest',
-        color: whiteColor,
-        fontSize: 16,
-        fontWeight: FontWeight.w800,
-      ),
-      labelMedium: TextStyle(
-        fontFamily: 'Onest',
-        color: whiteColor,
-        fontSize: 16,
-        fontWeight: FontWeight.w700,
-      ),
-      labelSmall: TextStyle(
-        fontFamily: 'Orbitron',
-        color: whiteColor,
-        fontSize: 28,
-        fontWeight: FontWeight.w800,
-      ),
-      bodyMedium: TextStyle(
-        fontFamily: 'Onest',
-        color: whiteColor,
-        fontSize: 14,
-        fontWeight: FontWeight.w500,
-      ),
-      bodySmall: TextStyle(
-        fontFamily: 'Onest',
-        color: whiteColor,
-        fontSize: 14,
-        fontWeight: FontWeight.w300,
-      ),
-      titleLarge: TextStyle(
-        fontFamily: 'Orbitron',
-        color: whiteColor,
-        fontSize: 18,
-        fontWeight: FontWeight.w900,
-      ),
-      titleMedium: TextStyle(
-        fontFamily: 'Onest',
-        color: whiteColor,
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
-      ),
-      titleSmall: TextStyle(
-        fontFamily: 'Onest',
-        color: whiteColor,
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-      ),
-      displayLarge: TextStyle(
-        fontFamily: 'Orbitron',
-        color: whiteColor,
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-      ),
-      displayMedium: TextStyle(
-        fontFamily: 'Onest',
-        color: whiteColor,
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-      ),
-      displaySmall: TextStyle(
-        fontFamily: 'Onest',
-        color: textMedium,
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-  }
+  static TextTheme get _baseTextTheme => StatOzTypography.textTheme;
 
   static ThemeData get darkTheme {
     final textTheme = Cyber.buildTextTheme(_baseTextTheme);
@@ -507,7 +421,7 @@ class AppTheme {
         centerTitle: false,
         titleSpacing: 0,
         iconTheme: const IconThemeData(color: whiteColor),
-        titleTextStyle: Cyber.label(20),
+        titleTextStyle: Cyber.label(StatOzTypography.p20),
         // Keep the app-wide transparent/light overlay (AppBar would otherwise
         // reset the status bar to its own computed style).
         systemOverlayStyle: const SystemUiOverlayStyle(
@@ -532,10 +446,8 @@ class AppTheme {
           foregroundColor: backgroundPrimary,
           backgroundColor: activeButtonColor,
           minimumSize: const Size.fromHeight(48),
-          textStyle: Cyber.label(
-            14,
+          textStyle: StatOzTypography.control.copyWith(
             color: backgroundPrimary,
-            weight: FontWeight.w900,
           ),
           shape: const BeveledRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(10)),
@@ -547,7 +459,7 @@ class AppTheme {
           foregroundColor: textPrimary,
           side: const BorderSide(color: border),
           minimumSize: const Size.fromHeight(46),
-          textStyle: Cyber.label(14, color: textPrimary),
+          textStyle: StatOzTypography.control.copyWith(color: textPrimary),
           shape: const BeveledRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(10)),
           ),
@@ -556,7 +468,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: textPrimary,
-          textStyle: Cyber.label(13, color: textPrimary),
+          textStyle: StatOzTypography.control.copyWith(color: textPrimary),
         ),
       ),
       chipTheme: const ChipThemeData(
@@ -566,18 +478,23 @@ class AppTheme {
         labelStyle: TextStyle(
           color: whiteColor,
           fontFamily: Cyber.displayFont,
-          fontWeight: FontWeight.w800,
-          fontSize: 11,
+          fontWeight: StatOzTypography.extrabold,
+          fontSize: StatOzTypography.p11,
           letterSpacing: 0.7,
         ),
       ),
-      snackBarTheme: SnackBarThemeData(contentTextStyle: Cyber.body(13)),
+      snackBarTheme: SnackBarThemeData(
+        contentTextStyle: Cyber.body(StatOzTypography.p13),
+      ),
       listTileTheme: ListTileThemeData(
-        titleTextStyle: Cyber.body(14, weight: FontWeight.w700),
+        titleTextStyle: Cyber.body(
+          StatOzTypography.p14,
+          weight: StatOzTypography.bold,
+        ),
         subtitleTextStyle: Cyber.body(
-          12,
+          StatOzTypography.p12,
           color: textMedium,
-          weight: FontWeight.w500,
+          weight: StatOzTypography.medium,
         ),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
@@ -639,9 +556,9 @@ class Cyber {
   static const arenaVioletHorizon = AppTheme.arenaVioletHorizon;
   static const arenaFloor = AppTheme.arenaFloor;
 
-  static const displayFont = 'Orbitron';
-  static const bodyFont = 'Onest';
-  static const gameBodyFont = 'Exo 2';
+  static const displayFont = StatOzTypography.displayFont;
+  static const bodyFont = StatOzTypography.bodyFont;
+  static const gameBodyFont = StatOzTypography.bodyFont;
 
   static String bodyFontFor(BuildContext context) =>
       Theme.of(context).textTheme.bodyMedium?.fontFamily ?? bodyFont;
@@ -706,42 +623,39 @@ class Cyber {
     double size, {
     Color color = Colors.white,
     double letterSpacing = 1.5,
-    FontWeight weight = FontWeight.w900,
-  }) => TextStyle(
-    color: color,
-    fontFamily: displayFont,
-    fontSize: size,
-    fontWeight: weight,
+    FontWeight weight = StatOzTypography.black,
+  }) => StatOzTypography.displayAt(
+    size,
+    weight: weight,
     letterSpacing: letterSpacing,
-    height: 1,
-    decoration: TextDecoration.none,
-  );
+  ).copyWith(color: color, decoration: TextDecoration.none);
 
   static TextStyle body(
     double size, {
     Color color = Colors.white,
-    FontWeight weight = FontWeight.w500,
+    FontWeight weight = StatOzTypography.medium,
     double letterSpacing = 0,
-    double height = 1.35,
+    double height = 1.4,
     List<FontFeature>? fontFeatures,
-  }) => TextStyle(
-    color: color,
-    fontFamily: bodyFont,
-    fontSize: size,
-    fontWeight: weight,
-    letterSpacing: letterSpacing,
-    height: height,
-    fontFeatures: fontFeatures,
-    decoration: TextDecoration.none,
-  );
+  }) =>
+      StatOzTypography.bodyAt(
+        size,
+        weight: weight,
+        height: height,
+        letterSpacing: letterSpacing,
+      ).copyWith(
+        color: color,
+        fontFeatures: fontFeatures,
+        decoration: TextDecoration.none,
+      );
 
   static TextStyle bodyFor(
     BuildContext context,
     double size, {
     Color color = Colors.white,
-    FontWeight weight = FontWeight.w500,
+    FontWeight weight = StatOzTypography.medium,
     double letterSpacing = 0,
-    double height = 1.35,
+    double height = 1.4,
     List<FontFeature>? fontFeatures,
   }) => body(
     size,
@@ -755,7 +669,7 @@ class Cyber {
   static TextStyle label(
     double size, {
     Color color = Colors.white,
-    FontWeight weight = FontWeight.w800,
+    FontWeight weight = StatOzTypography.extrabold,
     double letterSpacing = 0.9,
     double height = 1,
     List<FontFeature>? fontFeatures,
@@ -770,93 +684,6 @@ class Cyber {
     decoration: TextDecoration.none,
   );
 
-  static TextTheme buildTextTheme(TextTheme base) {
-    final themed = base.apply(
-      bodyColor: Colors.white,
-      displayColor: Colors.white,
-      fontFamily: bodyFont,
-    );
-
-    TextStyle useBody(
-      TextStyle? style, {
-      FontWeight? weight,
-      double? letterSpacing,
-      double? height,
-    }) => (style ?? const TextStyle()).copyWith(
-      color: Colors.white,
-      fontFamily: bodyFont,
-      fontWeight: weight,
-      letterSpacing: letterSpacing,
-      height: height,
-      decoration: TextDecoration.none,
-    );
-
-    TextStyle useDisplay(
-      TextStyle? style, {
-      FontWeight weight = FontWeight.w900,
-      double? letterSpacing,
-      double height = 1,
-    }) => (style ?? const TextStyle()).copyWith(
-      color: Colors.white,
-      fontFamily: displayFont,
-      fontWeight: weight,
-      letterSpacing: letterSpacing,
-      height: height,
-      decoration: TextDecoration.none,
-    );
-
-    return themed.copyWith(
-      displayLarge: useDisplay(themed.displayLarge, letterSpacing: 1.2),
-      displayMedium: useDisplay(themed.displayMedium, letterSpacing: 1.2),
-      displaySmall: useDisplay(themed.displaySmall, letterSpacing: 1.15),
-      headlineLarge: useDisplay(themed.headlineLarge, letterSpacing: 1.1),
-      headlineMedium: useDisplay(themed.headlineMedium, letterSpacing: 1.05),
-      headlineSmall: useDisplay(themed.headlineSmall, letterSpacing: 1),
-      titleLarge: useDisplay(
-        themed.titleLarge,
-        weight: FontWeight.w800,
-        letterSpacing: 0.9,
-      ),
-      titleMedium: useDisplay(
-        themed.titleMedium,
-        weight: FontWeight.w800,
-        letterSpacing: 0.8,
-      ),
-      titleSmall: useDisplay(
-        themed.titleSmall,
-        weight: FontWeight.w800,
-        letterSpacing: 0.8,
-      ),
-      bodyLarge: useBody(
-        themed.bodyLarge,
-        weight: FontWeight.w500,
-        height: 1.4,
-      ),
-      bodyMedium: useBody(
-        themed.bodyMedium,
-        weight: FontWeight.w500,
-        height: 1.4,
-      ),
-      bodySmall: useBody(
-        themed.bodySmall,
-        weight: FontWeight.w500,
-        height: 1.35,
-      ),
-      labelLarge: useDisplay(
-        themed.labelLarge,
-        weight: FontWeight.w800,
-        letterSpacing: 0.8,
-      ),
-      labelMedium: useDisplay(
-        themed.labelMedium,
-        weight: FontWeight.w800,
-        letterSpacing: 0.75,
-      ),
-      labelSmall: useDisplay(
-        themed.labelSmall,
-        weight: FontWeight.w800,
-        letterSpacing: 0.7,
-      ),
-    );
-  }
+  static TextTheme buildTextTheme(TextTheme base) =>
+      base.apply(bodyColor: Colors.white, displayColor: Colors.white);
 }

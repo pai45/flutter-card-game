@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -371,12 +372,12 @@ class _ScanStatusPanel extends StatelessWidget {
               Expanded(
                 child: Text(
                   'SCANNING SPORT NETWORK',
-                  style: Cyber.label(10, letterSpacing: 1.5),
+                  style: Cyber.label(StatOzTypography.p10, letterSpacing: 1.5),
                 ),
               ),
               Text(
                 '$loaded/$total',
-                style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.2),
+                style: Cyber.label(StatOzTypography.p10, color: Cyber.muted, letterSpacing: 1.2),
               ),
             ],
           ),
@@ -416,7 +417,7 @@ class _PartialFeedPanel extends StatelessWidget {
           Expanded(
             child: Text(
               'PARTIAL FEED // $labels UNAVAILABLE',
-              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.1),
+              style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.1),
             ),
           ),
         ],
@@ -444,7 +445,7 @@ class _ResultTelemetry extends StatelessWidget {
         const SizedBox(width: 10),
         Text(
           '$entityCount ENTITIES // $fixtureCount FIXTURES',
-          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.1),
+          style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.1),
         ),
       ],
     );
@@ -479,14 +480,14 @@ class _SearchGroupHeader extends StatelessWidget {
               children: [
                 Text(
                   '$kindLabel // ${sport.label.toUpperCase()}',
-                  style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4),
+                  style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.4),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   group.title.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.display(14, letterSpacing: 1),
+                  style: Cyber.display(StatOzTypography.p14, letterSpacing: 1),
                 ),
               ],
             ),
@@ -494,7 +495,7 @@ class _SearchGroupHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             '${group.code.toUpperCase()} // ${group.fixtures.length}',
-            style: Cyber.label(10, color: group.accent, letterSpacing: 1),
+            style: Cyber.label(StatOzTypography.p10, color: group.accent, letterSpacing: 1),
           ),
         ],
       ),

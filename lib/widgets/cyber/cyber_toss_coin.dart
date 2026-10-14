@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -174,7 +175,7 @@ class _CyberCoinTossPhaseState extends State<CyberCoinTossPhase>
         child: Text(
           'FLIPPING…',
           textAlign: TextAlign.center,
-          style: Cyber.label(12, color: Cyber.muted, letterSpacing: 3),
+          style: Cyber.label(StatOzTypography.p12, color: Cyber.muted, letterSpacing: 3),
         ),
       );
     }
@@ -195,7 +196,7 @@ class _CyberCoinTossPhaseState extends State<CyberCoinTossPhase>
                 Text(
                   _resultCaption,
                   textAlign: TextAlign.center,
-                  style: Cyber.label(13, color: Cyber.muted, letterSpacing: 2),
+                  style: Cyber.label(StatOzTypography.p13, color: Cyber.muted, letterSpacing: 2),
                 ),
                 const SizedBox(height: 14),
                 Padding(
@@ -258,7 +259,7 @@ class _CyberCoinTossPhaseState extends State<CyberCoinTossPhase>
             Text(
               widget.prompt,
               textAlign: TextAlign.center,
-              style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+              style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
             ),
             const SizedBox(height: 12),
             choices,
@@ -288,8 +289,7 @@ class _CyberTossTopBar extends StatelessWidget {
             child: Text(
               'COIN TOSS',
               textAlign: TextAlign.center,
-              style: Cyber.label(
-                11,
+              style: Cyber.label(StatOzTypography.p11,
                 color: Cyber.cyan.withValues(alpha: 0.75),
                 letterSpacing: 2,
               ),
@@ -624,7 +624,7 @@ class _CyberTossCoinState extends State<CyberTossCoin>
                   : (Matrix4.identity()..rotateY(pi)),
               child: Text(
                 headsUp ? 'H' : 'T',
-                style: Cyber.display(50, color: faceColor),
+                style: Cyber.display(StatOzTypography.p50, color: faceColor),
               ),
             ),
           ),
@@ -781,13 +781,13 @@ class _CyberCallChoiceButtonState extends State<CyberCallChoiceButton>
                   ),
                   child: Text(
                     widget.face,
-                    style: Cyber.display(15, color: accent),
+                    style: Cyber.display(StatOzTypography.p15, color: accent),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   widget.label,
-                  style: Cyber.display(17, color: accent, letterSpacing: 2),
+                  style: Cyber.display(StatOzTypography.p17, color: accent, letterSpacing: 2),
                 ),
               ],
             ),

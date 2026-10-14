@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/team_palettes.dart';
+import '../data/demo_championship_markets.dart';
 import '../models/picks.dart';
 import '../models/sport_match.dart';
 import 'market_archetypes.dart';
@@ -208,6 +209,7 @@ class MockPickRepository implements PickRepository {
   }
 
   List<PickMarket> _buildMarkets() => [
+    ...demoChampionshipMarkets,
     ..._buildFifaKnockoutMarkets(),
     ...[
       PickMarket(

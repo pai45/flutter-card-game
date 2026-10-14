@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -248,9 +249,9 @@ class ShopHeaderStrip extends StatelessWidget {
               rarity!.toUpperCase(),
               style: TextStyle(
                 color: (rarityColor ?? kShopSecondary).withValues(alpha: 0.9),
-                fontFamily: 'Orbitron',
-                fontSize: 8,
-                fontWeight: FontWeight.w900,
+                fontFamily: StatOzTypography.displayFont,
+                fontSize: StatOzTypography.p8,
+                fontWeight: StatOzTypography.black,
                 letterSpacing: 1.4,
               ),
             ),
@@ -286,9 +287,9 @@ class ShopTag extends StatelessWidget {
             label.toUpperCase(),
             style: TextStyle(
               color: accent,
-              fontFamily: 'Orbitron',
-              fontSize: 8,
-              fontWeight: FontWeight.w900,
+              fontFamily: StatOzTypography.displayFont,
+              fontSize: StatOzTypography.p8,
+              fontWeight: StatOzTypography.black,
               letterSpacing: 1.0,
             ),
           ),
@@ -326,9 +327,9 @@ class ShopPricePill extends StatelessWidget {
             _formatInt(coins!),
             style: TextStyle(
               color: Colors.white,
-              fontFamily: 'Orbitron',
+              fontFamily: StatOzTypography.displayFont,
               fontSize: size,
-              fontWeight: FontWeight.w900,
+              fontWeight: StatOzTypography.black,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
@@ -346,9 +347,9 @@ class ShopPricePill extends StatelessWidget {
             '₹${_formatInt(inr!)}',
             style: TextStyle(
               color: accent,
-              fontFamily: 'Orbitron',
+              fontFamily: StatOzTypography.displayFont,
               fontSize: size,
-              fontWeight: FontWeight.w900,
+              fontWeight: StatOzTypography.black,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
@@ -399,9 +400,9 @@ class ShopActionButton extends StatelessWidget {
               label,
               style: TextStyle(
                 color: filled ? kShopBg : accent,
-                fontFamily: 'Orbitron',
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
+                fontFamily: StatOzTypography.displayFont,
+                fontWeight: StatOzTypography.black,
+                fontSize: StatOzTypography.p12,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -446,9 +447,9 @@ class ShopStateStamp extends StatelessWidget {
             label,
             style: TextStyle(
               color: accent,
-              fontFamily: 'Orbitron',
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
+              fontFamily: StatOzTypography.displayFont,
+              fontSize: StatOzTypography.p18,
+              fontWeight: StatOzTypography.black,
               letterSpacing: 2,
             ),
           ),

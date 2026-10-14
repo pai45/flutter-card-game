@@ -9,7 +9,7 @@
 Make opening a new sport feel like gaining access to a playable game route.
 The [Cyberpunk 2077 UI Art reference](https://www.behance.net/gallery/120401689/Cyberpunk-2077-UI-Art)
 informs the fine frames, angular silhouettes and compact labels. StatOz supplies
-the cyan actions, sport identity, gold rewards and Orbitron/Onest typography.
+the cyan actions, sport identity, gold rewards and Orbitron/Space Grotesk typography.
 All artwork is composed from code and existing icons.
 
 ## Where It Lives

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -167,13 +168,12 @@ class _LineupIdentityPanel extends StatelessWidget {
               children: [
                 Text(
                   team.name.toUpperCase(),
-                  style: Cyber.display(15, color: teamColor),
+                  style: Cyber.display(StatOzTypography.p15, color: teamColor),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${lineup.formation} FORMATION // $playerCount PLAYER SQUAD',
-                  style: Cyber.label(
-                    8.5,
+                  style: Cyber.label(StatOzTypography.p8_5,
                     color: Cyber.muted,
                     letterSpacing: 0.8,
                   ),
@@ -293,7 +293,7 @@ class _PitchPlayer extends StatelessWidget {
                     color: Cyber.card,
                     child: Text(
                       player.number.toString(),
-                      style: Cyber.display(12, color: tint).copyWith(
+                      style: Cyber.display(StatOzTypography.p12, color: tint).copyWith(
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
@@ -320,10 +320,8 @@ class _PitchPlayer extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.bodyFor(
-                context,
-                8.5,
-                weight: FontWeight.w800,
+              style: Cyber.bodyFor(context, StatOzTypography.p8_5,
+                weight: StatOzTypography.bold,
                 color: dim ? Cyber.muted : Colors.white,
               ),
             ),
@@ -466,12 +464,12 @@ class _BenchPanel extends StatelessWidget {
             children: [
               Text(
                 'BENCH UNIT',
-                style: Cyber.label(10, color: teamColor, letterSpacing: 1.2),
+                style: Cyber.label(StatOzTypography.p10, color: teamColor, letterSpacing: 1.2),
               ),
               const Spacer(),
               Text(
                 '${lineup.substitutes.length.toString().padLeft(2, '0')} AVAILABLE',
-                style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.7),
+                style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 0.7),
               ),
             ],
           ),
@@ -479,7 +477,7 @@ class _BenchPanel extends StatelessWidget {
           if (lineup.substitutes.isEmpty)
             Text(
               'No substitutes supplied.',
-              style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+              style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
             )
           else
             LayoutBuilder(
@@ -533,8 +531,7 @@ class _BenchPlayerTile extends StatelessWidget {
             width: 28,
             child: Text(
               player.number.toString(),
-              style: Cyber.display(
-                10,
+              style: Cyber.display(StatOzTypography.p10,
                 color: teamColor,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
@@ -547,13 +544,13 @@ class _BenchPlayerTile extends StatelessWidget {
                   player.shortName ?? player.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.bodyFor(context, 10, weight: FontWeight.w800),
+                  style: Cyber.bodyFor(context, StatOzTypography.p10, weight: StatOzTypography.bold),
                 ),
                 Text(
                   (player.role ?? 'Squad player').toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.label(7, color: Cyber.muted, letterSpacing: 0.5),
+                  style: Cyber.label(StatOzTypography.p7, color: Cyber.muted, letterSpacing: 0.5),
                 ),
               ],
             ),

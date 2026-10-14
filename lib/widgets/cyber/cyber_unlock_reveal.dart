@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -219,7 +220,7 @@ class _CyberUnlockRevealState extends State<CyberUnlockReveal>
           child: Text(
             widget.eyebrow,
             textAlign: TextAlign.center,
-            style: Cyber.label(13, color: accent, letterSpacing: 3.4).copyWith(
+            style: Cyber.label(StatOzTypography.p13, color: accent, letterSpacing: 3.4).copyWith(
               shadows: [
                 Shadow(color: accent.withValues(alpha: 0.6), blurRadius: 16),
               ],
@@ -296,8 +297,7 @@ class _CyberUnlockRevealState extends State<CyberUnlockReveal>
                   widget.title,
                   textAlign: TextAlign.center,
                   style:
-                      Cyber.display(
-                        28,
+                      Cyber.display(StatOzTypography.p28,
                         color: Colors.white,
                         letterSpacing: 1.4,
                       ).copyWith(
@@ -315,7 +315,7 @@ class _CyberUnlockRevealState extends State<CyberUnlockReveal>
                   child: Text(
                     widget.subtitle,
                     textAlign: TextAlign.center,
-                    style: Cyber.bodyFor(context, 14, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, StatOzTypography.p14, color: Cyber.muted),
                   ),
                 ),
                 if (widget.rewardLabel != null) ...[

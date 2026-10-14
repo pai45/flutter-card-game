@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
@@ -145,8 +146,7 @@ class SelectableBannerTile extends StatelessWidget {
                   banner.label.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.label(
-                    10,
+                  style: Cyber.label(StatOzTypography.p10,
                     color: Colors.white,
                     letterSpacing: 1.3,
                   ),

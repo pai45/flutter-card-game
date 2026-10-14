@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -160,7 +161,7 @@ class _SteeringPadState extends State<_SteeringPad> {
             height: 52,
             child: Column(
               children: [
-                Text('STEER', style: Cyber.label(8, color: Cyber.muted)),
+                Text('STEER', style: Cyber.label(StatOzTypography.p8, color: Cyber.muted)),
                 const SizedBox(height: 8),
                 Expanded(
                   child: Stack(
@@ -270,8 +271,7 @@ class _HoldPadState extends State<_HoldPad> {
                 FittedBox(
                   child: Text(
                     widget.label,
-                    style: Cyber.label(
-                      8,
+                    style: Cyber.label(StatOzTypography.p8,
                       color: _down ? widget.accent : Cyber.muted,
                       letterSpacing: 0.8,
                     ),

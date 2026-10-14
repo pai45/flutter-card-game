@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import '../../../config/game_ladder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -294,8 +295,7 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
                         children: [
                           Text(
                             'MVP',
-                            style: Cyber.label(
-                              12,
+                            style: Cyber.label(StatOzTypography.p12,
                               color: Cyber.cyan,
                               letterSpacing: 2,
                             ),
@@ -316,23 +316,19 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
                               bestPower.combo > 0
                                   ? 'BEST COMBINATION +${bestPower.combo}'
                                   : 'BUILD YOUR NEXT COMBINATION',
-                              style: Cyber.label(12, color: Cyber.cyan),
+                              style: Cyber.label(StatOzTypography.p12, color: Cyber.cyan),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               '${(bestRound.playerAttacking ? bestRound.attackerCard : bestRound.defenderCard).name} + ${(bestRound.playerAttacking ? bestRound.attackAction : bestRound.defenseAction).title}',
-                              style: Cyber.bodyFor(
-                                context,
-                                14,
+                              style: Cyber.bodyFor(context, StatOzTypography.p14,
                                 color: AppTheme.whiteColor,
                               ),
                             ),
                             const SizedBox(height: 6),
                             Text(
                               'Affinity +${bestPower.affinity} • Scenario match +${bestPower.scenarioCombo}',
-                              style: Cyber.bodyFor(
-                                context,
-                                12,
+                              style: Cyber.bodyFor(context, StatOzTypography.p12,
                                 color: Cyber.cyan,
                               ),
                             ),
@@ -342,9 +338,7 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
                               const SizedBox(height: 8),
                               Text(
                                 'Match a player affinity for +4 and the scenario for +6.',
-                                style: Cyber.bodyFor(
-                                  context,
-                                  12,
+                                style: Cyber.bodyFor(context, StatOzTypography.p12,
                                   color: Cyber.muted,
                                 ),
                               ),
@@ -448,7 +442,7 @@ class _OutcomeBanner extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             title,
-            style: Cyber.display(36, color: accent, letterSpacing: 3),
+            style: Cyber.display(StatOzTypography.p36, color: accent, letterSpacing: 3),
           ),
         ],
       ),
@@ -473,12 +467,12 @@ class _GiantScoreline extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text('$playerScore', style: Cyber.display(72, color: Cyber.cyan)),
+        Text('$playerScore', style: Cyber.display(StatOzTypography.p72, color: Cyber.cyan)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text('-', style: Cyber.display(48, color: Cyber.muted)),
+          child: Text('-', style: Cyber.display(StatOzTypography.p48, color: Cyber.muted)),
         ),
-        Text('$opponentScore', style: Cyber.display(72, color: Cyber.danger)),
+        Text('$opponentScore', style: Cyber.display(StatOzTypography.p72, color: Cyber.danger)),
       ],
     );
   }
@@ -565,11 +559,9 @@ class _ResultDockButton extends StatelessWidget {
               ],
               Text(
                 label,
-                style: Cyber.bodyFor(
-                  context,
-                  15,
+                style: Cyber.bodyFor(context, StatOzTypography.p15,
                   color: content,
-                  weight: FontWeight.w800,
+                  weight: StatOzTypography.bold,
                 ).copyWith(letterSpacing: 0.8),
               ),
             ],
@@ -661,9 +653,9 @@ class _XpProgressPanel extends StatelessWidget {
           Text(
             isWin ? '+$displayedCount XP' : '−$displayedCount XP',
             style: TextStyle(
-              fontFamily: 'Orbitron',
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
+              fontFamily: StatOzTypography.displayFont,
+              fontSize: StatOzTypography.p28,
+              fontWeight: StatOzTypography.black,
               color: Colors.white,
               letterSpacing: 1,
             ),
@@ -680,7 +672,7 @@ class _XpProgressPanel extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '$xpIntoLevel / $xpToNextLevel XP · LEVEL $level',
-            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.5),
+            style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 0.5),
           ),
         ],
       ),
@@ -701,12 +693,12 @@ class _RoundLogHeader extends StatelessWidget {
       children: [
         Text(
           'MATCH LOG',
-          style: Cyber.label(12, color: Cyber.cyan, letterSpacing: 2),
+          style: Cyber.label(StatOzTypography.p12, color: Cyber.cyan, letterSpacing: 2),
         ),
         const SizedBox(height: 8),
         Text(
           '$count ROUNDS PLAYED',
-          style: Cyber.label(10, color: Colors.white38, letterSpacing: 1),
+          style: Cyber.label(StatOzTypography.p10, color: Colors.white38, letterSpacing: 1),
         ),
       ],
     );
@@ -835,10 +827,9 @@ class _FinalRoundLogItem extends StatelessWidget {
               width: 40,
               child: Text(
                 'R${round.round}',
-                style: Cyber.label(
-                  10,
+                style: Cyber.label(StatOzTypography.p10,
                   color: Cyber.muted,
-                  weight: FontWeight.w700,
+                  weight: StatOzTypography.bold,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -848,8 +839,8 @@ class _FinalRoundLogItem extends StatelessWidget {
                 round.scenario.title,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+                  fontSize: StatOzTypography.p12,
+                  fontWeight: StatOzTypography.medium,
                 ),
               ),
             ),
@@ -859,8 +850,8 @@ class _FinalRoundLogItem extends StatelessWidget {
                 outcomeLabel(round.outcome),
                 style: TextStyle(
                   color: goalColor,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+                  fontSize: StatOzTypography.p11,
+                  fontWeight: StatOzTypography.bold,
                   letterSpacing: 0.5,
                 ),
                 textAlign: TextAlign.right,
@@ -871,7 +862,7 @@ class _FinalRoundLogItem extends StatelessWidget {
               width: 50,
               child: Text(
                 '$playerGoals - $cpuGoals',
-                style: Cyber.display(14, color: Colors.white, letterSpacing: 1),
+                style: Cyber.display(StatOzTypography.p14, color: Colors.white, letterSpacing: 1),
                 textAlign: TextAlign.right,
               ),
             ),

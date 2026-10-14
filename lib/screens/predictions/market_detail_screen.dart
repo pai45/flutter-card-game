@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -125,7 +126,7 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: const Color(0xff121b30),
-          content: Text(result.message, style: Cyber.bodyFor(context, 12)),
+          content: Text(result.message, style: Cyber.bodyFor(context, StatOzTypography.p12)),
         ),
       );
       return;
@@ -181,14 +182,14 @@ class _MarketHeader extends StatelessWidget {
                     const Spacer(),
                     Text(
                       market.leagueLabel,
-                      style: Cyber.label(10, color: Cyber.muted),
+                      style: Cyber.label(StatOzTypography.p10, color: Cyber.muted),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Text(
                   market.question,
-                  style: Cyber.display(18, letterSpacing: 0.5),
+                  style: Cyber.display(StatOzTypography.p18, letterSpacing: 0.5),
                 ),
                 const SizedBox(height: 12),
                 _LeadingProbability(market: market),
@@ -201,11 +202,9 @@ class _MarketHeader extends StatelessWidget {
                       market.contextTitle,
                       market.contextSubtitle,
                     ].whereType<String>().join(' · '),
-                    style: Cyber.bodyFor(
-                      context,
-                      12,
+                    style: Cyber.bodyFor(context, StatOzTypography.p12,
                       color: Cyber.muted,
-                      weight: FontWeight.w700,
+                      weight: StatOzTypography.bold,
                     ),
                   ),
                 const SizedBox(height: 12),
@@ -352,8 +351,7 @@ class _LeadingProbability extends StatelessWidget {
       children: [
         Text(
           '${leading.probabilityPercent}%',
-          style: Cyber.display(
-            34,
+          style: Cyber.display(StatOzTypography.p34,
             color: leading.color,
             letterSpacing: 0,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -367,13 +365,12 @@ class _LeadingProbability extends StatelessWidget {
                 leading.label.toUpperCase(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.label(10, color: Colors.white, letterSpacing: 1),
+                style: Cyber.label(StatOzTypography.p10, color: Colors.white, letterSpacing: 1),
               ),
               const SizedBox(height: 4),
               Text(
                 'CHANCE',
-                style: Cyber.label(
-                  8,
+                style: Cyber.label(StatOzTypography.p8,
                   color: Cyber.muted.withValues(alpha: 0.8),
                   letterSpacing: 1.4,
                 ),
@@ -412,11 +409,9 @@ class _ScoreContext extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 market.contextSubtitle!,
-                style: Cyber.bodyFor(
-                  context,
-                  11,
+                style: Cyber.bodyFor(context, StatOzTypography.p11,
                   color: Cyber.muted,
-                  weight: FontWeight.w700,
+                  weight: StatOzTypography.bold,
                 ),
               ),
             ),
@@ -440,13 +435,12 @@ class _ScoreRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: Cyber.bodyFor(context, 13, weight: FontWeight.w700),
+            style: Cyber.bodyFor(context, StatOzTypography.p13, weight: StatOzTypography.bold),
           ),
         ),
         Text(
           score ?? '-',
-          style: Cyber.label(
-            12,
+          style: Cyber.label(StatOzTypography.p12,
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
@@ -570,10 +564,8 @@ class _OutcomeRow extends StatelessWidget {
                           outcome.label,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.bodyFor(
-                            context,
-                            13,
-                            weight: FontWeight.w700,
+                          style: Cyber.bodyFor(context, StatOzTypography.p13,
+                            weight: StatOzTypography.bold,
                           ),
                         ),
                       ),
@@ -587,8 +579,7 @@ class _OutcomeRow extends StatelessWidget {
                         const SizedBox(width: 2),
                         Text(
                           'BACKED',
-                          style: Cyber.label(
-                            8,
+                          style: Cyber.label(StatOzTypography.p8,
                             color: Cyber.cyan,
                             letterSpacing: 0.8,
                           ),
@@ -609,8 +600,7 @@ class _OutcomeRow extends StatelessWidget {
             const SizedBox(width: 12),
             Text(
               '${outcome.probabilityPercent}%',
-              style: Cyber.display(
-                18,
+              style: Cyber.display(StatOzTypography.p18,
                 color: outcome.color,
                 letterSpacing: 0,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -674,7 +664,7 @@ class _NoPositionPanel extends StatelessWidget {
               market.canBuy
                   ? 'Pick an outcome to create your ticket.'
                   : 'Market is closed with no ticket held.',
-              style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+              style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
             ),
           ),
         ],
@@ -708,18 +698,18 @@ class _PositionPanel extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text('YOUR TICKET', style: Cyber.label(11, color: statusColor)),
+              Text('YOUR TICKET', style: Cyber.label(StatOzTypography.p11, color: statusColor)),
               const Spacer(),
               Text(
                 pickPositionLabel(position.status),
-                style: Cyber.label(9, color: statusColor),
+                style: Cyber.label(StatOzTypography.p9, color: statusColor),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
             position.outcomeLabel,
-            style: Cyber.display(16, letterSpacing: 0.5),
+            style: Cyber.display(StatOzTypography.p16, letterSpacing: 0.5),
           ),
           const SizedBox(height: 12),
           Row(
@@ -753,11 +743,9 @@ class _PositionPanel extends StatelessWidget {
                   : position.status == PickPositionStatus.voided
                   ? 'Stake refunded'
                   : '${position.stakeOz} Oz spent',
-              style: Cyber.bodyFor(
-                context,
-                12,
+              style: Cyber.bodyFor(context, StatOzTypography.p12,
                 color: statusColor,
-                weight: FontWeight.w700,
+                weight: StatOzTypography.bold,
               ),
             ),
           ],
@@ -785,11 +773,9 @@ class _RulesPanel extends StatelessWidget {
         '${outcome.probabilityPercent} Oz and pays 100 Oz '
         '(${(100 / outcome.probabilityPercent).toStringAsFixed(1)}×) '
         'if correct.',
-        style: Cyber.bodyFor(
-          context,
-          12,
+        style: Cyber.bodyFor(context, StatOzTypography.p12,
           color: Cyber.muted,
-          weight: FontWeight.w700,
+          weight: StatOzTypography.bold,
         ),
       ),
     );
@@ -808,16 +794,14 @@ class _TicketMetric extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: Cyber.label(9, color: Cyber.muted)),
+          Text(label, style: Cyber.label(StatOzTypography.p9, color: Cyber.muted)),
           const SizedBox(height: 5),
           Text(
             value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.bodyFor(
-              context,
-              12,
-              weight: FontWeight.w700,
+            style: Cyber.bodyFor(context, StatOzTypography.p12,
+              weight: StatOzTypography.bold,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
@@ -839,7 +823,7 @@ class _MissingMarket extends StatelessWidget {
           child: Center(
             child: Text(
               'Market unavailable.',
-              style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+              style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
             ),
           ),
         ),

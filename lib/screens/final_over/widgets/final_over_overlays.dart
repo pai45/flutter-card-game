@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -33,8 +34,7 @@ class FinalOverBowlerRevealOverlay extends StatelessWidget {
               children: [
                 Text(
                   'OVER $overNumber',
-                  style: Cyber.label(
-                    11,
+                  style: Cyber.label(StatOzTypography.p11,
                     color: Cyber.muted,
                     letterSpacing: 2.4,
                   ),
@@ -43,8 +43,7 @@ class FinalOverBowlerRevealOverlay extends StatelessWidget {
                 Text(
                   bowlerName,
                   style:
-                      Cyber.display(
-                        34,
+                      Cyber.display(StatOzTypography.p34,
                         color: Colors.white,
                         letterSpacing: 2,
                       ).copyWith(
@@ -62,8 +61,7 @@ class FinalOverBowlerRevealOverlay extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   'TAKES THE BALL',
-                  style: Cyber.label(
-                    10,
+                  style: Cyber.label(StatOzTypography.p10,
                     color: Cyber.magenta,
                     letterSpacing: 2,
                   ),
@@ -109,8 +107,7 @@ class FinalOverPauseOverlay extends StatelessWidget {
                     Text(
                       'CHASE PAUSED',
                       textAlign: TextAlign.center,
-                      style: Cyber.display(
-                        26,
+                      style: Cyber.display(StatOzTypography.p26,
                         color: Colors.white,
                         letterSpacing: 3,
                       ),
@@ -119,7 +116,7 @@ class FinalOverPauseOverlay extends StatelessWidget {
                     Text(
                       'The over is held exactly where you left it.',
                       textAlign: TextAlign.center,
-                      style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
                     ),
                     const SizedBox(height: 20),
                     HudCtaButton(
@@ -133,8 +130,7 @@ class FinalOverPauseOverlay extends StatelessWidget {
                       onPressed: onQuit,
                       child: Text(
                         'QUIT WITHOUT REWARD',
-                        style: Cyber.label(
-                          10,
+                        style: Cyber.label(StatOzTypography.p10,
                           color: Cyber.danger,
                           letterSpacing: 1.6,
                         ),

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -456,8 +457,7 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage> {
                           Expanded(
                             child: Text(
                               '${(_index + 1).toString().padLeft(2, '0')}/${widget.steps.length.toString().padLeft(2, '0')}',
-                              style: Cyber.label(
-                                9,
+                              style: Cyber.label(StatOzTypography.p9,
                                 color: step.accent,
                                 letterSpacing: 1.2,
                               ),
@@ -473,9 +473,7 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage> {
                               ),
                               child: Text(
                                 'SKIP ALL',
-                                style: Cyber.bodyFor(
-                                  context,
-                                  11,
+                                style: Cyber.bodyFor(context, StatOzTypography.p11,
                                   color: Cyber.muted,
                                 ),
                               ),
@@ -487,8 +485,7 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage> {
                         step.title.toUpperCase(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.label(
-                          12,
+                        style: Cyber.label(StatOzTypography.p12,
                           color: AppTheme.whiteColor,
                           letterSpacing: 0.5,
                         ),
@@ -498,9 +495,7 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage> {
                         child: SingleChildScrollView(
                           child: Text(
                             step.body,
-                            style: Cyber.bodyFor(
-                              context,
-                              13,
+                            style: Cyber.bodyFor(context, StatOzTypography.p13,
                               color: AppTheme.whiteColor,
                             ).copyWith(height: 1.35),
                           ),
@@ -549,7 +544,7 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage> {
                                 ),
                                 child: Text(
                                   '< BACK',
-                                  style: Cyber.label(11, color: Cyber.muted),
+                                  style: Cyber.label(StatOzTypography.p11, color: Cyber.muted),
                                 ),
                               ),
                             ),
@@ -569,8 +564,7 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage> {
                                 _index < widget.steps.length - 1
                                     ? 'NEXT >'
                                     : 'GOT IT >',
-                                style: Cyber.label(
-                                  14,
+                                style: Cyber.label(StatOzTypography.p14,
                                   color: step.accent,
                                   letterSpacing: 1.4,
                                 ),

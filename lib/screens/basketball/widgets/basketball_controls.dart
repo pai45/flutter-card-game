@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -339,7 +340,7 @@ class _ActionCueCopy extends StatelessWidget {
                 const SizedBox(width: 5),
                 Text(
                   label,
-                  style: Cyber.display(11, color: accent, letterSpacing: 1.4),
+                  style: Cyber.display(StatOzTypography.p11, color: accent, letterSpacing: 1.4),
                 ),
               ],
             ),
@@ -347,8 +348,7 @@ class _ActionCueCopy extends StatelessWidget {
             Text(
               instruction,
               maxLines: 1,
-              style: Cyber.label(
-                6.5,
+              style: Cyber.label(StatOzTypography.p6_5,
                 color: down ? Cyber.gold : Cyber.muted,
                 letterSpacing: 0.65,
               ),
@@ -382,7 +382,7 @@ class _HintLabel extends StatelessWidget {
           ),
           child: Text(
             text,
-            style: Cyber.label(8, color: Cyber.gold, letterSpacing: 1.4),
+            style: Cyber.label(StatOzTypography.p8, color: Cyber.gold, letterSpacing: 1.4),
           ),
         ),
       ),

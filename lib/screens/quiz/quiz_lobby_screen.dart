@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -307,8 +308,7 @@ class _QuizSetScreenState extends State<QuizSetScreen> {
                           ),
                           Text(
                             '${progress.completedCount}/$kQuizSetCount CLEARED',
-                            style: Cyber.label(
-                              9,
+                            style: Cyber.label(StatOzTypography.p9,
                               color: mode.accent,
                               letterSpacing: 1,
                             ),
@@ -323,8 +323,7 @@ class _QuizSetScreenState extends State<QuizSetScreen> {
                           Text(
                             '${progress.starCount}/${progress.maxStars}',
                             style:
-                                Cyber.label(
-                                  9,
+                                Cyber.label(StatOzTypography.p9,
                                   color: Cyber.gold,
                                   letterSpacing: 0.4,
                                 ).copyWith(
@@ -455,8 +454,7 @@ class _KnowledgeArenaHero extends StatelessWidget {
                       'QUIZ GRID // ${sport.name.toUpperCase()}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.label(
-                        7.5,
+                      style: Cyber.label(StatOzTypography.p7_5,
                         color: Cyber.cyan,
                         letterSpacing: 1.25,
                       ),
@@ -471,8 +469,7 @@ class _KnowledgeArenaHero extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     '04 TRACKS',
-                    style: Cyber.label(
-                      7.5,
+                    style: Cyber.label(StatOzTypography.p7_5,
                       color: Cyber.muted,
                       letterSpacing: 1.1,
                       fontFeatures: const [FontFeature.tabularFigures()],
@@ -515,8 +512,7 @@ class _KnowledgeArenaHero extends StatelessWidget {
                               bottom: 8,
                               child: Text(
                                 'TRIVIA',
-                                style: Cyber.label(
-                                  6.5,
+                                style: Cyber.label(StatOzTypography.p6_5,
                                   color: Cyber.muted,
                                   letterSpacing: 1.1,
                                 ),
@@ -537,14 +533,13 @@ class _KnowledgeArenaHero extends StatelessWidget {
                           alignment: Alignment.centerLeft,
                           child: Text(
                             'KNOWLEDGE',
-                            style: Cyber.display(15.5, letterSpacing: 1.35),
+                            style: Cyber.display(StatOzTypography.p15_5, letterSpacing: 1.35),
                           ),
                         ),
                         const SizedBox(height: 3),
                         Text(
                           'ARENA',
-                          style: Cyber.display(
-                            22,
+                          style: Cyber.display(StatOzTypography.p22,
                             color: Cyber.cyan,
                             letterSpacing: 2,
                           ),
@@ -554,8 +549,7 @@ class _KnowledgeArenaHero extends StatelessWidget {
                           'CLEAR SETS // CLIMB THE LADDER',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.label(
-                            7,
+                          style: Cyber.label(StatOzTypography.p7,
                             color: Cyber.muted,
                             letterSpacing: 0.65,
                           ),
@@ -574,8 +568,7 @@ class _KnowledgeArenaHero extends StatelessWidget {
                         Text(
                           '$passed',
                           style:
-                              Cyber.display(
-                                27,
+                              Cyber.display(StatOzTypography.p27,
                                 color: Cyber.cyan,
                                 letterSpacing: 0.3,
                               ).copyWith(
@@ -587,8 +580,7 @@ class _KnowledgeArenaHero extends StatelessWidget {
                         const SizedBox(height: 2),
                         Text(
                           '/ $total',
-                          style: Cyber.label(
-                            9,
+                          style: Cyber.label(StatOzTypography.p9,
                             color: Cyber.muted,
                             letterSpacing: 0.4,
                             fontFeatures: const [FontFeature.tabularFigures()],
@@ -598,8 +590,7 @@ class _KnowledgeArenaHero extends StatelessWidget {
                         Text(
                           'SETS CLEARED',
                           textAlign: TextAlign.right,
-                          style: Cyber.label(
-                            6,
+                          style: Cyber.label(StatOzTypography.p6,
                             color: Cyber.muted,
                             letterSpacing: 0.65,
                             height: 1.15,
@@ -620,8 +611,7 @@ class _KnowledgeArenaHero extends StatelessWidget {
                     children: [
                       Text(
                         'TOTAL MASTERY',
-                        style: Cyber.label(
-                          7.5,
+                        style: Cyber.label(StatOzTypography.p7_5,
                           color: Cyber.muted,
                           letterSpacing: 1.2,
                         ),
@@ -629,8 +619,7 @@ class _KnowledgeArenaHero extends StatelessWidget {
                       const Spacer(),
                       Text(
                         '$progressPercent%',
-                        style: Cyber.label(
-                          8.5,
+                        style: Cyber.label(StatOzTypography.p8_5,
                           color: Cyber.cyan,
                           letterSpacing: 0.5,
                           fontFeatures: const [FontFeature.tabularFigures()],
@@ -656,8 +645,7 @@ class _KnowledgeArenaHero extends StatelessWidget {
                       children: [
                         Text(
                           'MISSION BRIEF',
-                          style: Cyber.label(
-                            7,
+                          style: Cyber.label(StatOzTypography.p7,
                             color: Cyber.cyan,
                             letterSpacing: 1.15,
                           ),
@@ -665,9 +653,7 @@ class _KnowledgeArenaHero extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           'Clear sets to advance each category ladder.',
-                          style: Cyber.bodyFor(
-                            context,
-                            10.5,
+                          style: Cyber.bodyFor(context, StatOzTypography.p10_5,
                             color: Cyber.muted,
                           ),
                         ),
@@ -689,8 +675,7 @@ class _KnowledgeArenaHero extends StatelessWidget {
                           Text(
                             '10',
                             style:
-                                Cyber.display(
-                                  14,
+                                Cyber.display(StatOzTypography.p14,
                                   color: Cyber.cyan,
                                   letterSpacing: 0.3,
                                 ).copyWith(
@@ -702,8 +687,7 @@ class _KnowledgeArenaHero extends StatelessWidget {
                           const SizedBox(height: 2),
                           Text(
                             'Q / RUN',
-                            style: Cyber.label(
-                              5.8,
+                            style: Cyber.label(StatOzTypography.p5_8,
                               color: Cyber.muted,
                               letterSpacing: 0.65,
                             ),
@@ -819,8 +803,7 @@ class _ModeTile extends StatelessWidget {
                       textAlign: TextAlign.right,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.label(
-                        7,
+                      style: Cyber.label(StatOzTypography.p7,
                         color: Cyber.gold,
                         letterSpacing: 0.4,
                         height: 1.2,
@@ -834,15 +817,14 @@ class _ModeTile extends StatelessWidget {
                 mode.label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.display(15, letterSpacing: 1.2),
+                style: Cyber.display(StatOzTypography.p15, letterSpacing: 1.2),
               ),
               const SizedBox(height: 4),
               Text(
                 mode.blurbFor(sport),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.label(
-                  7.5,
+                style: Cyber.label(StatOzTypography.p7_5,
                   color: Cyber.muted,
                   letterSpacing: 0.65,
                 ),
@@ -852,8 +834,7 @@ class _ModeTile extends StatelessWidget {
                 complete ? 'LADDER COMPLETE' : 'NEXT SET $_nextSet',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.label(
-                  7.5,
+                style: Cyber.label(StatOzTypography.p7_5,
                   color: complete
                       ? Cyber.success
                       : accent.withValues(alpha: 0.9),
@@ -874,14 +855,14 @@ class _ModeTile extends StatelessWidget {
                   const SizedBox(width: 3),
                   Text(
                     '${progress.starCount}',
-                    style: Cyber.label(8.5, color: Cyber.gold).copyWith(
+                    style: Cyber.label(StatOzTypography.p8_5, color: Cyber.gold).copyWith(
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
                   const Spacer(),
                   Text(
                     '${progress.completedCount}/$kQuizSetCount',
-                    style: Cyber.display(11, color: accent).copyWith(
+                    style: Cyber.display(StatOzTypography.p11, color: accent).copyWith(
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
@@ -914,7 +895,7 @@ class _CoinBalance extends StatelessWidget {
           children: [
             const Icon(Icons.toll, color: Cyber.gold, size: 16),
             const SizedBox(width: 5),
-            Text('$coins', style: Cyber.display(11, color: Cyber.gold)),
+            Text('$coins', style: Cyber.display(StatOzTypography.p11, color: Cyber.gold)),
           ],
         ),
       ),
@@ -975,7 +956,7 @@ class _NextChallengeCard extends StatelessWidget {
                       : ladderComplete
                       ? 'LADDER COMPLETE'
                       : 'NEXT CHALLENGE',
-                  style: Cyber.label(10, color: accent, letterSpacing: 1.6),
+                  style: Cyber.label(StatOzTypography.p10, color: accent, letterSpacing: 1.6),
                 ),
               ),
               CyberChip(
@@ -995,7 +976,7 @@ class _NextChallengeCard extends StatelessWidget {
                 : ladderComplete
                 ? '${mode.label} KNOWLEDGE MASTERED'
                 : '${mode.label} · SET $setNumber',
-            style: Cyber.display(20, letterSpacing: 1.1),
+            style: Cyber.display(StatOzTypography.p20, letterSpacing: 1.1),
           ),
           const SizedBox(height: 7),
           Text(
@@ -1006,7 +987,7 @@ class _NextChallengeCard extends StatelessWidget {
                 : replay
                 ? 'Best ${progress.bestCorrect}/$kQuizQuestionsPerSet · ${progress.stars}/3 stars · replay for a perfect run.'
                 : '10 questions · instant verdict after every answer.',
-            style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+            style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
           ),
         ],
       ),
@@ -1106,14 +1087,13 @@ class _ChapterTab extends StatelessWidget {
                 child: Text(
                   kQuizBandNames[chapter],
                   maxLines: 1,
-                  style: Cyber.label(7.5, color: ink, letterSpacing: 0.3),
+                  style: Cyber.label(StatOzTypography.p7_5, color: ink, letterSpacing: 0.3),
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 '${firstSet.toString().padLeft(2, '0')}–${firstSet + 9}',
-                style: Cyber.label(
-                  8.5,
+                style: Cyber.label(StatOzTypography.p8_5,
                   color: selected
                       ? accent
                       : ink.withValues(alpha: authored ? 0.75 : 0.45),
@@ -1209,7 +1189,7 @@ class _SetTile extends StatelessWidget {
                   const SizedBox(height: 5),
                   Text(
                     setNumber.toString().padLeft(2, '0'),
-                    style: Cyber.display(15, color: color),
+                    style: Cyber.display(StatOzTypography.p15, color: color),
                   ),
                   const SizedBox(height: 4),
                   if (graded)
@@ -1219,8 +1199,7 @@ class _SetTile extends StatelessWidget {
                       launching ? 'OPENING' : status,
                       maxLines: 1,
                       textAlign: TextAlign.center,
-                      style: Cyber.label(
-                        6.5,
+                      style: Cyber.label(StatOzTypography.p6_5,
                         color: color,
                         letterSpacing: 0.35,
                       ),
@@ -1236,8 +1215,7 @@ class _SetTile extends StatelessWidget {
                           : '+${mode.reward} XP EACH',
                       maxLines: 1,
                       textAlign: TextAlign.center,
-                      style: Cyber.label(
-                        5.8,
+                      style: Cyber.label(StatOzTypography.p5_8,
                         color: graded
                             ? Cyber.muted
                             : color.withValues(alpha: 0.8),
@@ -1276,7 +1254,7 @@ class _LadderRule extends StatelessWidget {
             child: Text(
               'Finish all $kQuizQuestionsPerSet questions to unlock the next set — any score clears it. '
               'Score $kQuizQuestionsPerSet/$kQuizQuestionsPerSet for 3 stars.',
-              style: Cyber.bodyFor(context, 11.5, color: Cyber.muted),
+              style: Cyber.bodyFor(context, StatOzTypography.p11_5, color: Cyber.muted),
             ),
           ),
         ],
@@ -1327,7 +1305,7 @@ class _EntryBriefing extends StatelessWidget {
                         Expanded(
                           child: Text(
                             'ENTRY BRIEFING',
-                            style: Cyber.display(17, letterSpacing: 1.6),
+                            style: Cyber.display(StatOzTypography.p17, letterSpacing: 1.6),
                           ),
                         ),
                         IconButton(
@@ -1358,13 +1336,12 @@ class _EntryBriefing extends StatelessWidget {
                                   children: [
                                     Text(
                                       '${mode.label} · SET $setNumber',
-                                      style: Cyber.display(18),
+                                      style: Cyber.display(StatOzTypography.p18),
                                     ),
                                     const SizedBox(height: 5),
                                     Text(
                                       '${sport.name.toUpperCase()} · ${mode.blurbFor(sport)}',
-                                      style: Cyber.label(
-                                        8.5,
+                                      style: Cyber.label(StatOzTypography.p8_5,
                                         color: Cyber.muted,
                                       ),
                                     ),
@@ -1433,8 +1410,7 @@ class _EntryBriefing extends StatelessWidget {
                               canAfford
                                   ? 'BALANCE · $coins COINS'
                                   : 'NEED $missing MORE COINS',
-                              style: Cyber.label(
-                                10,
+                              style: Cyber.label(StatOzTypography.p10,
                                 color: canAfford ? Colors.white : Cyber.danger,
                               ),
                             ),
@@ -1488,10 +1464,10 @@ class _BriefingStat extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1),
+            style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1),
           ),
         ),
-        Text(value, style: Cyber.label(10, color: accent)),
+        Text(value, style: Cyber.label(StatOzTypography.p10, color: accent)),
       ],
     );
   }

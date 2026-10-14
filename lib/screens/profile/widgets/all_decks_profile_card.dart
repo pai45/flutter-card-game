@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../blocs/game/game_state.dart';
@@ -62,8 +63,7 @@ class AllDecksProfileCard extends StatelessWidget {
                     children: [
                       Text(
                         'ALL DECKS',
-                        style: Cyber.label(
-                          11,
+                        style: Cyber.label(StatOzTypography.p11,
                           color: Colors.white,
                           letterSpacing: 1.5,
                         ),
@@ -73,8 +73,7 @@ class AllDecksProfileCard extends StatelessWidget {
                         '// ${active?.name.toUpperCase() ?? 'ACTIVE SQUAD'}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.label(
-                          8,
+                        style: Cyber.label(StatOzTypography.p8,
                           color: Cyber.cyan,
                           letterSpacing: 1,
                         ),
@@ -84,8 +83,7 @@ class AllDecksProfileCard extends StatelessWidget {
                 ),
                 Text(
                   '${game.sportDeckReadyCount}/5',
-                  style: Cyber.display(
-                    17,
+                  style: Cyber.display(StatOzTypography.p17,
                     color: allReady ? Cyber.success : Cyber.cyan,
                   ),
                 ),
@@ -118,8 +116,7 @@ class AllDecksProfileCard extends StatelessWidget {
               allReady
                   ? 'EVERY SPORT LOADOUT IS LOCKED AND READY'
                   : 'MANAGE THE SAME LOADOUTS USED IN EVERY GAME',
-              style: Cyber.label(
-                7,
+              style: Cyber.label(StatOzTypography.p7,
                 color: Cyber.muted,
                 letterSpacing: 0.9,
               ),

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -573,7 +574,7 @@ class _LandingSystemBar extends StatelessWidget {
         Expanded(
           child: Text(
             'COURT ONLINE // ${player.name.toUpperCase()}',
-            style: Cyber.display(9, color: Cyber.muted),
+            style: Cyber.display(StatOzTypography.p9, color: Cyber.muted),
           ),
         ),
         IconButton(
@@ -614,22 +615,20 @@ class _TennisHero extends StatelessWidget {
                     color: Cyber.lime.withValues(alpha: 0.16),
                     child: Text(
                       'FEATURED // 2D ARCADE',
-                      style: Cyber.display(8, color: Cyber.lime),
+                      style: Cyber.display(StatOzTypography.p8, color: Cyber.lime),
                     ),
                   ),
                   const SizedBox(height: 13),
                   Text(
                     'TENNIS',
-                    style: Cyber.display(
-                      34,
+                    style: Cyber.display(StatOzTypography.p34,
                       color: Colors.white,
                       letterSpacing: 0.5,
                     ),
                   ),
                   Text(
                     'RALLY',
-                    style: Cyber.display(
-                      38,
+                    style: Cyber.display(StatOzTypography.p38,
                       color: Cyber.lime,
                       letterSpacing: 1.8,
                     ),
@@ -637,9 +636,7 @@ class _TennisHero extends StatelessWidget {
                   const SizedBox(height: 7),
                   Text(
                     'READ THE BOUNCE. OWN THE LINE.',
-                    style: Cyber.bodyFor(
-                      context,
-                      11,
+                    style: Cyber.bodyFor(context, StatOzTypography.p11,
                       color: Colors.white.withValues(alpha: 0.72),
                       letterSpacing: 0.8,
                     ),
@@ -746,19 +743,19 @@ class _ResumeCard extends StatelessWidget {
               children: [
                 Text(
                   'MATCH SUSPENDED',
-                  style: Cyber.display(11, color: Cyber.amber),
+                  style: Cyber.display(StatOzTypography.p11, color: Cyber.amber),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${snapshot.config.mode.label} // ${tennisPlayerById(snapshot.config.opponentId).name.toUpperCase()}',
-                  style: Cyber.bodyFor(context, 10, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, StatOzTypography.p10, color: Cyber.muted),
                 ),
               ],
             ),
           ),
           TextButton(
             onPressed: onResume,
-            child: Text('RESUME', style: Cyber.display(10, color: Cyber.amber)),
+            child: Text('RESUME', style: Cyber.display(StatOzTypography.p10, color: Cyber.amber)),
           ),
         ],
       ),
@@ -802,13 +799,13 @@ class _ModeCard extends StatelessWidget {
                 Text(
                   mode.label,
                   maxLines: 1,
-                  style: Cyber.display(10, color: Colors.white),
+                  style: Cyber.display(StatOzTypography.p10, color: Colors.white),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
                   maxLines: 1,
-                  style: Cyber.display(7, color: Cyber.muted),
+                  style: Cyber.display(StatOzTypography.p7, color: Cyber.muted),
                 ),
               ],
             ),
@@ -859,12 +856,12 @@ class _MatchHistoryStrip extends StatelessWidget {
                 children: [
                   Text(
                     'MATCH HISTORY',
-                    style: Cyber.display(12, color: Colors.white),
+                    style: Cyber.display(StatOzTypography.p12, color: Colors.white),
                   ),
                   const SizedBox(height: 5),
                   Text(
                     '${profile.setsWon} WINS // ${(rate * 100).round()}% RATE // CAREER + RECENT SETS',
-                    style: Cyber.display(8, color: Cyber.muted),
+                    style: Cyber.display(StatOzTypography.p8, color: Cyber.muted),
                   ),
                 ],
               ),
@@ -896,10 +893,10 @@ class _MasteryStrip extends StatelessWidget {
               Expanded(
                 child: Text(
                   '${player.name.toUpperCase()} MASTERY',
-                  style: Cyber.display(10),
+                  style: Cyber.display(StatOzTypography.p10),
                 ),
               ),
-              Text('LV $level', style: Cyber.display(11, color: Cyber.cyan)),
+              Text('LV $level', style: Cyber.display(StatOzTypography.p11, color: Cyber.cyan)),
             ],
           ),
           const SizedBox(height: 9),
@@ -911,7 +908,7 @@ class _MasteryStrip extends StatelessWidget {
           const SizedBox(height: 7),
           Text(
             _nextCosmetic(level),
-            style: Cyber.display(8, color: Cyber.muted),
+            style: Cyber.display(StatOzTypography.p8, color: Cyber.muted),
           ),
         ],
       ),
@@ -1067,13 +1064,13 @@ class _AthleteCard extends StatelessWidget {
                 Text(
                   player.name.toUpperCase(),
                   maxLines: 1,
-                  style: Cyber.display(10),
+                  style: Cyber.display(StatOzTypography.p10),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   player.archetype.label,
                   maxLines: 1,
-                  style: Cyber.display(7, color: accent),
+                  style: Cyber.display(StatOzTypography.p7, color: accent),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -1082,7 +1079,7 @@ class _AthleteCard extends StatelessWidget {
                       : _unlockLabel(player.id),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.display(7, color: Cyber.muted),
+                  style: Cyber.display(StatOzTypography.p7, color: Cyber.muted),
                 ),
               ],
             ),
@@ -1154,12 +1151,12 @@ class _AthleteDetail extends StatelessWidget {
               Expanded(
                 child: Text(
                   player.signature,
-                  style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
                 ),
               ),
               Text(
                 'LV ${profile.masteryLevel(player.id)}',
-                style: Cyber.display(11, color: Cyber.cyan),
+                style: Cyber.display(StatOzTypography.p11, color: Cyber.cyan),
               ),
             ],
           ),
@@ -1198,9 +1195,9 @@ class _RatingChip extends StatelessWidget {
       color: Cyber.bg.withValues(alpha: 0.62),
       child: Row(
         children: [
-          Text(label, style: Cyber.display(7, color: Cyber.muted)),
+          Text(label, style: Cyber.display(StatOzTypography.p7, color: Cyber.muted)),
           const Spacer(),
-          Text('$value', style: Cyber.display(9, color: Cyber.cyan)),
+          Text('$value', style: Cyber.display(StatOzTypography.p9, color: Cyber.cyan)),
         ],
       ),
     );
@@ -1243,8 +1240,7 @@ class _DifficultyPicker extends StatelessWidget {
                   child: Text(
                     difficulty.label,
                     textAlign: TextAlign.center,
-                    style: Cyber.display(
-                      8,
+                    style: Cyber.display(StatOzTypography.p8,
                       color: difficulty == selected ? Cyber.cyan : Cyber.muted,
                     ),
                   ),
@@ -1345,8 +1341,7 @@ class _PreviewScreen extends StatelessWidget {
                                             alignment: Alignment.centerLeft,
                                             child: Text(
                                               'TENNIS RALLY',
-                                              style: Cyber.display(
-                                                24,
+                                              style: Cyber.display(StatOzTypography.p24,
                                                 letterSpacing: 1.4,
                                               ),
                                             ),
@@ -1354,8 +1349,7 @@ class _PreviewScreen extends StatelessWidget {
                                           const SizedBox(height: 6),
                                           Text(
                                             'FAST COURT SHOWDOWN',
-                                            style: Cyber.display(
-                                              9,
+                                            style: Cyber.display(StatOzTypography.p9,
                                               color: Cyber.muted,
                                               letterSpacing: 2.2,
                                             ),
@@ -1567,8 +1561,7 @@ class _TennisLobbyEmblem extends StatelessWidget {
                     bottom: 11,
                     child: Text(
                       'TR//01',
-                      style: Cyber.display(
-                        6.5,
+                      style: Cyber.display(StatOzTypography.p6_5,
                         color: Cyber.muted,
                         letterSpacing: 0.8,
                       ),
@@ -1644,7 +1637,7 @@ class _ControlBrief extends StatelessWidget {
           Expanded(
             child: Text(
               'DRAG TO MOVE // QUICK FLICK TO SPRINT',
-              style: Cyber.display(8, color: Cyber.muted),
+              style: Cyber.display(StatOzTypography.p8, color: Cyber.muted),
             ),
           ),
           const SizedBox(width: 8),
@@ -1653,7 +1646,7 @@ class _ControlBrief extends StatelessWidget {
           Expanded(
             child: Text(
               'TAP, HOLD OR SWIPE TO SHAPE THE SHOT',
-              style: Cyber.display(8, color: Cyber.muted),
+              style: Cyber.display(StatOzTypography.p8, color: Cyber.muted),
             ),
           ),
         ],
@@ -1711,12 +1704,12 @@ class _TrainingScreen extends StatelessWidget {
                                 children: [
                                   Text(
                                     state.selectedPlayer.name.toUpperCase(),
-                                    style: Cyber.display(11),
+                                    style: Cyber.display(StatOzTypography.p11),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     '${state.profile.completedLessons.length}/8 COMPLETE',
-                                    style: Cyber.display(8, color: Cyber.cyan),
+                                    style: Cyber.display(StatOzTypography.p8, color: Cyber.cyan),
                                   ),
                                 ],
                               ),
@@ -1725,7 +1718,7 @@ class _TrainingScreen extends StatelessWidget {
                               onPressed: onSelectPlayer,
                               child: Text(
                                 'CHANGE',
-                                style: Cyber.display(9, color: Cyber.cyan),
+                                style: Cyber.display(StatOzTypography.p9, color: Cyber.cyan),
                               ),
                             ),
                           ],
@@ -1781,7 +1774,7 @@ class _LessonCard extends StatelessWidget {
                 ? const Icon(Icons.check, color: Cyber.lime)
                 : Text(
                     '${lesson.number}',
-                    style: Cyber.display(16, color: Cyber.cyan),
+                    style: Cyber.display(StatOzTypography.p16, color: Cyber.cyan),
                   ),
           ),
           const SizedBox(width: 12),
@@ -1789,11 +1782,11 @@ class _LessonCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(lesson.name, style: Cyber.display(10)),
+                Text(lesson.name, style: Cyber.display(StatOzTypography.p10)),
                 const SizedBox(height: 4),
                 Text(
                   lesson.objective,
-                  style: Cyber.bodyFor(context, 10, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, StatOzTypography.p10, color: Cyber.muted),
                 ),
               ],
             ),
@@ -1802,8 +1795,7 @@ class _LessonCard extends StatelessWidget {
             onPressed: onStart,
             child: Text(
               complete ? 'REPLAY' : 'START',
-              style: Cyber.display(
-                9,
+              style: Cyber.display(StatOzTypography.p9,
                 color: complete ? Cyber.lime : Cyber.cyan,
               ),
             ),
@@ -1931,20 +1923,20 @@ class _TournamentHeader extends StatelessWidget {
                   tournament?.champion == true
                       ? 'TITLE SECURED'
                       : 'THREE WINS TO THE TROPHY',
-                  style: Cyber.display(12, color: Cyber.gold),
+                  style: Cyber.display(StatOzTypography.p12, color: Cyber.gold),
                 ),
                 const SizedBox(height: 5),
                 Text(
                   '${tennisPlayerById(tournament?.playerId ?? profile.selectedPlayerId).name.toUpperCase()} // '
                   '${tournament?.difficulty.label ?? profile.difficulty.label}',
-                  style: Cyber.display(8, color: Cyber.muted),
+                  style: Cyber.display(StatOzTypography.p8, color: Cyber.muted),
                 ),
               ],
             ),
           ),
           Text(
             '${tournament?.results.where((result) => result == 'W').length ?? 0}/3',
-            style: Cyber.display(19, color: Cyber.gold),
+            style: Cyber.display(StatOzTypography.p19, color: Cyber.gold),
           ),
         ],
       ),
@@ -1964,7 +1956,7 @@ class _Bracket extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('TOURNAMENT DRAW', style: Cyber.display(11, color: Cyber.cyan)),
+          Text('TOURNAMENT DRAW', style: Cyber.display(StatOzTypography.p11, color: Cyber.cyan)),
           const SizedBox(height: 12),
           for (var i = 0; i < tournament.opponents.length; i++) ...[
             _BracketRound(
@@ -1981,7 +1973,7 @@ class _Bracket extends StatelessWidget {
               ),
           ],
           const SizedBox(height: 14),
-          Text('FIELD OF 8', style: Cyber.display(8, color: Cyber.muted)),
+          Text('FIELD OF 8', style: Cyber.display(StatOzTypography.p8, color: Cyber.muted)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 6,
@@ -1998,8 +1990,7 @@ class _Bracket extends StatelessWidget {
                       : Cyber.bg.withValues(alpha: 0.62),
                   child: Text(
                     tennisPlayerById(id).name.toUpperCase(),
-                    style: Cyber.display(
-                      7,
+                    style: Cyber.display(StatOzTypography.p7,
                       color: id == tournament.playerId
                           ? Cyber.cyan
                           : Cyber.muted,
@@ -2048,17 +2039,17 @@ class _BracketRound extends StatelessWidget {
             width: 90,
             child: Text(
               _roundName(round),
-              style: Cyber.display(8, color: color),
+              style: Cyber.display(StatOzTypography.p8, color: color),
             ),
           ),
           _PlayerMonogram(player: opponent, size: 34),
           const SizedBox(width: 9),
           Expanded(
-            child: Text(opponent.name.toUpperCase(), style: Cyber.display(9)),
+            child: Text(opponent.name.toUpperCase(), style: Cyber.display(StatOzTypography.p9)),
           ),
           Text(
             result ?? (current ? 'NEXT' : '--'),
-            style: Cyber.display(10, color: color),
+            style: Cyber.display(StatOzTypography.p10, color: color),
           ),
         ],
       ),
@@ -2138,9 +2129,9 @@ class _CareerNumber extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(value, style: Cyber.display(19, color: Cyber.cyan)),
+          Text(value, style: Cyber.display(StatOzTypography.p19, color: Cyber.cyan)),
           const SizedBox(height: 4),
-          Text(label, style: Cyber.display(7, color: Cyber.muted)),
+          Text(label, style: Cyber.display(StatOzTypography.p7, color: Cyber.muted)),
         ],
       ),
     );
@@ -2159,7 +2150,7 @@ class _TrophyCabinet extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('TROPHY CABINET', style: Cyber.display(11, color: Cyber.gold)),
+          Text('TROPHY CABINET', style: Cyber.display(StatOzTypography.p11, color: Cyber.gold)),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -2177,11 +2168,11 @@ class _TrophyCabinet extends StatelessWidget {
                       const SizedBox(height: 5),
                       Text(
                         difficulty.label,
-                        style: Cyber.display(7, color: Cyber.muted),
+                        style: Cyber.display(StatOzTypography.p7, color: Cyber.muted),
                       ),
                       Text(
                         'x${profile.trophies[difficulty.name] ?? 0}',
-                        style: Cyber.display(9, color: Cyber.gold),
+                        style: Cyber.display(StatOzTypography.p9, color: Cyber.gold),
                       ),
                     ],
                   ),
@@ -2214,7 +2205,7 @@ class _MasteryRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(player.name.toUpperCase(), style: Cyber.display(9)),
+                Text(player.name.toUpperCase(), style: Cyber.display(StatOzTypography.p9)),
                 const SizedBox(height: 6),
                 CyberProgressBar(
                   value: profile.masteryProgress(player.id),
@@ -2228,7 +2219,7 @@ class _MasteryRow extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             'LV $level',
-            style: Cyber.display(10, color: _playerAccent(player.id)),
+            style: Cyber.display(StatOzTypography.p10, color: _playerAccent(player.id)),
           ),
         ],
       ),
@@ -2265,15 +2256,14 @@ class _AchievementRow extends StatelessWidget {
                 children: [
                   Text(
                     spec.name,
-                    style: Cyber.display(
-                      9,
+                    style: Cyber.display(StatOzTypography.p9,
                       color: unlocked ? Colors.white : Cyber.muted,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     spec.condition,
-                    style: Cyber.bodyFor(context, 10, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, StatOzTypography.p10, color: Cyber.muted),
                   ),
                 ],
               ),
@@ -2460,7 +2450,7 @@ class _HubSwitch extends StatelessWidget {
   Widget build(BuildContext context) {
     return SwitchListTile.adaptive(
       contentPadding: EdgeInsets.zero,
-      title: Text(label, style: Cyber.display(9)),
+      title: Text(label, style: Cyber.display(StatOzTypography.p9)),
       value: value,
       activeThumbColor: Cyber.cyan,
       onChanged: onChanged,
@@ -2488,7 +2478,7 @@ class _HubSlider extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Cyber.display(9, color: Cyber.muted)),
+        Text(label, style: Cyber.display(StatOzTypography.p9, color: Cyber.muted)),
         Slider(
           value: value,
           min: min,

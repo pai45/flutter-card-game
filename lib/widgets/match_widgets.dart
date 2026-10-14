@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -357,8 +358,8 @@ class MatchHeaderScore extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white,
                 fontFamily: Cyber.displayFont,
-                fontSize: 13,
-                fontWeight: FontWeight.w900,
+                fontSize: StatOzTypography.p13,
+                fontWeight: StatOzTypography.black,
                 letterSpacing: 0.8,
                 fontFeatures: [FontFeature.tabularFigures()],
               ),
@@ -431,8 +432,8 @@ class _ScoreDigit extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontFamily: Cyber.displayFont,
-          fontSize: 15,
-          fontWeight: FontWeight.w700,
+          fontSize: StatOzTypography.p15,
+          fontWeight: StatOzTypography.bold,
           letterSpacing: 0.5,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
@@ -477,8 +478,8 @@ class RoleStrip extends StatelessWidget {
               'YOU // ${attacking ? 'ATTACKING' : 'DEFENDING'}',
               style: TextStyle(
                 color: accent,
-                fontFamily: 'Orbitron',
-                fontWeight: FontWeight.w900,
+                fontFamily: StatOzTypography.displayFont,
+                fontWeight: StatOzTypography.black,
                 letterSpacing: 1.3,
               ),
             ),
@@ -583,7 +584,7 @@ class SelectedMovePanel extends StatelessWidget {
                             style: Cyber.label(
                               compact ? 14 : 15,
                               color: Colors.white,
-                              weight: FontWeight.w800,
+                              weight: StatOzTypography.extrabold,
                               letterSpacing: 2,
                             ),
                           ),
@@ -678,7 +679,7 @@ class _MoveArenaSlot extends StatelessWidget {
         Center(
           child: Text(
             label,
-            style: Cyber.label(11, color: accent, letterSpacing: 1.4),
+            style: Cyber.label(StatOzTypography.p11, color: accent, letterSpacing: 1.4),
           ),
         ),
         const SizedBox(height: 8),
@@ -709,8 +710,8 @@ class _MoveArenaSlot extends StatelessWidget {
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.9),
               fontFamily: Cyber.displayFont,
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
+              fontSize: StatOzTypography.p10,
+              fontWeight: StatOzTypography.black,
               letterSpacing: 0.5,
             ),
           ),
@@ -750,8 +751,8 @@ class _PendingSelectionBox extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.65),
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
+              fontSize: StatOzTypography.p10,
+              fontWeight: StatOzTypography.bold,
               letterSpacing: 1.2,
             ),
           ),
@@ -779,7 +780,7 @@ class _ArenaCenterColumn extends StatelessWidget {
               color: Cyber.bg,
               border: Border.all(color: Cyber.gold),
             ),
-            child: Text('VS', style: Cyber.display(18, color: Cyber.gold)),
+            child: Text('VS', style: Cyber.display(StatOzTypography.p18, color: Cyber.gold)),
           ),
           const SizedBox(height: 12),
           if (estimate != null)
@@ -795,10 +796,9 @@ class _ArenaCenterColumn extends StatelessWidget {
                   Text(
                     'POWER',
                     textAlign: TextAlign.center,
-                    style: Cyber.label(
-                      9,
+                    style: Cyber.label(StatOzTypography.p9,
                       color: Cyber.gold.withValues(alpha: 0.8),
-                      weight: FontWeight.w700,
+                      weight: StatOzTypography.bold,
                       letterSpacing: 1,
                     ),
                   ),
@@ -806,8 +806,7 @@ class _ArenaCenterColumn extends StatelessWidget {
                   Text(
                     '${estimate!}-${estimate! + 20}',
                     textAlign: TextAlign.center,
-                    style: Cyber.display(
-                      14,
+                    style: Cyber.display(StatOzTypography.p14,
                       color: Cyber.gold,
                       letterSpacing: 0.4,
                     ),
@@ -837,8 +836,8 @@ class LoadoutStatusPanel extends StatelessWidget {
             '> LOADOUT STATUS',
             style: TextStyle(
               color: Cyber.cyan.withValues(alpha: 0.68),
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
+              fontSize: StatOzTypography.p10,
+              fontWeight: StatOzTypography.bold,
               letterSpacing: 2,
             ),
           ),
@@ -895,8 +894,8 @@ class MatchHistoryPanel extends StatelessWidget {
                   'MATCH HISTORY',
                   style: TextStyle(
                     color: Cyber.cyan.withValues(alpha: 0.68),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
+                    fontSize: StatOzTypography.p10,
+                    fontWeight: StatOzTypography.bold,
                     letterSpacing: 2,
                   ),
                 ),
@@ -914,8 +913,8 @@ class MatchHistoryPanel extends StatelessWidget {
                 : 'Tap any result to inspect the scoreline, deck, and round log.',
             style: const TextStyle(
               color: Cyber.muted,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+              fontSize: StatOzTypography.p12,
+              fontWeight: StatOzTypography.semibold,
               height: 1.4,
             ),
           ),
@@ -939,8 +938,8 @@ class MatchHistoryPanel extends StatelessWidget {
                         'Archive terminal ready. Your next finished match will appear here.',
                         style: TextStyle(
                           color: Color(0xffd1d5db),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                          fontSize: StatOzTypography.p12,
+                          fontWeight: StatOzTypography.semibold,
                           height: 1.4,
                         ),
                       ),
@@ -994,8 +993,8 @@ class MatchHistoryHeaderButton extends StatelessWidget {
                   'HISTORY',
                   style: TextStyle(
                     color: history.isEmpty ? Cyber.muted : Cyber.cyan,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
+                    fontSize: StatOzTypography.p10,
+                    fontWeight: StatOzTypography.bold,
                     letterSpacing: 1.4,
                   ),
                 ),
@@ -1067,9 +1066,9 @@ class MatchHistoryTile extends StatelessWidget {
                     entry.resultLabel[0].toUpperCase(),
                     style: TextStyle(
                       color: accent,
-                      fontFamily: 'Orbitron',
-                      fontWeight: FontWeight.w900,
-                      fontSize: 11,
+                      fontFamily: StatOzTypography.displayFont,
+                      fontWeight: StatOzTypography.black,
+                      fontSize: StatOzTypography.p11,
                       letterSpacing: 1,
                     ),
                   ),
@@ -1096,9 +1095,9 @@ class MatchHistoryTile extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontFamily: 'Orbitron',
-                              fontSize: 12,
-                              fontWeight: FontWeight.w900,
+                              fontFamily: StatOzTypography.displayFont,
+                              fontSize: StatOzTypography.p12,
+                              fontWeight: StatOzTypography.black,
                               letterSpacing: 0.7,
                             ),
                           ),
@@ -1110,15 +1109,15 @@ class MatchHistoryTile extends StatelessWidget {
                             children: [
                               Text(
                                 'P${entry.playerScore}',
-                                style: Cyber.display(18, color: accent),
+                                style: Cyber.display(StatOzTypography.p18, color: accent),
                               ),
                               Text(
                                 '/${entry.opponentScore}',
                                 style: TextStyle(
                                   color: Cyber.muted,
-                                  fontFamily: 'Orbitron',
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 12,
+                                  fontFamily: StatOzTypography.displayFont,
+                                  fontWeight: StatOzTypography.black,
+                                  fontSize: StatOzTypography.p12,
                                 ),
                               ),
                             ],
@@ -1128,20 +1127,20 @@ class MatchHistoryTile extends StatelessWidget {
                             children: [
                               Text(
                                 '${entry.playerScore}',
-                                style: Cyber.display(18, color: Cyber.cyan),
+                                style: Cyber.display(StatOzTypography.p18, color: Cyber.cyan),
                               ),
                               Text(
                                 ' – ',
                                 style: TextStyle(
                                   color: Cyber.muted,
-                                  fontFamily: 'Orbitron',
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 14,
+                                  fontFamily: StatOzTypography.displayFont,
+                                  fontWeight: StatOzTypography.black,
+                                  fontSize: StatOzTypography.p14,
                                 ),
                               ),
                               Text(
                                 '${entry.opponentScore}',
-                                style: Cyber.display(18, color: Cyber.danger),
+                                style: Cyber.display(StatOzTypography.p18, color: Cyber.danger),
                               ),
                             ],
                           ),
@@ -1154,8 +1153,8 @@ class MatchHistoryTile extends StatelessWidget {
                           historyTimestampLabel(entry.timestampIso),
                           style: const TextStyle(
                             color: Cyber.muted,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
+                            fontSize: StatOzTypography.p10,
+                            fontWeight: StatOzTypography.bold,
                           ),
                         ),
                         if (entry.isShootout) ...[
@@ -1175,9 +1174,9 @@ class MatchHistoryTile extends StatelessWidget {
                               'SHOOTOUT',
                               style: TextStyle(
                                 color: Cyber.violet,
-                                fontSize: 9,
-                                fontFamily: 'Orbitron',
-                                fontWeight: FontWeight.w900,
+                                fontSize: StatOzTypography.p9,
+                                fontFamily: StatOzTypography.displayFont,
+                                fontWeight: StatOzTypography.black,
                               ),
                             ),
                           ),
@@ -1199,9 +1198,9 @@ class MatchHistoryTile extends StatelessWidget {
                               'GRAND PRIX',
                               style: TextStyle(
                                 color: Cyber.f1Red,
-                                fontSize: 9,
-                                fontFamily: 'Orbitron',
-                                fontWeight: FontWeight.w900,
+                                fontSize: StatOzTypography.p9,
+                                fontFamily: StatOzTypography.displayFont,
+                                fontWeight: StatOzTypography.black,
                               ),
                             ),
                           ),
@@ -1223,9 +1222,9 @@ class MatchHistoryTile extends StatelessWidget {
                               'HOOP DUEL',
                               style: TextStyle(
                                 color: Cyber.gold,
-                                fontSize: 9,
-                                fontFamily: 'Orbitron',
-                                fontWeight: FontWeight.w900,
+                                fontSize: StatOzTypography.p9,
+                                fontFamily: StatOzTypography.displayFont,
+                                fontWeight: StatOzTypography.black,
                               ),
                             ),
                           ),
@@ -1247,9 +1246,9 @@ class MatchHistoryTile extends StatelessWidget {
                               'TENNIS RALLY',
                               style: TextStyle(
                                 color: Cyber.lime,
-                                fontSize: 9,
-                                fontFamily: 'Orbitron',
-                                fontWeight: FontWeight.w900,
+                                fontSize: StatOzTypography.p9,
+                                fontFamily: StatOzTypography.displayFont,
+                                fontWeight: StatOzTypography.black,
                               ),
                             ),
                           ),
@@ -1271,9 +1270,9 @@ class MatchHistoryTile extends StatelessWidget {
                               'PEN ${entry.penaltyPlayerScore}–${entry.penaltyOpponentScore}',
                               style: const TextStyle(
                                 color: Cyber.violet,
-                                fontSize: 9,
-                                fontFamily: 'Orbitron',
-                                fontWeight: FontWeight.w900,
+                                fontSize: StatOzTypography.p9,
+                                fontFamily: StatOzTypography.displayFont,
+                                fontWeight: StatOzTypography.black,
                               ),
                             ),
                           ),
@@ -1307,9 +1306,9 @@ class MatchHistoryTile extends StatelessWidget {
                                 color: entry.xpEarned! >= 0
                                     ? Cyber.cyan
                                     : const Color(0xFFFF4D6A),
-                                fontSize: 9,
-                                fontFamily: 'Orbitron',
-                                fontWeight: FontWeight.w900,
+                                fontSize: StatOzTypography.p9,
+                                fontFamily: StatOzTypography.displayFont,
+                                fontWeight: StatOzTypography.black,
                               ),
                             ),
                           ),
@@ -1435,9 +1434,9 @@ class BottomActionBar extends StatelessWidget {
                         tertiaryLabel!.toUpperCase(),
                         style: const TextStyle(
                           color: Cyber.violet,
-                          fontFamily: 'Orbitron',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
+                          fontFamily: StatOzTypography.displayFont,
+                          fontSize: StatOzTypography.p11,
+                          fontWeight: StatOzTypography.black,
                           letterSpacing: 1.5,
                         ),
                       ),
@@ -1509,9 +1508,9 @@ class InfoPanel extends StatelessWidget {
                 Text(
                   title.toUpperCase(),
                   style: const TextStyle(
-                    fontFamily: 'Orbitron',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
+                    fontFamily: StatOzTypography.displayFont,
+                    fontSize: StatOzTypography.p16,
+                    fontWeight: StatOzTypography.black,
                     color: Cyber.cyan,
                     letterSpacing: 0.8,
                   ),
@@ -1571,14 +1570,14 @@ class ScoreboardPanel extends StatelessWidget {
                 label ?? 'RD ${max(1, state.currentRound)} / 4',
                 style: const TextStyle(
                   color: Cyber.cyan,
-                  fontSize: 10,
+                  fontSize: StatOzTypography.p10,
                   fontFamily: Cyber.gameBodyFont,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: StatOzTypography.bold,
                   letterSpacing: 1.5,
                   fontFeatures: [FontFeature.tabularFigures()],
                 ),
               ),
-              Text('VS', style: Cyber.display(16, color: Colors.white)),
+              Text('VS', style: Cyber.display(StatOzTypography.p16, color: Colors.white)),
               if (inMatch) ...[
                 const SizedBox(height: 4),
                 _RoleBadge(attacking: state.playerAttacking),
@@ -1617,8 +1616,8 @@ class _RoleBadge extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontFamily: Cyber.gameBodyFont,
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
+          fontSize: StatOzTypography.p9,
+          fontWeight: StatOzTypography.bold,
           letterSpacing: 1,
         ),
       ),
@@ -1679,8 +1678,8 @@ class _HudIdentityState extends State<_HudIdentity>
             style: TextStyle(
               color: widget.color,
               fontFamily: Cyber.gameBodyFont,
-              fontWeight: FontWeight.w700,
-              fontSize: 11,
+              fontWeight: StatOzTypography.bold,
+              fontSize: StatOzTypography.p11,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
@@ -1698,7 +1697,7 @@ class _HudIdentityState extends State<_HudIdentity>
             },
             child: Text(
               '${widget.score}',
-              style: Cyber.display(36, color: Cyber.gold),
+              style: Cyber.display(StatOzTypography.p36, color: Cyber.gold),
             ),
           ),
         ],
@@ -1772,14 +1771,14 @@ class PlayerCardTile extends StatelessWidget {
         ),
         title: Text(
           card.name,
-          style: const TextStyle(fontWeight: FontWeight.w800),
+          style: const TextStyle(fontWeight: StatOzTypography.bold),
         ),
         subtitle: Text(
           '${card.countryCode} - ${card.trait} - ${card.position}',
         ),
         trailing: Text(
           '${card.rating}',
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+          style: const TextStyle(fontSize: StatOzTypography.p22, fontWeight: StatOzTypography.bold),
         ),
       ),
     );
@@ -1807,12 +1806,12 @@ class ActionCardTile extends StatelessWidget {
         leading: CircleAvatar(child: Icon(card.icon)),
         title: Text(
           card.title,
-          style: const TextStyle(fontWeight: FontWeight.w800),
+          style: const TextStyle(fontWeight: StatOzTypography.bold),
         ),
         subtitle: Text('${card.category.name.toUpperCase()} - ${card.effect}'),
         trailing: Text(
           '+${card.power}',
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+          style: const TextStyle(fontSize: StatOzTypography.p20, fontWeight: StatOzTypography.bold),
         ),
       ),
     );

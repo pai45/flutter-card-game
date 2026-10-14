@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../blocs/football_bingo/football_bingo_state.dart';
@@ -218,7 +219,7 @@ class _LandingHero extends StatelessWidget {
                       child: Text(
                         'FOOTBALL BINGO',
                         maxLines: 1,
-                        style: Cyber.display(22, color: Colors.white).copyWith(
+                        style: Cyber.display(StatOzTypography.p22, color: Colors.white).copyWith(
                           letterSpacing: 1.1,
                           shadows: [
                             Shadow(
@@ -232,7 +233,7 @@ class _LandingHero extends StatelessWidget {
                     const SizedBox(height: 5),
                     Text(
                       '3X3 BINGO GAME',
-                      style: Cyber.label(10, color: Cyber.muted),
+                      style: Cyber.label(StatOzTypography.p10, color: Cyber.muted),
                     ),
                     const SizedBox(height: 8),
                     const CyberChip(label: 'BINGO ONLINE', color: Cyber.lime),
@@ -303,7 +304,7 @@ class _TelemetryStrip extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text('ONLINE', style: Cyber.display(9, color: Cyber.lime)),
+          Text('ONLINE', style: Cyber.display(StatOzTypography.p9, color: Cyber.lime)),
           const SizedBox(width: 10),
           Expanded(
             child: Container(
@@ -317,7 +318,7 @@ class _TelemetryStrip extends StatelessWidget {
               fit: BoxFit.scaleDown,
               child: Text(
                 'SYS://3X3 BINGO GAME | 1.0.0',
-                style: Cyber.label(8, color: Cyber.muted),
+                style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
               ),
             ),
           ),
@@ -440,8 +441,7 @@ class _DailyLogsHeader extends StatelessWidget {
             Expanded(
               child: Text(
                 'DAILY LOGS',
-                style: Cyber.display(
-                  14,
+                style: Cyber.display(StatOzTypography.p14,
                   color: Cyber.amber,
                 ).copyWith(letterSpacing: 1.4),
               ),
@@ -475,13 +475,12 @@ class _StatTile extends StatelessWidget {
         children: [
           Text(
             value,
-            style: Cyber.display(
-              16,
+            style: Cyber.display(StatOzTypography.p16,
               color: Cyber.amber,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
           const SizedBox(height: 2),
-          Text(label, style: Cyber.label(8, color: Cyber.muted)),
+          Text(label, style: Cyber.label(StatOzTypography.p8, color: Cyber.muted)),
         ],
       ),
     );
@@ -504,8 +503,8 @@ class _HudLink extends StatelessWidget {
         style: TextStyle(
           color: Cyber.amber,
           fontFamily: Cyber.displayFont,
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
+          fontSize: StatOzTypography.p11,
+          fontWeight: StatOzTypography.black,
           letterSpacing: 1.4,
         ),
       ),

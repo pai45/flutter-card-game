@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -419,8 +420,7 @@ class _PenaltyInteractionArenaState extends State<PenaltyInteractionArena>
                                 _directionLabel(direction),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: Cyber.label(
-                                  9,
+                                style: Cyber.label(StatOzTypography.p9,
                                   color: widget.selected == direction
                                       ? Cyber.cyan
                                       : Colors.white.withValues(alpha: 0.68),
@@ -555,8 +555,7 @@ class _DivePad extends StatelessWidget {
                     child: Text(
                       _label,
                       maxLines: 1,
-                      style: Cyber.label(
-                        9,
+                      style: Cyber.label(StatOzTypography.p9,
                         color: selected ? Cyber.cyan : Colors.white,
                         letterSpacing: 0.6,
                       ),

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
@@ -47,14 +48,14 @@ class TennisScorecardView extends StatelessWidget {
         children: [
           Expanded(
             flex: 3,
-            child: Text('PLAYER', style: Cyber.label(10, color: Cyber.muted)),
+            child: Text('PLAYER', style: Cyber.label(StatOzTypography.p10, color: Cyber.muted)),
           ),
           for (int i = 0; i < scorecard.sets.length; i++)
             Expanded(
               child: Text(
                 'SET ${i + 1}',
                 textAlign: TextAlign.center,
-                style: Cyber.label(10, color: Cyber.muted),
+                style: Cyber.label(StatOzTypography.p10, color: Cyber.muted),
               ),
             ),
         ],
@@ -73,7 +74,7 @@ class TennisScorecardView extends StatelessWidget {
               playerName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.body(13, weight: FontWeight.bold),
+              style: Cyber.body(StatOzTypography.p13, weight: FontWeight.bold),
             ),
           ),
           for (int i = 0; i < scorecard.sets.length; i++)
@@ -96,7 +97,7 @@ class TennisScorecardView extends StatelessWidget {
       children: [
         Text(
           score.toString(),
-          style: Cyber.display(14, color: isWinner ? accent : Colors.white)
+          style: Cyber.display(StatOzTypography.p14, color: isWinner ? accent : Colors.white)
               .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
         if (tiebreak != null)
@@ -104,7 +105,7 @@ class TennisScorecardView extends StatelessWidget {
             padding: const EdgeInsets.only(left: 2, top: 1),
             child: Text(
               tiebreak.toString(),
-              style: Cyber.label(9, color: isWinner ? accent : Cyber.muted),
+              style: Cyber.label(StatOzTypography.p9, color: isWinner ? accent : Cyber.muted),
             ),
           ),
       ],
