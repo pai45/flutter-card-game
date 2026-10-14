@@ -75,7 +75,7 @@ jobs:
         # includes device/golden and live-fixture tests that run in their own
         # validation context.
         run: >-
-          flutter test --no-pub
+          flutter test --no-pub --concurrency=1
           test/statoz_icons_test.dart
           test/cyber_underline_tabs_test.dart
           test/profile_setup_screen_test.dart
