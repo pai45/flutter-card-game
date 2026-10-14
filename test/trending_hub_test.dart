@@ -26,6 +26,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
+    AudioController.debugUseBackend(_NoopAudioBackend());
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
           const MethodChannel('xyz.luan/audioplayers.global'),
@@ -290,6 +291,51 @@ void main() {
       }
     });
   }
+}
+
+class _NoopAudioBackend implements AudioPlaybackBackend {
+  @override
+  Future<void> dispose() async {}
+
+  @override
+  Future<void> playEffect(
+    String assetPath, {
+    required AudioBus bus,
+    required double volume,
+  }) async {}
+
+  @override
+  Future<void> preload(List<String> assetPaths) async {}
+
+  @override
+  Future<void> setAmbienceVolume(double volume) async {}
+
+  @override
+  Future<void> setDynamicLoop({
+    required double volume,
+    required double rate,
+  }) async {}
+
+  @override
+  Future<void> startAmbience(
+    String assetPath, {
+    required double volume,
+  }) async {}
+
+  @override
+  Future<void> startDynamicLoop(
+    String assetPath, {
+    required double volume,
+  }) async {}
+
+  @override
+  Future<void> stopAll() async {}
+
+  @override
+  Future<void> stopAmbience() async {}
+
+  @override
+  Future<void> stopDynamicLoop() async {}
 }
 
 void _expectMinimumStyledType(WidgetTester tester, Finder root) {
