@@ -18,6 +18,8 @@ import '../../../widgets/cyber/match_discovery.dart';
 import 'pick_trade_sheet.dart';
 import '../match_prediction_screen.dart';
 
+part 'editorial_cycle_selection.dart';
+
 class TrendingMatchesView extends StatefulWidget {
   const TrendingMatchesView({
     required this.onOpenMatch,
@@ -36,20 +38,6 @@ class TrendingMatchesView extends StatefulWidget {
   final Widget? header;
   @override
   State<TrendingMatchesView> createState() => _TrendingMatchesViewState();
-}
-
-class _EditorialCycle {
-  const _EditorialCycle(
-    this.sport,
-    this.matches,
-    this.compact,
-    this.missions,
-    this.events,
-    this.future,
-  );
-  final Sport sport;
-  final List<String> matches, missions, events;
-  final String? compact, future;
 }
 
 class _TrendingMatchesViewState extends State<TrendingMatchesView> {
@@ -73,96 +61,6 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
     }
   }
 
-  _EditorialCycle _select(
-    Sport sport,
-    PredictionState state,
-    PicksState picks,
-  ) {
-    int priority(SportMatch m) =>
-        (state.isFavoriteMatch(m) ? 4 : 0) +
-        (state.followedLeagueIds.contains(m.leagueId) ? 2 : 0) +
-        (state
-                .predictionsForMatch(m.id)
-                .any((p) => p.status == PredictionStatus.open)
-            ? 1
-            : 0);
-    final seen = <String>{};
-    final fixtures =
-        state.fixtures.where((m) => m.sport == sport && seen.add(m.id)).toList()
-          ..sort((a, b) {
-            final p = priority(b).compareTo(priority(a));
-            if (p != 0) return p;
-            final live = (b.status == MatchStatus.live ? 1 : 0).compareTo(
-              a.status == MatchStatus.live ? 1 : 0,
-            );
-            if (live != 0) return live;
-            final time = a.kickoff.compareTo(b.kickoff);
-            return time != 0 ? time : a.id.compareTo(b.id);
-          });
-    final matches = fixtures
-        .take(MatchDiscoveryTokens.cycleCounts['matches']!)
-        .map((m) => m.id)
-        .toList();
-    final compact = fixtures
-        .skip(MatchDiscoveryTokens.cycleCounts['matches']!)
-        .firstOrNull
-        ?.id;
-    final missions = fixtures
-        .where(
-          (m) =>
-              m.status == MatchStatus.upcoming &&
-              state.quizzes.values.any(
-                (q) => q.matchId == m.id && q.entryFee == 0,
-              ),
-        )
-        .take(MatchDiscoveryTokens.cycleCounts['missions']!)
-        .map((m) => m.id)
-        .toList();
-    final events = picks.markets
-        .where(
-          (m) =>
-              m.sport == sport &&
-              m.type == PickMarketType.event &&
-              m.outcomes.isNotEmpty,
-        )
-        .take(MatchDiscoveryTokens.cycleCounts['events']!)
-        .map((m) => m.id)
-        .toList();
-    final excluded = _featured(
-      picks.markets,
-    ).map((market) => market.id).toSet();
-    final futures =
-        picks.markets
-            .where(
-              (market) =>
-                  market.sport == sport &&
-                  market.type == PickMarketType.future &&
-                  market.outcomes.isNotEmpty &&
-                  !excluded.contains(market.id),
-            )
-            .toList()
-          ..sort((a, b) {
-            int rank(PickMarket market) =>
-                (market.canBuy ? 4 : 0) +
-                (RegExp(
-                      MatchDiscoveryTokens.futurePriorityPattern,
-                      caseSensitive: false,
-                    ).hasMatch(market.question)
-                    ? 2
-                    : 0);
-            final order = rank(b).compareTo(rank(a));
-            return order != 0 ? order : a.id.compareTo(b.id);
-          });
-    return _EditorialCycle(
-      sport,
-      matches,
-      compact,
-      missions,
-      events,
-      futures.firstOrNull?.id,
-    );
-  }
-
   @override
   Widget build(
     BuildContext context,
@@ -175,6 +73,15 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
         final ordered = MatchDiscoveryTokens.sportOrder
             .map((name) => Sport.values.firstWhere((s) => s.name == name))
             .where(unlocks.isSportUnlocked);
+        final excluded = _featured(picks.markets).map((m) => m.id).toSet();
+        final fixturesById = <String, SportMatch>{};
+        for (final fixture in state.fixtures) {
+          fixturesById.putIfAbsent(fixture.id, () => fixture);
+        }
+        final freeQuizzesByMatch = <String, PredictionQuiz>{};
+        for (final quiz in state.quizzes.values.where((q) => q.entryFee == 0)) {
+          freeQuizzesByMatch.putIfAbsent(quiz.matchId, () => quiz);
+        }
         // Freeze each sport's IDs after its load; values and statuses remain live.
         for (final sport in ordered) {
           if (!_cycles.containsKey(sport) &&
@@ -182,7 +89,7 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
               (state.loadedSports.contains(sport) ||
                   state.fixtures.any((m) => m.sport == sport)) &&
               !picks.loading) {
-            final selected = _select(sport, state, picks);
+            final selected = _select(sport, state, picks, excluded);
             if (selected.matches.isNotEmpty ||
                 selected.events.isNotEmpty ||
                 selected.future != null) {
@@ -199,8 +106,7 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
             if (mounted) widget.onIntroPlayed?.call();
           });
         }
-        SportMatch? match(String id) =>
-            state.fixtures.where((m) => m.id == id).firstOrNull;
+        SportMatch? match(String id) => fixturesById[id];
         final children = <Widget>[
           if (markets.isNotEmpty) ...[
             _FeaturedPicks(markets: markets, onOpen: widget.onOpenMarket),
@@ -247,10 +153,7 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
                       ),
                   for (final id in cycle.missions)
                     if (match(id) case final fixture?)
-                      if (state.quizzes.values
-                              .where((q) => q.matchId == id && q.entryFee == 0)
-                              .firstOrNull
-                          case final quiz?)
+                      if (freeQuizzesByMatch[id] case final quiz?)
                         EditorialMission(
                           match: fixture,
                           quiz: quiz,
@@ -429,9 +332,9 @@ class _FeaturedPicksState extends State<_FeaturedPicks> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, box) {
-      width = ((box.maxWidth - MatchDiscoveryTokens.page * 2) * .88).clamp(
+      width = ((box.maxWidth - MatchDiscoveryTokens.page * 2) * MatchDiscoveryTokens.carouselFraction).clamp(
         0,
-        340,
+        MatchDiscoveryTokens.carouselMaxWidth,
       );
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -285,3 +285,5 @@ one-time marker is not part of either profile snapshot.
 - [Audio cue catalog](../audio/CUE_CATALOG.md)
 - [IPL player data sheet](../data/ipl_players.md)
 - [League stats field inventory (EPL and LaLiga)](../data/league-stats-field-inventory.md)
+
+- [Discovery card library](discovery-card-library.md): current recent-card recipes, component ownership and shared local adapters.

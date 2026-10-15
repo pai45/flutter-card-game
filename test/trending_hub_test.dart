@@ -8,7 +8,6 @@ import 'package:card_game/models/league.dart';
 import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/screens/predictions/all_sports_screen.dart';
 import 'package:card_game/screens/predictions/prediction_home_screen.dart';
-import 'package:card_game/screens/predictions/trending_hub_catalog.dart';
 import 'package:card_game/services/basketball_match_package_service.dart';
 import 'package:card_game/services/pick_repository.dart';
 import 'package:card_game/services/prediction_repository.dart';
@@ -42,15 +41,13 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  test('MATCH Trending registers the bundled NBA Finals card', () {
-    final card = matchTrendingCatalog.singleWhere(
-      (item) => item.id == 'trend-spurs-knicks',
+  test('MATCH Trending can resolve the bundled NBA Finals fixture', () async {
+    final fixture = await MockPredictionRepository().fixtureById(
+      BasketballMatchPackageService.bundledMatchId,
     );
-
-    expect(card.kind, TrendingTileKind.match);
-    expect(card.sourceId, BasketballMatchPackageService.bundledMatchId);
-    expect(card.sport, Sport.basketball);
-    expect(card.span, CyberBentoSpan.wide);
+    expect(fixture, isNotNull);
+    expect(fixture!.sport, Sport.basketball);
+    expect(fixture.id, BasketballMatchPackageService.bundledMatchId);
   });
 
   testWidgets(

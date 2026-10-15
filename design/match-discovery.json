@@ -49,7 +49,9 @@
     "progressHeight": 4,
     "progressGap": 4,
     "outcomeWidth": 64,
-    "carouselDotGap": 4
+    "carouselDotGap": 4,
+    "outcomeMinHeight": 44,
+    "carouselMaxWidth": 340
   },
   "type": {
     "question": 14,
@@ -97,7 +99,9 @@
     "entranceMs": 420,
     "entranceDistance": 12,
     "entranceStaggerMs": 48,
-    "entranceThreshold": 0.08
+    "entranceThreshold": 0.08,
+    "carouselFraction": 0.88,
+    "teamNameLines": 2
   },
   "selection": {
     "futurePriorityPattern": "champion|title|season"
