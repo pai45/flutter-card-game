@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -206,7 +207,7 @@ class _LegendMark extends StatelessWidget {
         const SizedBox(width: 5),
         Text(
           label,
-          style: Cyber.label(7, color: Cyber.muted, letterSpacing: 1),
+          style: Cyber.label(StatOzTypography.p7, color: Cyber.muted, letterSpacing: 1),
         ),
       ],
     );
@@ -288,8 +289,7 @@ class _SpellRow extends StatelessWidget {
           width: 32,
           child: Text(
             'OV$over',
-            style: Cyber.label(
-              7.5,
+            style: Cyber.label(StatOzTypography.p7_5,
               color: Cyber.muted,
               letterSpacing: 0.6,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -311,8 +311,7 @@ class _SpellRow extends StatelessWidget {
           child: Text(
             data.wickets > 0 ? '${data.runs} · ${data.wickets}W' : '${data.runs}',
             textAlign: TextAlign.right,
-            style: Cyber.display(
-              11,
+            style: Cyber.display(StatOzTypography.p11,
               color: data.wickets > 0 ? Cyber.lime : Colors.white,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),

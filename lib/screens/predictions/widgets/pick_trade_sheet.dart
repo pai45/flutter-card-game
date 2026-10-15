@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/services.dart';
@@ -132,8 +133,7 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
                         children: [
                           Text(
                             'BUY PICK',
-                            style: Cyber.label(
-                              12,
+                            style: Cyber.label(StatOzTypography.p12,
                               color: Cyber.cyan,
                               letterSpacing: 1.8,
                             ),
@@ -145,10 +145,8 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
                       const SizedBox(height: 10),
                       Text(
                         widget.market.question,
-                        style: Cyber.bodyFor(
-                          context,
-                          18,
-                          weight: FontWeight.w700,
+                        style: Cyber.bodyFor(context, StatOzTypography.p18,
+                          weight: StatOzTypography.bold,
                           height: 1.2,
                         ),
                       ),
@@ -157,8 +155,7 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
                         children: [
                           Text(
                             '$_price OZ / SHARE',
-                            style: Cyber.label(
-                              8,
+                            style: Cyber.label(StatOzTypography.p8,
                               color: Cyber.muted,
                               letterSpacing: 1,
                               fontFeatures: const [
@@ -169,8 +166,7 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
                           const SizedBox(width: 10),
                           Text(
                             'PAYS ${_multiplierLabel(_price)} IF RIGHT',
-                            style: Cyber.label(
-                              8,
+                            style: Cyber.label(StatOzTypography.p8,
                               color: Cyber.gold,
                               letterSpacing: 1,
                               fontFeatures: const [
@@ -203,8 +199,7 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
                         '$_shares ${_shares == 1 ? 'SHARE' : 'SHARES'} · '
                         'BALANCE AFTER '
                         '${formatOzGrouped(_balanceAfter(balance))} OZ',
-                        style: Cyber.label(
-                          8,
+                        style: Cyber.label(StatOzTypography.p8,
                           color: Cyber.muted,
                           letterSpacing: 1,
                           fontFeatures: const [FontFeature.tabularFigures()],
@@ -214,11 +209,9 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
                         const SizedBox(height: 8),
                         Text(
                           _disabledReason(balance),
-                          style: Cyber.bodyFor(
-                            context,
-                            11,
+                          style: Cyber.bodyFor(context, StatOzTypography.p11,
                             color: Cyber.amber,
-                            weight: FontWeight.w700,
+                            weight: StatOzTypography.bold,
                           ),
                         ),
                       ],
@@ -232,8 +225,7 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
                         ),
                         child: Text(
                           _submitting ? 'CONFIRMING' : 'CONFIRM PICK',
-                          style: Cyber.label(
-                            14,
+                          style: Cyber.label(StatOzTypography.p14,
                             color: Cyber.bg,
                             letterSpacing: 2,
                           ),
@@ -290,7 +282,7 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: const Color(0xff121b30),
-          content: Text(result.message, style: Cyber.bodyFor(context, 12)),
+          content: Text(result.message, style: Cyber.bodyFor(context, StatOzTypography.p12)),
         ),
       );
       return;
@@ -345,8 +337,7 @@ class _ToWinHero extends StatelessWidget {
             children: [
               Text(
                 'TO WIN',
-                style: Cyber.label(
-                  8,
+                style: Cyber.label(StatOzTypography.p8,
                   color: Cyber.lime.withValues(alpha: 0.68),
                   letterSpacing: 1.4,
                 ),
@@ -361,8 +352,7 @@ class _ToWinHero extends StatelessWidget {
                 builder: (context, v, _) => Text(
                   formatOzGrouped(v.round()),
                   style:
-                      Cyber.display(
-                        18,
+                      Cyber.display(StatOzTypography.p18,
                         color: Cyber.lime,
                         letterSpacing: 0.2,
                       ).copyWith(
@@ -379,8 +369,7 @@ class _ToWinHero extends StatelessWidget {
                 ),
                 child: Text(
                   _multiplierLabel(price),
-                  style: Cyber.label(
-                    8.5,
+                  style: Cyber.label(StatOzTypography.p8_5,
                     color: Cyber.gold,
                     letterSpacing: 0.4,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -496,8 +485,7 @@ class _QuickStakeChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: Cyber.label(
-            10,
+          style: Cyber.label(StatOzTypography.p10,
             color: !enabled
                 ? Cyber.muted.withValues(alpha: 0.4)
                 : active
@@ -613,7 +601,7 @@ class _PickSubmittedOverlayState extends State<_PickSubmittedOverlay>
                           Text(
                             'PICK LOCKED',
                             textAlign: TextAlign.center,
-                            style: Cyber.display(21, letterSpacing: 2).copyWith(
+                            style: Cyber.display(StatOzTypography.p21, letterSpacing: 2).copyWith(
                               shadows: [
                                 Shadow(
                                   color: Cyber.success.withValues(alpha: 0.62),
@@ -626,8 +614,7 @@ class _PickSubmittedOverlayState extends State<_PickSubmittedOverlay>
                           Text(
                             widget.success.outcomeLabel.toUpperCase(),
                             textAlign: TextAlign.center,
-                            style: Cyber.label(
-                              13,
+                            style: Cyber.label(StatOzTypography.p13,
                               color: Cyber.gold,
                               letterSpacing: 1.4,
                             ),
@@ -649,8 +636,7 @@ class _PickSubmittedOverlayState extends State<_PickSubmittedOverlay>
                                 const SizedBox(width: 6),
                                 Text(
                                   '${widget.success.stakeOz} STAKE',
-                                  style: Cyber.label(
-                                    10,
+                                  style: Cyber.label(StatOzTypography.p10,
                                     fontFeatures: const [
                                       FontFeature.tabularFigures(),
                                     ],
@@ -659,8 +645,7 @@ class _PickSubmittedOverlayState extends State<_PickSubmittedOverlay>
                                 const SizedBox(width: 14),
                                 Text(
                                   '${widget.success.shares} SHARES',
-                                  style: Cyber.label(
-                                    10,
+                                  style: Cyber.label(StatOzTypography.p10,
                                     color: Cyber.cyan,
                                     fontFeatures: const [
                                       FontFeature.tabularFigures(),
@@ -670,8 +655,7 @@ class _PickSubmittedOverlayState extends State<_PickSubmittedOverlay>
                                 const SizedBox(width: 14),
                                 Text(
                                   '${widget.success.maxPayoutOz} MAX',
-                                  style: Cyber.label(
-                                    10,
+                                  style: Cyber.label(StatOzTypography.p10,
                                     color: Cyber.success,
                                     fontFeatures: const [
                                       FontFeature.tabularFigures(),
@@ -705,8 +689,7 @@ class _PickSubmittedOverlayState extends State<_PickSubmittedOverlay>
                                   const SizedBox(width: 5),
                                   Text(
                                     'WIN STREAK ×${widget.winStreak} — KEEP IT ALIVE',
-                                    style: Cyber.label(
-                                      9,
+                                    style: Cyber.label(StatOzTypography.p9,
                                       color: Cyber.gold,
                                       letterSpacing: 1,
                                       fontFeatures: const [
@@ -747,8 +730,7 @@ class _PercentPill extends StatelessWidget {
       ),
       child: Text(
         '${outcome.label.toUpperCase()} ${outcome.probabilityPercent}%',
-        style: Cyber.label(
-          10,
+        style: Cyber.label(StatOzTypography.p10,
           color: outcome.color,
           letterSpacing: 0.5,
           fontFeatures: const [FontFeature.tabularFigures()],
@@ -798,8 +780,7 @@ class _StakeStepper extends StatelessWidget {
               children: [
                 Text(
                   'STAKE',
-                  style: Cyber.label(
-                    9,
+                  style: Cyber.label(StatOzTypography.p9,
                     color: Cyber.cyan.withValues(alpha: 0.82),
                     letterSpacing: 1.4,
                   ),
@@ -823,8 +804,7 @@ class _StakeStepper extends StatelessWidget {
                         textAlign: TextAlign.center,
                         cursorColor: Cyber.cyan,
                         style:
-                            Cyber.display(
-                              22,
+                            Cyber.display(StatOzTypography.p22,
                               color: Colors.white,
                               letterSpacing: 0.4,
                             ).copyWith(

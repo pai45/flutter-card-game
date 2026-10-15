@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
@@ -57,8 +58,7 @@ class CricketPlayerSeasonScreen extends StatelessWidget {
                               children: [
                                 Text(
                                   'ESPN // SEASON INTEL',
-                                  style: Cyber.label(
-                                    8,
+                                  style: Cyber.label(StatOzTypography.p8,
                                     color: Cyber.success,
                                     letterSpacing: 1.4,
                                   ),
@@ -68,8 +68,7 @@ class CricketPlayerSeasonScreen extends StatelessWidget {
                                   player.name,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: Cyber.display(
-                                    19,
+                                  style: Cyber.display(StatOzTypography.p19,
                                     color: Colors.white,
                                     letterSpacing: 0.3,
                                   ),
@@ -90,8 +89,7 @@ class CricketPlayerSeasonScreen extends StatelessWidget {
                                         '${team.shortName} // ${player.displayRole}',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: Cyber.label(
-                                          9,
+                                        style: Cyber.label(StatOzTypography.p9,
                                           color: Cyber.muted,
                                           letterSpacing: 0.8,
                                         ),
@@ -165,7 +163,7 @@ class _StatGroup extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Cyber.label(9, color: accent, letterSpacing: 1.4)),
+        Text(label, style: Cyber.label(StatOzTypography.p9, color: accent, letterSpacing: 1.4)),
         const SizedBox(height: 10),
         for (var index = 0; index < entries.length; index += 3) ...[
           Row(

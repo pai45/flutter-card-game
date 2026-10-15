@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -275,12 +276,12 @@ class _FootballShotMapPanelState extends State<FootballShotMapPanel> {
               Expanded(
                 child: Text(
                   'SHOT MAP',
-                  style: Cyber.label(10, color: Cyber.cyan),
+                  style: Cyber.label(StatOzTypography.p10, color: Cyber.cyan),
                 ),
               ),
               Text(
                 '${shots.length} ATTEMPTS',
-                style: Cyber.label(9, color: Cyber.muted),
+                style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
               ),
             ],
           ),
@@ -326,7 +327,7 @@ class _FootballShotMapPanelState extends State<FootballShotMapPanel> {
                         Center(
                           child: Text(
                             'NO PLOTTED ATTEMPTS IN THIS FILTER',
-                            style: Cyber.label(8, color: Cyber.muted),
+                            style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                           ),
                         ),
                     ],
@@ -352,7 +353,7 @@ class _FootballShotMapPanelState extends State<FootballShotMapPanel> {
             '${widget.match.home.shortName.toUpperCase()} ATTACK RIGHT // '
             '${widget.match.away.shortName.toUpperCase()} ATTACK LEFT',
             textAlign: TextAlign.center,
-            style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 0.7),
+            style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted, letterSpacing: 0.7),
           ),
         ],
       ),
@@ -383,7 +384,7 @@ class _ShotOutcomeLegend extends StatelessWidget {
             children: [
               _OutcomeSwatch(outcome: outcome),
               const SizedBox(width: 5),
-              Text(label, style: Cyber.label(7.5, color: Cyber.muted)),
+              Text(label, style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted)),
             ],
           ),
       ],
@@ -452,7 +453,7 @@ class _SelectedShotRow extends StatelessWidget {
                 width: 46,
                 child: Text(
                   shot.minuteLabel,
-                  style: Cyber.label(10, color: accent),
+                  style: Cyber.label(StatOzTypography.p10, color: accent),
                 ),
               ),
               Expanded(
@@ -518,12 +519,12 @@ class _ShotFact extends StatelessWidget {
         children: [
           SizedBox(
             width: 62,
-            child: Text(label, style: Cyber.label(7.5, color: Cyber.muted)),
+            child: Text(label, style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted)),
           ),
           Expanded(
             child: Text(
               value,
-              style: Cyber.label(8, color: accent ?? Cyber.cyan),
+              style: Cyber.label(StatOzTypography.p8, color: accent ?? Cyber.cyan),
             ),
           ),
         ],
@@ -576,7 +577,7 @@ class _ShotNetDiagram extends StatelessWidget {
           Text(
             caption,
             textAlign: TextAlign.center,
-            style: Cyber.label(7, color: Cyber.muted, letterSpacing: 0.6),
+            style: Cyber.label(StatOzTypography.p7, color: Cyber.muted, letterSpacing: 0.6),
           ),
         ],
       ),

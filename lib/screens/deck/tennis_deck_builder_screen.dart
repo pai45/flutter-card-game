@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -185,8 +186,7 @@ class _TennisCourtBoard extends StatelessWidget {
                       children: [
                         Text(
                           'BASELINE LOADOUT',
-                          style: Cyber.label(
-                            9,
+                          style: Cyber.label(StatOzTypography.p9,
                             color: Cyber.lime,
                             letterSpacing: 1.8,
                           ),
@@ -196,7 +196,7 @@ class _TennisCourtBoard extends StatelessWidget {
                           deckName.toUpperCase(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.display(13, letterSpacing: 1),
+                          style: Cyber.display(StatOzTypography.p13, letterSpacing: 1),
                         ),
                       ],
                     ),
@@ -249,7 +249,7 @@ class _EmptyTennisSlot extends StatelessWidget {
             Text(
               'SELECT\nATHLETE',
               textAlign: TextAlign.center,
-              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+              style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.2),
             ),
           ],
         ),
@@ -278,7 +278,7 @@ class _TennisTelemetryPanel extends StatelessWidget {
               const Spacer(),
               Text(
                 player.archetype.label,
-                style: Cyber.label(8, color: Cyber.lime, letterSpacing: 1),
+                style: Cyber.label(StatOzTypography.p8, color: Cyber.lime, letterSpacing: 1),
               ),
             ],
           ),
@@ -308,11 +308,11 @@ class _TennisStat extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text('$value', style: Cyber.display(15, color: Cyber.lime)),
+          Text('$value', style: Cyber.display(StatOzTypography.p15, color: Cyber.lime)),
           const SizedBox(height: 4),
           Text(
             label,
-            style: Cyber.label(7, color: Cyber.muted, letterSpacing: 1),
+            style: Cyber.label(StatOzTypography.p7, color: Cyber.muted, letterSpacing: 1),
           ),
         ],
       ),
@@ -342,8 +342,7 @@ class _TennisAthletePicker extends StatelessWidget {
               const Expanded(child: SectionLabel(label: 'OWNED ATHLETES')),
               Text(
                 '${cards.length} CARDS',
-                style: Cyber.label(
-                  8,
+                style: Cyber.label(StatOzTypography.p8,
                   color: Cyber.muted,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
@@ -354,9 +353,7 @@ class _TennisAthletePicker extends StatelessWidget {
           if (cards.isEmpty)
             Text(
               'OPEN THE TENNIS STARTER PACK IN GAMES TO SIGN AN ATHLETE.',
-              style: Cyber.bodyFor(
-                context,
-                12,
+              style: Cyber.bodyFor(context, StatOzTypography.p12,
                 color: Cyber.muted,
                 height: 1.4,
               ),

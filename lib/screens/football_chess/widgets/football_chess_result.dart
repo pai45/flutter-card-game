@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import '../../../config/game_ladder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -165,8 +166,7 @@ class _FootballChessResultState extends State<FootballChessResult>
                             const SizedBox(height: 18),
                             Text(
                               'MVP',
-                              style: Cyber.label(
-                                12,
+                              style: Cyber.label(StatOzTypography.p12,
                                 color: Cyber.gold,
                                 letterSpacing: 2,
                               ),
@@ -231,7 +231,7 @@ class _OutcomeBanner extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             verdict,
-            style: Cyber.display(34, color: accent, letterSpacing: 3),
+            style: Cyber.display(StatOzTypography.p34, color: accent, letterSpacing: 3),
           ),
         ],
       ),
@@ -250,12 +250,12 @@ class _Scoreline extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text('$you', style: Cyber.display(64, color: Cyber.cyan)),
+        Text('$you', style: Cyber.display(StatOzTypography.p64, color: Cyber.cyan)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text('-', style: Cyber.display(44, color: Cyber.muted)),
+          child: Text('-', style: Cyber.display(StatOzTypography.p44, color: Cyber.muted)),
         ),
-        Text('$opp', style: Cyber.display(64, color: Cyber.magenta)),
+        Text('$opp', style: Cyber.display(StatOzTypography.p64, color: Cyber.magenta)),
       ],
     );
   }
@@ -291,8 +291,8 @@ class _XpPanel extends StatelessWidget {
             '+$shownXp XP',
             style: TextStyle(
               fontFamily: Cyber.displayFont,
-              fontSize: 26,
-              fontWeight: FontWeight.w900,
+              fontSize: StatOzTypography.p26,
+              fontWeight: StatOzTypography.black,
               letterSpacing: 1,
               color: Cyber.violet,
             ),
@@ -309,7 +309,7 @@ class _XpPanel extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '$into / $span XP · LEVEL $level',
-            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.5),
+            style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 0.5),
           ),
         ],
       ),
@@ -337,13 +337,13 @@ class _GoalTimeline extends StatelessWidget {
       children: [
         Text(
           'GOAL LOG',
-          style: Cyber.label(12, color: Cyber.cyan, letterSpacing: 2),
+          style: Cyber.label(StatOzTypography.p12, color: Cyber.cyan, letterSpacing: 2),
         ),
         const SizedBox(height: 8),
         if (goals.isEmpty)
           Text(
             'NO GOALS — A TENSE STALEMATE.',
-            style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1),
+            style: Cyber.label(StatOzTypography.p10, color: Cyber.muted, letterSpacing: 1),
           )
         else
           for (var i = 0; i < goals.length; i++)
@@ -400,13 +400,12 @@ class _GoalRow extends StatelessWidget {
               '${goal.scorerShortName.toUpperCase()} · ${goal.byPlayer ? 'YOU' : opponentName.toUpperCase()}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.label(10, color: Colors.white, letterSpacing: 0.8),
+              style: Cyber.label(StatOzTypography.p10, color: Colors.white, letterSpacing: 0.8),
             ),
           ),
           Text(
             time,
-            style: Cyber.display(
-              13,
+            style: Cyber.display(StatOzTypography.p13,
               color: color,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),

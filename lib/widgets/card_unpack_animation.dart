@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'dart:math';
 import 'dart:ui' show lerpDouble;
@@ -179,8 +180,8 @@ class PackSkipButton extends StatelessWidget {
                       style: TextStyle(
                         color: Cyber.cyan.withValues(alpha: 0.72),
                         fontFamily: Cyber.displayFont,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
+                        fontSize: StatOzTypography.p12,
+                        fontWeight: StatOzTypography.extrabold,
                         letterSpacing: 2.4,
                         decoration: TextDecoration.none,
                       ),
@@ -1266,7 +1267,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
                 '?',
                 style: TextStyle(
                   color: _kWhite,
-                  fontSize: 48,
+                  fontSize: StatOzTypography.p48,
                   fontWeight: FontWeight.bold,
                   decoration: TextDecoration.none,
                 ),
@@ -1364,7 +1365,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
                       style: const TextStyle(
                         color: Colors.black,
                         fontWeight: FontWeight.bold,
-                        fontSize: 10,
+                        fontSize: StatOzTypography.p10,
                         decoration: TextDecoration.none,
                       ),
                     ),
@@ -1379,7 +1380,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
                     style: TextStyle(
                       color: ratingTextColor,
                       fontWeight: FontWeight.bold,
-                      fontSize: 28,
+                      fontSize: StatOzTypography.p28,
                       decoration: TextDecoration.none,
                     ),
                   ),
@@ -1404,7 +1405,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
                         style: const TextStyle(
                           color: _kWhite,
                           fontWeight: FontWeight.bold,
-                          fontSize: 13,
+                          fontSize: StatOzTypography.p13,
                           height: 1.2,
                           decoration: TextDecoration.none,
                         ),
@@ -1416,7 +1417,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
                         'PITCH DUEL',
                         style: TextStyle(
                           color: _kMuted,
-                          fontSize: 9,
+                          fontSize: StatOzTypography.p9,
                           letterSpacing: 1.5,
                           decoration: TextDecoration.none,
                         ),
@@ -1430,7 +1431,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
                       rarityLabel,
                       style: TextStyle(
                         color: rarityColor,
-                        fontSize: 9,
+                        fontSize: StatOzTypography.p9,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1,
                         decoration: TextDecoration.none,
@@ -1462,7 +1463,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       style: TextStyle(
         color: color,
         fontSize: widget.rarity == 'platinum' ? 24 : 20,
-        fontWeight: FontWeight.w700,
+        fontWeight: StatOzTypography.bold,
         letterSpacing: ls,
         decoration: TextDecoration.none,
       ),
@@ -1546,9 +1547,9 @@ class _CardUnpackState extends State<CardUnpackAnimation>
                       '$value',
                       style: TextStyle(
                         color: _kWhite,
-                        fontFamily: 'Orbitron',
-                        fontWeight: FontWeight.w900,
-                        fontSize: 56,
+                        fontFamily: StatOzTypography.displayFont,
+                        fontWeight: StatOzTypography.black,
+                        fontSize: StatOzTypography.p56,
                         height: 1,
                         decoration: TextDecoration.none,
                         fontFeatures: const [FontFeature.tabularFigures()],
@@ -1564,9 +1565,9 @@ class _CardUnpackState extends State<CardUnpackAnimation>
                       'OVR',
                       style: TextStyle(
                         color: base,
-                        fontFamily: 'Orbitron',
-                        fontWeight: FontWeight.w900,
-                        fontSize: 14,
+                        fontFamily: StatOzTypography.displayFont,
+                        fontWeight: StatOzTypography.black,
+                        fontSize: StatOzTypography.p14,
                         letterSpacing: 6,
                         decoration: TextDecoration.none,
                       ),
@@ -1600,8 +1601,8 @@ class _CardUnpackState extends State<CardUnpackAnimation>
             '3',
             style: const TextStyle(
               color: _kMuted,
-              fontSize: 36,
-              fontWeight: FontWeight.w700,
+              fontSize: StatOzTypography.p36,
+              fontWeight: StatOzTypography.bold,
               decoration: TextDecoration.none,
             ),
           ),

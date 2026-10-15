@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -86,15 +87,13 @@ class HowToPlayHubScreen extends StatelessWidget {
         children: [
           Text(
             'FOUR WAYS TO PLAY STATOZ',
-            style: Cyber.label(11, color: Cyber.cyan, letterSpacing: 2),
+            style: Cyber.label(StatOzTypography.p11, color: Cyber.cyan, letterSpacing: 2),
           ),
           const SizedBox(height: 6),
           Text(
             'Predict fixtures, take market picks, duel with cards, or trade spot '
             'kicks. Tap a mode for its quick guide.',
-            style: Cyber.bodyFor(
-              context,
-              12.5,
+            style: Cyber.bodyFor(context, StatOzTypography.p12_5,
               color: AppTheme.text2,
               height: 1.4,
             ),
@@ -139,14 +138,12 @@ class _ModeCard extends StatelessWidget {
                 children: [
                   Text(
                     guide.title,
-                    style: Cyber.display(15, letterSpacing: 0.6),
+                    style: Cyber.display(StatOzTypography.p15, letterSpacing: 0.6),
                   ),
                   const SizedBox(height: 5),
                   Text(
                     guide.tagline,
-                    style: Cyber.bodyFor(
-                      context,
-                      12,
+                    style: Cyber.bodyFor(context, StatOzTypography.p12,
                       color: AppTheme.text2,
                       height: 1.3,
                     ),
@@ -188,7 +185,7 @@ class _MetaTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Cyber.label(8, color: accent, letterSpacing: 1.2),
+        style: Cyber.label(StatOzTypography.p8, color: accent, letterSpacing: 1.2),
       ),
     );
   }
@@ -245,13 +242,11 @@ class _GuideHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(guide.title, style: Cyber.display(16, letterSpacing: 0.6)),
+                Text(guide.title, style: Cyber.display(StatOzTypography.p16, letterSpacing: 0.6)),
                 const SizedBox(height: 7),
                 Text(
                   guide.purpose,
-                  style: Cyber.bodyFor(
-                    context,
-                    12.5,
+                  style: Cyber.bodyFor(context, StatOzTypography.p12_5,
                     color: AppTheme.text2,
                     height: 1.45,
                   ),
@@ -308,13 +303,13 @@ class _GuideStatCell extends StatelessWidget {
           Text(
             stat.label,
             textAlign: TextAlign.center,
-            style: Cyber.label(9, letterSpacing: 0.8),
+            style: Cyber.label(StatOzTypography.p9, letterSpacing: 0.8),
           ),
           const SizedBox(height: 3),
           Text(
             stat.sub,
             textAlign: TextAlign.center,
-            style: Cyber.bodyFor(context, 9, color: Cyber.muted, height: 1.2),
+            style: Cyber.bodyFor(context, StatOzTypography.p9, color: Cyber.muted, height: 1.2),
           ),
         ],
       ),
@@ -375,8 +370,7 @@ class _StepTile extends StatelessWidget {
           ),
           child: Text(
             '$index',
-            style: Cyber.label(
-              12,
+            style: Cyber.label(StatOzTypography.p12,
               color: accent,
               letterSpacing: 0,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -392,15 +386,13 @@ class _StepTile extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   step.title,
-                  style: Cyber.label(12.5, letterSpacing: 0.5),
+                  style: Cyber.label(StatOzTypography.p12_5, letterSpacing: 0.5),
                 ),
               ),
               const SizedBox(height: 5),
               Text(
                 step.body,
-                style: Cyber.bodyFor(
-                  context,
-                  12,
+                style: Cyber.bodyFor(context, StatOzTypography.p12,
                   color: AppTheme.text2,
                   height: 1.45,
                 ),
@@ -461,13 +453,11 @@ class _FactTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(fact.label, style: Cyber.label(11.5, letterSpacing: 0.4)),
+              Text(fact.label, style: Cyber.label(StatOzTypography.p11_5, letterSpacing: 0.4)),
               const SizedBox(height: 4),
               Text(
                 fact.body,
-                style: Cyber.bodyFor(
-                  context,
-                  11.5,
+                style: Cyber.bodyFor(context, StatOzTypography.p11_5,
                   color: Cyber.muted,
                   height: 1.4,
                 ),

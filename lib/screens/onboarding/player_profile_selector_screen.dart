@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
@@ -126,8 +127,7 @@ class _PlayerProfileSelectorScreenState
                     Text(
                       'PROFILE SELECT',
                       textAlign: TextAlign.center,
-                      style: Cyber.label(
-                        11,
+                      style: Cyber.label(StatOzTypography.p11,
                         color: Cyber.cyan,
                         letterSpacing: 2.4,
                       ),
@@ -136,13 +136,13 @@ class _PlayerProfileSelectorScreenState
                     Text(
                       'WHO\'S ON THE PITCH?',
                       textAlign: TextAlign.center,
-                      style: Cyber.display(24, letterSpacing: 1.1),
+                      style: Cyber.display(StatOzTypography.p24, letterSpacing: 1.1),
                     ),
                     const SizedBox(height: 10),
                     Text(
                       'Choose how you want to play. Your saved career stays on this device.',
                       textAlign: TextAlign.center,
-                      style: Cyber.bodyFor(context, 14, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, StatOzTypography.p14, color: Cyber.muted),
                     ),
                     const SizedBox(height: 28),
                     _choiceCard(
@@ -166,8 +166,7 @@ class _PlayerProfileSelectorScreenState
                     Text(
                       'LOCAL PROFILE SWITCH // NO ACCOUNT REQUIRED',
                       textAlign: TextAlign.center,
-                      style: Cyber.label(
-                        8.5,
+                      style: Cyber.label(StatOzTypography.p8_5,
                         color: Cyber.muted,
                         letterSpacing: 1.15,
                       ),
@@ -264,8 +263,7 @@ class _ProfileChoiceCard extends StatelessWidget {
                         Flexible(
                           child: Text(
                             title,
-                            style: Cyber.label(
-                              13,
+                            style: Cyber.label(StatOzTypography.p13,
                               color: accent,
                               letterSpacing: 1.45,
                             ),
@@ -280,7 +278,7 @@ class _ProfileChoiceCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       description,
-                      style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
                     ),
                   ],
                 ),

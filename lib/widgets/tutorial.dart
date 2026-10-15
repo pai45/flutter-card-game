@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -139,8 +140,8 @@ class _TutorialDialogState extends State<TutorialDialog> {
                     style: TextStyle(
                       color: accent,
                       fontFamily: Cyber.gameBodyFont,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
+                      fontSize: StatOzTypography.p10,
+                      fontWeight: StatOzTypography.bold,
                       letterSpacing: 1.8,
                     ),
                   ),
@@ -177,9 +178,9 @@ class _TutorialDialogState extends State<TutorialDialog> {
                           'STEP ${(index + 1).toString().padLeft(2, '0')}',
                           style: TextStyle(
                             color: accent,
-                            fontFamily: 'Orbitron',
-                            fontSize: 9,
-                            fontWeight: FontWeight.w900,
+                            fontFamily: StatOzTypography.displayFont,
+                            fontSize: StatOzTypography.p9,
+                            fontWeight: StatOzTypography.black,
                             letterSpacing: 1.8,
                           ),
                         ),
@@ -189,9 +190,9 @@ class _TutorialDialogState extends State<TutorialDialog> {
                         step.title.toUpperCase(),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontFamily: 'Orbitron',
-                          fontSize: 15,
-                          fontWeight: FontWeight.w900,
+                          fontFamily: StatOzTypography.displayFont,
+                          fontSize: StatOzTypography.p15,
+                          fontWeight: StatOzTypography.black,
                           letterSpacing: 0.8,
                           height: 1.15,
                         ),
@@ -207,8 +208,8 @@ class _TutorialDialogState extends State<TutorialDialog> {
               style: const TextStyle(
                 color: Color(0xffd1d5db),
                 fontFamily: Cyber.gameBodyFont,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+                fontSize: StatOzTypography.p13,
+                fontWeight: StatOzTypography.semibold,
                 height: 1.45,
               ),
             ),
@@ -226,9 +227,9 @@ class _TutorialDialogState extends State<TutorialDialog> {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: accent.withValues(alpha: 0.9),
-                    fontFamily: 'Orbitron',
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
+                    fontFamily: StatOzTypography.displayFont,
+                    fontSize: StatOzTypography.p9,
+                    fontWeight: StatOzTypography.black,
                     letterSpacing: 1.3,
                   ),
                 ),

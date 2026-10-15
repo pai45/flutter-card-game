@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -326,15 +327,13 @@ class _RewardHeader extends StatelessWidget {
             Text(
               'REWARDS SETTLED',
               textAlign: TextAlign.center,
-              style: Cyber.display(26, color: Cyber.gold, letterSpacing: 2.4),
+              style: Cyber.display(StatOzTypography.p26, color: Cyber.gold, letterSpacing: 2.4),
             ),
             const SizedBox(height: 8),
             Text(
               'Your Predict and Picks results are in',
               textAlign: TextAlign.center,
-              style: Cyber.bodyFor(
-                context,
-                13,
+              style: Cyber.bodyFor(context, StatOzTypography.p13,
                 color: Cyber.muted,
                 letterSpacing: 0.3,
               ),
@@ -554,8 +553,7 @@ class _PredictOutcomeCard extends StatelessWidget {
             'PREDICTION RESULT',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.label(
-              8,
+            style: Cyber.label(StatOzTypography.p8,
               color: Cyber.muted.withValues(alpha: 0.85),
               letterSpacing: 1.2,
             ),
@@ -565,28 +563,24 @@ class _PredictOutcomeCard extends StatelessWidget {
             outcome.fixture,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.bodyFor(
-              context,
-              15,
-              weight: FontWeight.w700,
+            style: Cyber.bodyFor(context, StatOzTypography.p15,
+              weight: StatOzTypography.bold,
               height: 1.15,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             outcome.summary,
-            style: Cyber.bodyFor(context, 12, color: const Color(0xff9fb0c2)),
+            style: Cyber.bodyFor(context, StatOzTypography.p12, color: const Color(0xff9fb0c2)),
           ),
           const SizedBox(height: 10),
           Text(
             outcome.details.join('   '),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.bodyFor(
-              context,
-              11,
+            style: Cyber.bodyFor(context, StatOzTypography.p11,
               color: Cyber.muted,
-              weight: FontWeight.w600,
+              weight: StatOzTypography.semibold,
             ),
           ),
         ],
@@ -600,11 +594,9 @@ class _PredictOutcomeCard extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               '+${outcome.xpWon} XP',
-              style: Cyber.bodyFor(
-                context,
-                12.5,
+              style: Cyber.bodyFor(context, StatOzTypography.p12_5,
                 color: Cyber.cyan,
-                weight: FontWeight.w700,
+                weight: StatOzTypography.bold,
               ).copyWith(letterSpacing: 0.5),
             ),
           ],
@@ -632,8 +624,7 @@ class _PickOutcomeCard extends StatelessWidget {
             'PREMIER LEAGUE / MATCH PICK',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.label(
-              8,
+            style: Cyber.label(StatOzTypography.p8,
               color: Cyber.muted.withValues(alpha: 0.85),
               letterSpacing: 1.2,
             ),
@@ -643,10 +634,8 @@ class _PickOutcomeCard extends StatelessWidget {
             outcome.market,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.bodyFor(
-              context,
-              15,
-              weight: FontWeight.w700,
+            style: Cyber.bodyFor(context, StatOzTypography.p15,
+              weight: StatOzTypography.bold,
               height: 1.15,
             ),
           ),
@@ -663,8 +652,7 @@ class _PickOutcomeCard extends StatelessWidget {
                   children: [
                     Text(
                       'YOUR PICK',
-                      style: Cyber.label(
-                        7,
+                      style: Cyber.label(StatOzTypography.p7,
                         color: Cyber.muted,
                         letterSpacing: 1.2,
                       ),
@@ -674,10 +662,8 @@ class _PickOutcomeCard extends StatelessWidget {
                       outcome.selection,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.bodyFor(
-                        context,
-                        13,
-                        weight: FontWeight.w800,
+                      style: Cyber.bodyFor(context, StatOzTypography.p13,
+                        weight: StatOzTypography.bold,
                       ),
                     ),
                   ],
@@ -690,8 +676,7 @@ class _PickOutcomeCard extends StatelessWidget {
                 children: [
                   Text(
                     'TO WIN',
-                    style: Cyber.label(
-                      7,
+                    style: Cyber.label(StatOzTypography.p7,
                       color: Cyber.muted,
                       letterSpacing: 1.2,
                     ),
@@ -704,10 +689,8 @@ class _PickOutcomeCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         '${outcome.stake} -> ${outcome.payout}',
-                        style: Cyber.bodyFor(
-                          context,
-                          12.5,
-                          weight: FontWeight.w700,
+                        style: Cyber.bodyFor(context, StatOzTypography.p12_5,
+                          weight: StatOzTypography.bold,
                         ),
                       ),
                     ],
@@ -744,7 +727,7 @@ class _HeldBadge extends StatelessWidget {
               fit: BoxFit.scaleDown,
               child: Text(
                 _pickOutcomeCode(label),
-                style: Cyber.label(11, color: ink, letterSpacing: 0.5),
+                style: Cyber.label(StatOzTypography.p11, color: ink, letterSpacing: 0.5),
               ),
             ),
           ),
@@ -770,11 +753,9 @@ class _PickSettlementStrip extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               '+${outcome.profit} OZ PROFIT',
-              style: Cyber.bodyFor(
-                context,
-                12,
+              style: Cyber.bodyFor(context, StatOzTypography.p12,
                 color: Cyber.success,
-                weight: FontWeight.w800,
+                weight: StatOzTypography.bold,
               ),
             ),
           ],
@@ -784,24 +765,22 @@ class _PickSettlementStrip extends StatelessWidget {
         topBorder: Cyber.red.withValues(alpha: 0.18),
         child: Text(
           '-${outcome.stake} OZ',
-          style: Cyber.bodyFor(
-            context,
-            12,
+          style: Cyber.bodyFor(context, StatOzTypography.p12,
             color: Cyber.red.withValues(alpha: 0.9),
-            weight: FontWeight.w800,
+            weight: StatOzTypography.bold,
           ),
         ),
       ),
       RewardSettlementOutcome.voided => FixtureCardStrip(
         child: Text(
           'REFUNDED ${outcome.stake} OZ',
-          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.8),
+          style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 0.8),
         ),
       ),
       RewardSettlementOutcome.mixed => FixtureCardStrip(
         child: Text(
           'SETTLED',
-          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.8),
+          style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 0.8),
         ),
       ),
     };

@@ -4,6 +4,7 @@ import '../../blocs/guess_player/guess_player_cubit.dart';
 import '../../config/sport_modules.dart';
 import '../../models/sport_match.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/cyber/statoz_icons.dart';
 
 /// Maps the sport's daily record and archive into the shared case dossier.
 class GuessPlayerLobby extends StatelessWidget {
@@ -46,6 +47,11 @@ class GuessPlayerLobby extends StatelessWidget {
       sportLabel: sport.name.toUpperCase(),
       sportIcon: sportModuleFor(sport).icon,
       sportAccent: sportModuleFor(sport).accent,
+      sportMark: StatozSportIcon(
+        sport: sport,
+        color: sportModuleFor(sport).accent,
+        size: 32,
+      ),
       title: 'GUESS THE PLAYER',
       description:
           'Follow $clueCount career signals to identify the player. '

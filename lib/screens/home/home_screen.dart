@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -106,8 +107,7 @@ class HomeScreen extends StatelessWidget {
                                         Text(
                                           'PITCH DUEL',
                                           style:
-                                              Cyber.display(
-                                                26,
+                                              Cyber.display(StatOzTypography.p26,
                                                 letterSpacing: 1.4,
                                               ).copyWith(
                                                 shadows: [
@@ -127,8 +127,8 @@ class HomeScreen extends StatelessWidget {
                                           style: TextStyle(
                                             color: Cyber.muted,
                                             fontFamily: Cyber.displayFont,
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w800,
+                                            fontSize: StatOzTypography.p9,
+                                            fontWeight: StatOzTypography.extrabold,
                                             letterSpacing: 2.4,
                                           ),
                                         ),
@@ -561,7 +561,7 @@ class _HudLink extends StatelessWidget {
           color: faint ? Cyber.cyan.withValues(alpha: 0.55) : Cyber.cyan,
           fontFamily: Cyber.displayFont,
           fontSize: faint ? 10 : 11,
-          fontWeight: faint ? FontWeight.w800 : FontWeight.w900,
+          fontWeight: faint ? StatOzTypography.extrabold : StatOzTypography.black,
           letterSpacing: faint ? 2.2 : 1.4,
         ),
       ),

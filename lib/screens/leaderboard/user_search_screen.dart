@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../config/theme.dart';
@@ -36,7 +37,7 @@ class UserSearchScreen extends StatelessWidget {
                   )
                 : Text(
                     '${results.length} PLAYERS FOUND',
-                    style: Cyber.label(10, color: Cyber.cyan),
+                    style: Cyber.label(StatOzTypography.p10, color: Cyber.cyan),
                   );
           }
           final seed = results[index - 1];

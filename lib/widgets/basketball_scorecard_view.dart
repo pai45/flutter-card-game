@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
@@ -79,8 +80,7 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
           child: Text(
             teamName.toUpperCase(),
             maxLines: 1,
-            style: Cyber.display(
-              12,
+            style: Cyber.display(StatOzTypography.p12,
               color: isSelected ? widget.accent : Cyber.muted,
             ),
           ),
@@ -115,7 +115,7 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
                   flex: 3,
                   child: Text(
                     'TEAM',
-                    style: Cyber.label(10, color: Cyber.muted),
+                    style: Cyber.label(StatOzTypography.p10, color: Cyber.muted),
                   ),
                 ),
                 for (int i = 1; i <= pc; i++)
@@ -123,7 +123,7 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
                     child: Text(
                       'Q$i',
                       textAlign: TextAlign.center,
-                      style: Cyber.label(10, color: Cyber.muted),
+                      style: Cyber.label(StatOzTypography.p10, color: Cyber.muted),
                     ),
                   ),
                 Expanded(
@@ -131,7 +131,7 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
                   child: Text(
                     'T',
                     textAlign: TextAlign.right,
-                    style: Cyber.label(11, color: Colors.white),
+                    style: Cyber.label(StatOzTypography.p11, color: Colors.white),
                   ),
                 ),
               ],
@@ -161,7 +161,7 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
               teamName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.bodyFor(context, 13, weight: FontWeight.bold),
+              style: Cyber.bodyFor(context, StatOzTypography.p13, weight: FontWeight.bold),
             ),
           ),
           for (int i = 0; i < periodCount; i++)
@@ -169,8 +169,7 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
               child: Text(
                 i < scores.length ? scores[i].toString() : '-',
                 textAlign: TextAlign.center,
-                style: Cyber.display(
-                  13,
+                style: Cyber.display(StatOzTypography.p13,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
             ),
@@ -179,8 +178,7 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
             child: Text(
               total.toString(),
               textAlign: TextAlign.right,
-              style: Cyber.display(
-                14,
+              style: Cyber.display(StatOzTypography.p14,
                 color: widget.accent,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
@@ -214,15 +212,14 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
                   awayName.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.label(8, color: Cyber.muted),
+                  style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                 ),
               ),
               Expanded(
                 child: Text(
                   'TEAM STATS',
                   textAlign: TextAlign.center,
-                  style: Cyber.display(
-                    10,
+                  style: Cyber.display(StatOzTypography.p10,
                     color: Colors.white,
                     letterSpacing: 1.2,
                   ),
@@ -234,7 +231,7 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.right,
-                  style: Cyber.label(8, color: Cyber.muted),
+                  style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                 ),
               ),
             ],
@@ -364,7 +361,7 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     awayVal,
-                    style: Cyber.display(12, color: awayColor),
+                    style: Cyber.display(StatOzTypography.p12, color: awayColor),
                   ),
                 ),
               ),
@@ -372,7 +369,7 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
                 child: Text(
                   label,
                   textAlign: TextAlign.center,
-                  style: Cyber.label(9, color: Cyber.muted),
+                  style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
                 ),
               ),
               Expanded(
@@ -381,7 +378,7 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
                   alignment: Alignment.centerRight,
                   child: Text(
                     homeVal,
-                    style: Cyber.display(12, color: homeColor),
+                    style: Cyber.display(StatOzTypography.p12, color: homeColor),
                   ),
                 ),
               ),
@@ -427,9 +424,7 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
                           p.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.bodyFor(
-                            context,
-                            12,
+                          style: Cyber.bodyFor(context, StatOzTypography.p12,
                             weight: p.starter
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -441,8 +436,7 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
                               : '${p.jersey == null || p.jersey!.isEmpty ? '' : '#${p.jersey} // '}${p.position ?? ''}${p.starter ? ' // STARTER' : ''}${p.ejected ? ' // EJECTED' : ''}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.label(
-                            7,
+                          style: Cyber.label(StatOzTypography.p7,
                             color: p.didNotPlay ? Cyber.danger : Cyber.muted,
                           ),
                         ),
@@ -534,7 +528,7 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
     Color color = Cyber.muted,
   }) {
     return _buildCell(
-      Text(text, style: Cyber.label(10, color: color)),
+      Text(text, style: Cyber.label(StatOzTypography.p10, color: color)),
       width: width,
       height: height,
       alignment: alignment,
@@ -552,7 +546,7 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
     return _buildCell(
       Text(
         text.isEmpty ? '-' : text,
-        style: Cyber.display(12, color: color).copyWith(
+        style: Cyber.display(StatOzTypography.p12, color: color).copyWith(
           fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),

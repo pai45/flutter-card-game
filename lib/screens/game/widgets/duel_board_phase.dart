@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -834,7 +835,7 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
           children: [
             Text(
               '1  CHOOSE YOUR ${state.playerAttacking ? 'ATTACKER' : 'DEFENDER'}',
-              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.8),
+              style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 0.8),
             ),
             SpotlightTarget(
               spotlightKey: _playersKey,
@@ -852,14 +853,14 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
             const SizedBox(height: 8),
             Text(
               '2  LINK AN ACTION',
-              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.8),
+              style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 0.8),
             ),
             if (reserved)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   'RESERVED: needed for a later ${state.playerAttacking ? 'defense' : 'attack'}.',
-                  style: Cyber.bodyFor(context, 11, color: Cyber.amber),
+                  style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.amber),
                 ),
               ),
             SpotlightTarget(
@@ -949,14 +950,14 @@ class _MoveGuidanceDock extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.display(12, color: accent, letterSpacing: 1.6),
+                    style: Cyber.display(StatOzTypography.p12, color: accent, letterSpacing: 1.6),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     helper,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
                   ),
                 ],
               ),
@@ -1013,7 +1014,7 @@ class _MoveStepStatus extends StatelessWidget {
           size: 12,
         ),
         const SizedBox(width: 3),
-        Text(label, style: Cyber.label(8, color: color, letterSpacing: 1.2)),
+        Text(label, style: Cyber.label(StatOzTypography.p8, color: color, letterSpacing: 1.2)),
       ],
     );
   }
@@ -1049,8 +1050,7 @@ class _OpponentBoardStrip extends StatelessWidget {
                     compactOpponentName(state),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(
-                      10,
+                    style: Cyber.label(StatOzTypography.p10,
                       color: Cyber.muted,
                       letterSpacing: 0.8,
                     ),
@@ -1066,7 +1066,7 @@ class _OpponentBoardStrip extends StatelessWidget {
                         : 'ATTACKING',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.bodyFor(context, 10, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, StatOzTypography.p10, color: Cyber.muted),
                   ),
                 ],
               ),
@@ -1287,14 +1287,13 @@ class _ArenaScenarioStrip extends StatelessWidget {
               '// ${title.toUpperCase()}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.6),
+              style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.6),
             ),
           ),
           const SizedBox(width: 8),
           Text(
             '${attacking ? 'ATK' : 'DEF'} +$bonus',
-            style: Cyber.label(
-              9,
+            style: Cyber.label(StatOzTypography.p9,
               color: accent,
               letterSpacing: 1.4,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -1385,7 +1384,7 @@ class _ArenaSlot extends StatelessWidget {
             child: Text(
               'AWAITING\nDEPLOY',
               textAlign: TextAlign.center,
-              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.4),
+              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1.4),
             ),
           ),
         ),
@@ -1399,7 +1398,7 @@ class _ArenaSlot extends StatelessWidget {
           label.toUpperCase(),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.6),
+          style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.6),
         ),
         const SizedBox(height: 6),
         slot,
@@ -1437,7 +1436,7 @@ class _VsMedallion extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: hot ? 1 : 0.5)),
         boxShadow: hot ? Cyber.glow(Cyber.gold) : null,
       ),
-      child: Text('VS', style: Cyber.display(14, color: color)),
+      child: Text('VS', style: Cyber.display(StatOzTypography.p14, color: color)),
     );
   }
 }
@@ -1489,8 +1488,7 @@ class _DuelIntelStrip extends StatelessWidget {
                     scenario?.title.toUpperCase() ?? 'READ THE PITCH',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(
-                      10,
+                    style: Cyber.label(StatOzTypography.p10,
                       color: AppTheme.whiteColor,
                       letterSpacing: 0.3,
                     ),
@@ -1522,8 +1520,7 @@ class _DuelIntelStrip extends StatelessWidget {
                   power == null
                       ? 'PICK YOUR CARDS'
                       : 'YOUR POWER ${power.base}',
-                  style: Cyber.display(
-                    14,
+                  style: Cyber.display(StatOzTypography.p14,
                     color: AppTheme.whiteColor,
                     letterSpacing: 0,
                   ),
@@ -1535,8 +1532,7 @@ class _DuelIntelStrip extends StatelessWidget {
                         ? 'COMBO +${power.combo}'
                         : 'TIMING +0–8',
                     key: ValueKey(power?.combo ?? 0),
-                    style: Cyber.label(
-                      9,
+                    style: Cyber.label(StatOzTypography.p9,
                       color: power != null && power.combo > 0
                           ? Cyber.cyan
                           : Cyber.muted,
@@ -1551,7 +1547,7 @@ class _DuelIntelStrip extends StatelessWidget {
               rival == null
                   ? 'RIVAL POWER RANGE —'
                   : 'RIVAL POWER RANGE ${rival.min}–${rival.max}',
-              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.3),
+              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 0.3),
             ),
           ],
         ),
@@ -1574,19 +1570,19 @@ class _DuelIntelStrip extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('YOUR PLAY', style: Cyber.display(18)),
+              Text('YOUR PLAY', style: Cyber.display(StatOzTypography.p18)),
               const SizedBox(height: 16),
               if (power != null) PitchContributionStrip(power: power),
               const SizedBox(height: 16),
               if (state.currentScenario != null)
                 Text(
                   'Scenario match +6: ${pitchScenarioActionNames(state.currentScenario!, attacking: state.playerAttacking).join(', ')}.',
-                  style: Cyber.bodyFor(context, 13, color: Cyber.cyan),
+                  style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.cyan),
                 ),
               const SizedBox(height: 12),
               Text(
                 'Your cards set the power. Timing adds up to +8. The rival range covers all its remaining legal plays; its pick stays hidden.',
-                style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+                style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
               ),
               const SizedBox(height: 20),
               CyberCtaButton(
@@ -1719,8 +1715,7 @@ class _BoardActionRail extends StatelessWidget {
                 : reserved
                 ? 'LATER ROUND'
                 : ' ',
-            style: Cyber.label(
-              8,
+            style: Cyber.label(StatOzTypography.p8,
               color: bonus > 0 && !used && !reserved ? Cyber.cyan : Cyber.muted,
               letterSpacing: 0.2,
             ),
@@ -1794,7 +1789,7 @@ class _RoleBanner extends StatelessWidget {
                 children: [
                   Text(
                     'ROUND $round // $context2',
-                    style: Cyber.label(10, color: Cyber.muted, letterSpacing: 2)
+                    style: Cyber.label(StatOzTypography.p10, color: Cyber.muted, letterSpacing: 2)
                         .copyWith(
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
@@ -1826,8 +1821,7 @@ class _RoleBanner extends StatelessWidget {
                           const SizedBox(width: 10),
                           Text(
                             attacking ? 'YOU ATTACK' : 'YOU DEFEND',
-                            style: Cyber.display(
-                              22,
+                            style: Cyber.display(StatOzTypography.p22,
                               color: accent,
                               letterSpacing: 2.5,
                             ),

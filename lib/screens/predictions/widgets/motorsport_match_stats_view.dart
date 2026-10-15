@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -241,7 +242,7 @@ class _CircuitHero extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 circuit.fullName,
-                style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
               ),
               const SizedBox(height: 12),
               _TrackMap(circuit: circuit, package: package),
@@ -847,7 +848,7 @@ class _MapReadoutShell extends StatelessWidget {
           children: [
             Text(
               label,
-              style: Cyber.label(10, color: Cyber.cyan, letterSpacing: 1.6),
+              style: Cyber.label(StatOzTypography.p10, color: Cyber.cyan, letterSpacing: 1.6),
             ),
             const SizedBox(width: 8),
             Expanded(child: Container(height: 1, color: Cyber.line)),
@@ -857,7 +858,7 @@ class _MapReadoutShell extends StatelessWidget {
         for (final child in children) ...[child, const SizedBox(height: 6)],
         Text(
           caption,
-          style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.1),
+          style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1.1),
         ),
       ],
     );
@@ -889,7 +890,7 @@ class _MapFactRow extends StatelessWidget {
           ],
           Text(
             label,
-            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+            style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.2),
           ),
           const Spacer(),
           if (detail != null && detail.isNotEmpty) ...[
@@ -899,12 +900,12 @@ class _MapFactRow extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.end,
-                style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+                style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
               ),
             ),
             const SizedBox(width: 8),
           ],
-          Text(value, style: Cyber.display(12, color: accent ?? Colors.white)),
+          Text(value, style: Cyber.display(StatOzTypography.p12, color: accent ?? Colors.white)),
         ],
       ),
     );
@@ -942,7 +943,7 @@ class _RecordLine extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             'LAP RECORD',
-            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+            style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.2),
           ),
           const Spacer(),
           if (holder != null || record.year != null) ...[
@@ -954,15 +955,14 @@ class _RecordLine extends StatelessWidget {
                 ].whereType<String>().join(' · '),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+                style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
               ),
             ),
             const SizedBox(width: 10),
           ],
           Text(
             record.time ?? '—',
-            style: Cyber.display(
-              13,
+            style: Cyber.display(StatOzTypography.p13,
               color: Cyber.cyan,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
@@ -1001,14 +1001,14 @@ class _WinnerPlate extends StatelessWidget {
               children: [
                 Text(
                   'WINNER',
-                  style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1.4),
+                  style: Cyber.label(StatOzTypography.p9, color: Cyber.gold, letterSpacing: 1.4),
                 ),
                 const SizedBox(height: 5),
                 Text(
                   driver.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.bodyFor(context, 15, weight: FontWeight.w800),
+                  style: Cyber.bodyFor(context, StatOzTypography.p15, weight: StatOzTypography.bold),
                 ),
                 if (entry.constructorName != null) ...[
                   const SizedBox(height: 3),
@@ -1016,7 +1016,7 @@ class _WinnerPlate extends StatelessWidget {
                     entry.constructorName!.toUpperCase(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(9, color: Cyber.muted),
+                    style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
                   ),
                 ],
               ],
@@ -1028,8 +1028,7 @@ class _WinnerPlate extends StatelessWidget {
             children: [
               Text(
                 entry.display('totalTime') ?? '—',
-                style: Cyber.display(
-                  14,
+                style: Cyber.display(StatOzTypography.p14,
                   color: Cyber.gold,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
@@ -1037,7 +1036,7 @@ class _WinnerPlate extends StatelessWidget {
                 const SizedBox(height: 5),
                 Text(
                   'FROM P${entry.grid} · +$gained',
-                  style: Cyber.label(9, color: Cyber.success),
+                  style: Cyber.label(StatOzTypography.p9, color: Cyber.success),
                 ),
               ],
             ],
@@ -1168,8 +1167,7 @@ class _ClassificationRow extends StatelessWidget {
             width: 30,
             child: Text(
               'P${entry.position}',
-              style: Cyber.display(
-                13,
+              style: Cyber.display(StatOzTypography.p13,
                 color: positionColor,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
@@ -1184,10 +1182,8 @@ class _ClassificationRow extends StatelessWidget {
                   driver?.displayName ?? entry.driverId,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.bodyFor(
-                    context,
-                    13,
-                    weight: podium ? FontWeight.w800 : FontWeight.w600,
+                  style: Cyber.bodyFor(context, StatOzTypography.p13,
+                    weight: podium ? StatOzTypography.extrabold : StatOzTypography.semibold,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1198,7 +1194,7 @@ class _ClassificationRow extends StatelessWidget {
                   ].join(' · ').toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1),
+                  style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1),
                 ),
               ],
             ),
@@ -1207,8 +1203,7 @@ class _ClassificationRow extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               gained > 0 ? '+$gained' : '$gained',
-              style: Cyber.label(
-                10,
+              style: Cyber.label(StatOzTypography.p10,
                 color: gained > 0 ? Cyber.success : Cyber.danger,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
@@ -1222,8 +1217,7 @@ class _ClassificationRow extends StatelessWidget {
               textAlign: TextAlign.end,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.display(
-                11,
+              style: Cyber.display(StatOzTypography.p11,
                 color: entry.retired
                     ? Cyber.danger
                     : (entry.position == 1 ? Cyber.gold : Cyber.muted),
@@ -1274,7 +1268,7 @@ class _WeekendSection extends StatelessWidget {
             'Position at each stage of the weekend. ESPN publishes no '
             'lap-by-lap data for F1, so this tracks the sessions themselves — '
             'no lap positions are inferred.',
-            style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+            style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
           ),
         ],
         const SizedBox(height: 18),
@@ -1550,7 +1544,7 @@ class _QualifyingSection extends StatelessWidget {
           Text(
             'A line stops at the segment its driver was knocked out in — the '
             'feed records no time beyond the cut, so none is drawn.',
-            style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+            style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
           ),
         ],
         const SizedBox(height: 18),
@@ -1698,12 +1692,12 @@ class _GridDeltaBoard extends StatelessWidget {
             children: [
               Text(
                 'GRID VS FINISH',
-                style: Cyber.label(10, color: Cyber.cyan, letterSpacing: 1.4),
+                style: Cyber.label(StatOzTypography.p10, color: Cyber.cyan, letterSpacing: 1.4),
               ),
               const Spacer(),
               Text(
                 'POSITIONS GAINED',
-                style: Cyber.label(9, color: Cyber.muted),
+                style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
               ),
             ],
           ),
@@ -1749,8 +1743,7 @@ class _GridDeltaRow extends StatelessWidget {
           width: 34,
           child: Text(
             code,
-            style: Cyber.label(
-              10,
+            style: Cyber.label(StatOzTypography.p10,
               color: Colors.white,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
@@ -1793,8 +1786,7 @@ class _GridDeltaRow extends StatelessWidget {
           child: Text(
             gained == 0 ? '0' : (gained > 0 ? '+$gained' : '$gained'),
             textAlign: TextAlign.end,
-            style: Cyber.label(
-              10,
+            style: Cyber.label(StatOzTypography.p10,
               color: tone,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
@@ -2007,7 +1999,7 @@ class _SessionResultsPanel extends StatelessWidget {
             ],
             Text(
               sessions[s].name.toUpperCase(),
-              style: Cyber.label(11, color: Cyber.cyan, letterSpacing: 1.2),
+              style: Cyber.label(StatOzTypography.p11, color: Cyber.cyan, letterSpacing: 1.2),
             ),
             const SizedBox(height: 6),
             if (sessions[s].results.isEmpty)
@@ -2015,7 +2007,7 @@ class _SessionResultsPanel extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 2),
                 child: Text(
                   'Not yet run.',
-                  style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
                 ),
               )
             else
@@ -2024,7 +2016,7 @@ class _SessionResultsPanel extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 3),
                   child: Text(
                     result,
-                    style: Cyber.bodyFor(context, 13, color: Colors.white),
+                    style: Cyber.bodyFor(context, StatOzTypography.p13, color: Colors.white),
                   ),
                 ),
           ],
@@ -2064,8 +2056,7 @@ class _DriverStandingsPanel extends StatelessWidget {
                       child: Text(
                         '${i + 1}',
                         style:
-                            Cyber.display(
-                              14,
+                            Cyber.display(StatOzTypography.p14,
                               color: i < 3 ? Cyber.gold : Cyber.muted,
                             ).copyWith(
                               fontFeatures: const [
@@ -2079,10 +2070,8 @@ class _DriverStandingsPanel extends StatelessWidget {
                         standings[i],
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.bodyFor(
-                          context,
-                          14,
-                          weight: i < 3 ? FontWeight.w800 : FontWeight.w600,
+                        style: Cyber.bodyFor(context, StatOzTypography.p14,
+                          weight: i < 3 ? StatOzTypography.extrabold : StatOzTypography.semibold,
                         ),
                       ),
                     ),
@@ -2175,7 +2164,7 @@ class _F1QualifyingGridPanel extends StatelessWidget {
                   ),
                   child: Text(
                     'Not yet run.',
-                    style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
                   ),
                 )
               else
@@ -2217,7 +2206,7 @@ class _F1GridRow extends StatelessWidget {
     final posColor = isPole
         ? Cyber.gold
         : (index < 3 ? Cyber.cyan : Cyber.muted);
-    final nameWeight = isPole || index < 3 ? FontWeight.w800 : FontWeight.w600;
+    final nameWeight = isPole || index < 3 ? StatOzTypography.extrabold : StatOzTypography.semibold;
 
     return Container(
       height: 52,
@@ -2236,8 +2225,7 @@ class _F1GridRow extends StatelessWidget {
             width: 36,
             child: Text(
               'P${parsed.position ?? (index + 1)}',
-              style: Cyber.display(
-                13,
+              style: Cyber.display(StatOzTypography.p13,
                 color: posColor,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
@@ -2251,7 +2239,7 @@ class _F1GridRow extends StatelessWidget {
                   parsed.driver,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.bodyFor(context, 14, weight: nameWeight),
+                  style: Cyber.bodyFor(context, StatOzTypography.p14, weight: nameWeight),
                 ),
                 if (parsed.constructor != null) ...[
                   const SizedBox(height: 2),
@@ -2259,8 +2247,7 @@ class _F1GridRow extends StatelessWidget {
                     parsed.constructor!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(
-                      9,
+                    style: Cyber.label(StatOzTypography.p9,
                       color: Cyber.muted,
                       letterSpacing: 1.0,
                     ),
@@ -2273,15 +2260,14 @@ class _F1GridRow extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               'POLE',
-              style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1.4),
+              style: Cyber.label(StatOzTypography.p9, color: Cyber.gold, letterSpacing: 1.4),
             ),
           ],
           if (parsed.time != null) ...[
             const SizedBox(width: 10),
             Text(
               parsed.time!,
-              style: Cyber.display(
-                12,
+              style: Cyber.display(StatOzTypography.p12,
                 color: isPole ? Cyber.gold : Cyber.muted,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),

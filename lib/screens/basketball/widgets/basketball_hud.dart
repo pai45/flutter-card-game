@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -129,7 +130,7 @@ class _ScoreBlock extends StatelessWidget {
             const SizedBox(width: 4),
             Text(
               label,
-              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.6),
+              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1.6),
             ),
           ],
         ),
@@ -138,8 +139,7 @@ class _ScoreBlock extends StatelessWidget {
           valueListenable: score,
           builder: (context, value, _) => Text(
             '$value',
-            style: Cyber.display(
-              26,
+            style: Cyber.display(StatOzTypography.p26,
               color: accent,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
@@ -160,8 +160,7 @@ class _ScoreBlock extends StatelessWidget {
                     child: Text(
                       active ? 'ON FIRE' : 'HEAT',
                       key: ValueKey(active),
-                      style: Cyber.label(
-                        5.5,
+                      style: Cyber.label(StatOzTypography.p5_5,
                         color: active ? Cyber.gold : Cyber.muted,
                         letterSpacing: active ? 0.8 : 1.2,
                       ),
@@ -203,8 +202,7 @@ class _ClockCluster extends StatelessWidget {
               1 => '2ND HALF',
               _ => 'OVERTIME',
             },
-            style: Cyber.label(
-              8,
+            style: Cyber.label(StatOzTypography.p8,
               color: state.halfIndex >= 2 ? Cyber.gold : Cyber.muted,
               letterSpacing: 1.8,
             ),
@@ -216,8 +214,7 @@ class _ClockCluster extends StatelessWidget {
           builder: (context, state) => state.halfIndex >= 2
               ? Text(
                   'SUDDEN DEATH',
-                  style: Cyber.display(
-                    14,
+                  style: Cyber.display(StatOzTypography.p14,
                     color: Cyber.gold,
                     letterSpacing: 1.5,
                   ),
@@ -232,8 +229,7 @@ class _ClockCluster extends StatelessWidget {
                           ? '0:${seconds.floor().toString().padLeft(2, '0')}'
                           : seconds.toStringAsFixed(1),
                       style:
-                          Cyber.display(
-                            20,
+                          Cyber.display(StatOzTypography.p20,
                             color: danger ? Cyber.danger : Colors.white,
                           ).copyWith(
                             fontFeatures: const [FontFeature.tabularFigures()],
@@ -259,8 +255,7 @@ class _ClockCluster extends StatelessWidget {
               ),
               child: Text(
                 'SHOT $clock',
-                style: Cyber.label(
-                  8.5,
+                style: Cyber.label(StatOzTypography.p8_5,
                   color: danger ? Cyber.danger : Cyber.gold,
                   letterSpacing: 1.2,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -290,7 +285,7 @@ class BasketballStaminaRail extends StatelessWidget {
         children: [
           Text(
             'STAMINA',
-            style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 1.6),
+            style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted, letterSpacing: 1.6),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -315,8 +310,7 @@ class BasketballStaminaRail extends StatelessWidget {
                       '${(value * 100).round()}%',
                       textAlign: TextAlign.right,
                       style:
-                          Cyber.label(
-                            7.5,
+                          Cyber.label(StatOzTypography.p7_5,
                             color: value < 0.3 ? Cyber.danger : Cyber.muted,
                             letterSpacing: 0.5,
                           ).copyWith(

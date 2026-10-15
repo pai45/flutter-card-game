@@ -25,7 +25,9 @@ void main() {
   test(
     'milestone coin reward is persisted and cannot be claimed twice',
     () async {
-      final bloc = GameBloc(SecureGameStorage())..add(GameLoaded());
+      final storage = SecureGameStorage();
+      await storage.saveStreak(StreakSnapshot.seeded(DateTime.now()));
+      final bloc = GameBloc(storage)..add(GameLoaded());
       addTearDown(bloc.close);
       await bloc.stream.firstWhere((state) => !state.loading);
 

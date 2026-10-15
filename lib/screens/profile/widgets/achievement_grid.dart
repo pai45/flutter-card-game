@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -70,7 +71,7 @@ class _AchievementGridState extends State<AchievementGrid>
               const SizedBox(width: 9),
               Text(
                 'ACHIEVEMENTS',
-                style: Cyber.display(16, letterSpacing: 1.2),
+                style: Cyber.display(StatOzTypography.p16, letterSpacing: 1.2),
               ),
               const Spacer(),
               GestureDetector(
@@ -81,8 +82,7 @@ class _AchievementGridState extends State<AchievementGrid>
                   children: [
                     Text(
                       '$unlocked / $total',
-                      style: Cyber.label(
-                        13,
+                      style: Cyber.label(StatOzTypography.p13,
                         color: Cyber.gold,
                         letterSpacing: 1,
                         fontFeatures: const [FontFeature.tabularFigures()],

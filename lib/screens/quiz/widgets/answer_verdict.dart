@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -471,7 +472,7 @@ class VerdictDebriefStrip extends StatelessWidget {
                         : correct
                         ? 'SIGNAL LOCKED'
                         : 'SIGNAL LOST',
-                    style: Cyber.label(11, color: accent, letterSpacing: 1.6),
+                    style: Cyber.label(StatOzTypography.p11, color: accent, letterSpacing: 1.6),
                   ),
                   const SizedBox(height: 3),
                   Text(
@@ -480,7 +481,7 @@ class VerdictDebriefStrip extends StatelessWidget {
                         : 'ANSWER WAS · $correctLabel',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.bodyFor(context, 11.5, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, StatOzTypography.p11_5, color: Cyber.muted),
                   ),
                 ],
               ),
@@ -495,7 +496,7 @@ class VerdictDebriefStrip extends StatelessWidget {
                 ),
                 child: Text(
                   '+$xp XP',
-                  style: Cyber.display(11, color: Cyber.gold).copyWith(
+                  style: Cyber.display(StatOzTypography.p11, color: Cyber.gold).copyWith(
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),

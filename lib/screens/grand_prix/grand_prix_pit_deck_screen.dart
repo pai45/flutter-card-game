@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -207,8 +208,7 @@ class _DriverPanel extends StatelessWidget {
                   children: [
                     Text(
                       'PIT LANE LOADOUT',
-                      style: Cyber.label(
-                        9,
+                      style: Cyber.label(StatOzTypography.p9,
                         color: Cyber.f1Red,
                         letterSpacing: 1.8,
                       ),
@@ -216,7 +216,7 @@ class _DriverPanel extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       deckName.toUpperCase(),
-                      style: Cyber.display(15, letterSpacing: 1.1),
+                      style: Cyber.display(StatOzTypography.p15, letterSpacing: 1.1),
                     ),
                   ],
                 ),
@@ -239,8 +239,7 @@ class _DriverPanel extends StatelessWidget {
                         child: Center(
                           child: Text(
                             'SELECT YOUR RACE DRIVER',
-                            style: Cyber.label(
-                              9,
+                            style: Cyber.label(StatOzTypography.p9,
                               color: Cyber.muted,
                               letterSpacing: 1.4,
                             ),
@@ -279,7 +278,7 @@ class _DriverPickerPanel extends StatelessWidget {
           if (cards.isEmpty)
             Text(
               'NO DRIVERS IN YOUR GARAGE YET',
-              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+              style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.2),
             )
           else
             Wrap(
@@ -342,8 +341,7 @@ class _EquippedDriverTelemetry extends StatelessWidget {
                   driver.archetype.label,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.label(
-                    8,
+                  style: Cyber.label(StatOzTypography.p8,
                     color: Cyber.f1Red,
                     letterSpacing: 0.8,
                   ),
@@ -355,12 +353,12 @@ class _EquippedDriverTelemetry extends StatelessWidget {
                       Expanded(
                         child: Text(
                           stats[i].$1,
-                          style: Cyber.label(7, color: Cyber.muted),
+                          style: Cyber.label(StatOzTypography.p7, color: Cyber.muted),
                         ),
                       ),
                       Text(
                         '${stats[i].$2}',
-                        style: Cyber.display(11, color: Cyber.f1Red),
+                        style: Cyber.display(StatOzTypography.p11, color: Cyber.f1Red),
                       ),
                     ],
                   ),

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
@@ -126,8 +127,7 @@ class StreakBadge extends StatelessWidget {
             if (!compact)
               Text(
                 '$value',
-                style: Cyber.label(
-                  11,
+                style: Cyber.label(StatOzTypography.p11,
                   color: Cyber.gold,
                   letterSpacing: 0.4,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -201,10 +201,8 @@ class StreakActivityMarker extends StatelessWidget {
         Flexible(
           child: Text(
             streakActivityLabel(activity),
-            style: Cyber.bodyFor(
-              context,
-              13,
-              weight: FontWeight.w800,
+            style: Cyber.bodyFor(context, StatOzTypography.p13,
+              weight: StatOzTypography.bold,
               height: 1.3,
             ),
           ),
@@ -260,8 +258,7 @@ class StreakWeekChain extends StatelessWidget {
                     i == days.length - 1
                         ? 'NOW'
                         : _weekdays[days[i].weekday - 1],
-                    style: Cyber.label(
-                      8,
+                    style: Cyber.label(StatOzTypography.p8,
                       color: i == days.length - 1 ? accent : Cyber.muted,
                       letterSpacing: 0.6,
                     ),

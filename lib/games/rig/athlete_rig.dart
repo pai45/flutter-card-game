@@ -20,6 +20,8 @@
 ///     "this is live" aura, and that belongs to the game, not the rig.
 library;
 
+import 'package:card_game/design_system/typography.dart';
+
 import 'dart:math';
 import 'dart:ui';
 
@@ -64,7 +66,7 @@ TextPaint rigNumberPaint(Color color, double fontSize) =>
         style: TextStyle(
           fontFamily: Cyber.displayFont,
           fontSize: fontSize,
-          fontWeight: FontWeight.w800,
+          fontWeight: StatOzTypography.extrabold,
           color: color,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -133,11 +134,9 @@ class _TeamHalf extends StatelessWidget {
         textAlign: nameAlign,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: Cyber.bodyFor(
-          context,
-          15,
+        style: Cyber.bodyFor(context, StatOzTypography.p15,
           color: teamColor,
-          weight: FontWeight.w700,
+          weight: StatOzTypography.bold,
         ),
       ),
     );
@@ -204,8 +203,7 @@ class _ScoreControls extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '$score',
-            style: Cyber.display(
-              30,
+            style: Cyber.display(StatOzTypography.p30,
               color: scoreColor,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
@@ -100,8 +101,7 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                           children: [
                             Text(
                               'UNLOCKED',
-                              style: Cyber.label(
-                                10,
+                              style: Cyber.label(StatOzTypography.p10,
                                 color: Cyber.muted,
                                 letterSpacing: 1.6,
                               ),
@@ -109,8 +109,7 @@ class _AchievementsScreenState extends State<AchievementsScreen>
                             const Spacer(),
                             Text(
                               '$unlocked / ${badges.length}',
-                              style: Cyber.label(
-                                13,
+                              style: Cyber.label(StatOzTypography.p13,
                                 color: Cyber.gold,
                                 letterSpacing: 1,
                                 fontFeatures: const [

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -12,6 +13,7 @@ import '../../models/sport_match.dart';
 import '../../models/unlock_progress.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/cyber/statoz_icons.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import 'widgets/standings_table.dart' show DetailTopBar;
 import 'widgets/unlock_sheets.dart';
@@ -181,7 +183,7 @@ class _AllSportsScreenState extends State<AllSportsScreen> {
       index: entranceIndex,
       animate: true,
       child: _SportSignalRow(
-        icon: module.icon,
+        sport: sport,
         label: sport == Sport.basketball ? 'Basketball' : module.label,
         detail: detail,
         countLabel: countLabel,
@@ -205,7 +207,7 @@ class _SignalHeader extends StatelessWidget {
       children: [
         Text(
           'SPORT://ROUTER',
-          style: Cyber.label(10, color: Cyber.cyan, letterSpacing: 1.2),
+          style: Cyber.label(StatOzTypography.p10, color: Cyber.cyan, letterSpacing: 1.2),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -217,7 +219,7 @@ class _SignalHeader extends StatelessWidget {
         const SizedBox(width: 10),
         Text(
           modeLabel,
-          style: Cyber.label(10, color: Cyber.muted, letterSpacing: 0.7),
+          style: Cyber.label(StatOzTypography.p10, color: Cyber.muted, letterSpacing: 0.7),
         ),
       ],
     );
@@ -226,17 +228,19 @@ class _SignalHeader extends StatelessWidget {
 
 class _SportSignalRow extends StatelessWidget {
   const _SportSignalRow({
-    required this.icon,
     required this.label,
     required this.detail,
     required this.countLabel,
     required this.accent,
     required this.selected,
     required this.onTap,
+    this.sport,
+    this.icon,
     super.key,
-  });
+  }) : assert(sport != null || icon != null);
 
-  final IconData icon;
+  final Sport? sport;
+  final IconData? icon;
   final String label;
   final String detail;
   final String countLabel;
@@ -276,7 +280,14 @@ class _SportSignalRow extends StatelessWidget {
             child: Row(
               children: [
                 const SizedBox(width: 14),
-                Icon(icon, color: selected ? accent : Cyber.muted, size: 27),
+                if (sport != null)
+                  StatozSportIcon(
+                    sport: sport!,
+                    color: selected ? accent : Cyber.muted,
+                    size: 27,
+                  )
+                else
+                  Icon(icon!, color: selected ? accent : Cyber.muted, size: 27),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
@@ -285,8 +296,7 @@ class _SportSignalRow extends StatelessWidget {
                     children: [
                       Text(
                         label.toUpperCase(),
-                        style: Cyber.display(
-                          13,
+                        style: Cyber.display(StatOzTypography.p13,
                           color: selected ? Colors.white : Cyber.muted,
                           letterSpacing: 1.1,
                         ),
@@ -296,8 +306,7 @@ class _SportSignalRow extends StatelessWidget {
                         detail,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.label(
-                          10,
+                        style: Cyber.label(StatOzTypography.p10,
                           color: selected
                               ? accent.withValues(alpha: 0.8)
                               : Cyber.muted.withValues(alpha: 0.68),
@@ -320,8 +329,7 @@ class _SportSignalRow extends StatelessWidget {
                   child: Text(
                     countLabel,
                     style:
-                        Cyber.display(
-                          10,
+                        Cyber.display(StatOzTypography.p10,
                           color: selected ? accent : Cyber.muted,
                           letterSpacing: 0.5,
                         ).copyWith(

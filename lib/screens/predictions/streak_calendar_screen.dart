@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -272,11 +273,11 @@ class _StreakCalendarScreenState extends State<StreakCalendarScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (state.unlocks.questListEnabled) ...[
-            Text('QUEST LIST', style: Cyber.display(16, color: Colors.white)),
+            Text('QUEST LIST', style: Cyber.display(StatOzTypography.p16, color: Colors.white)),
             const SizedBox(height: 4),
             Text(
               'DAILY OPS + ACTIVE SPORT PATHS',
-              style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1.4),
+              style: Cyber.label(StatOzTypography.p9, color: Cyber.gold, letterSpacing: 1.4),
             ),
             const SizedBox(height: 14),
           ],
@@ -436,8 +437,7 @@ class _StreakHero extends StatelessWidget {
                                   curve: Curves.easeOutCubic,
                                   builder: (context, value, _) => Text(
                                     '${value.round()}',
-                                    style: Cyber.display(
-                                      46,
+                                    style: Cyber.display(StatOzTypography.p46,
                                       color: flame == StreakFlameState.cold
                                           ? Colors.white
                                           : accent,
@@ -448,8 +448,7 @@ class _StreakHero extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Text(
                                   '${current == 1 ? 'DAY' : 'DAYS'} · BEST $best',
-                                  style: Cyber.label(
-                                    11,
+                                  style: Cyber.label(StatOzTypography.p11,
                                     color: Cyber.muted,
                                     letterSpacing: 1.2,
                                     fontFeatures: tabular,
@@ -470,8 +469,7 @@ class _StreakHero extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       headline,
-                      style: Cyber.label(
-                        11.5,
+                      style: Cyber.label(StatOzTypography.p11_5,
                         color: flame == StreakFlameState.cold
                             ? Colors.white
                             : accent,
@@ -481,7 +479,7 @@ class _StreakHero extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       body,
-                      style: Cyber.bodyFor(context, 12.5, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, StatOzTypography.p12_5, color: Cyber.muted),
                     ),
                   ],
                 ),
@@ -505,14 +503,13 @@ class _StreakHero extends StatelessWidget {
                     '${next.days} DAYS · ${next.rewardLabel}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(10),
+                    style: Cyber.label(StatOzTypography.p10),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   '${next.days - current} TO GO',
-                  style: Cyber.label(
-                    10,
+                  style: Cyber.label(StatOzTypography.p10,
                     color: streakMilestoneAccent(next),
                     fontFeatures: tabular,
                   ),
@@ -528,7 +525,7 @@ class _StreakHero extends StatelessWidget {
           ] else
             Text(
               'EVERY MILESTONE CLEARED',
-              style: Cyber.label(10, color: Cyber.gold, letterSpacing: 1.2),
+              style: Cyber.label(StatOzTypography.p10, color: Cyber.gold, letterSpacing: 1.2),
             ),
         ],
       ),
@@ -618,7 +615,7 @@ class _StatusTag extends StatelessWidget {
             const SizedBox(width: 5),
             Text(
               label,
-              style: Cyber.label(8.5, color: color, letterSpacing: 1),
+              style: Cyber.label(StatOzTypography.p8_5, color: color, letterSpacing: 1),
             ),
           ],
         ),
@@ -717,7 +714,7 @@ class _MilestoneRow extends StatelessWidget {
         children: [
           const Icon(Icons.verified, size: 14, color: Cyber.success),
           const SizedBox(width: 4),
-          Text('CLAIMED', style: Cyber.label(9.5, color: Cyber.success)),
+          Text('CLAIMED', style: Cyber.label(StatOzTypography.p9_5, color: Cyber.success)),
         ],
       );
     } else if (isNext) {
@@ -727,14 +724,13 @@ class _MilestoneRow extends StatelessWidget {
         children: [
           Text(
             '${milestone.days - current}',
-            style: Cyber.display(
-              18,
+            style: Cyber.display(StatOzTypography.p18,
               color: tier,
               letterSpacing: 0,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
           const SizedBox(height: 2),
-          Text('TO GO', style: Cyber.label(8, color: Cyber.muted)),
+          Text('TO GO', style: Cyber.label(StatOzTypography.p8, color: Cyber.muted)),
         ],
       );
     } else {
@@ -797,8 +793,7 @@ class _MilestoneRow extends StatelessWidget {
                             children: [
                               Text(
                                 '${milestone.days} DAYS',
-                                style: Cyber.display(
-                                  14,
+                                style: Cyber.display(StatOzTypography.p14,
                                   color: locked
                                       ? Colors.white.withValues(alpha: 0.6)
                                       : tier,
@@ -816,8 +811,7 @@ class _MilestoneRow extends StatelessWidget {
                                   Flexible(
                                     child: Text(
                                       milestone.rewardLabel,
-                                      style: Cyber.label(
-                                        10,
+                                      style: Cyber.label(StatOzTypography.p10,
                                         color: locked
                                             ? Cyber.muted
                                             : Colors.white,
@@ -983,7 +977,7 @@ class _ClaimChip extends StatelessWidget {
                   const SizedBox(width: 5),
                   Text(
                     'CLAIM',
-                    style: Cyber.label(11, color: AppTheme.darkInk),
+                    style: Cyber.label(StatOzTypography.p11, color: AppTheme.darkInk),
                   ),
                 ],
               ),
@@ -1093,13 +1087,12 @@ class _ModeStreakCard extends StatelessWidget {
                   children: [
                     Text(
                       streakCategoryLabel(category).toUpperCase(),
-                      style: Cyber.display(13),
+                      style: Cyber.display(StatOzTypography.p13),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'BEST $best',
-                      style: Cyber.label(
-                        9,
+                      style: Cyber.label(StatOzTypography.p9,
                         color: Cyber.muted,
                         letterSpacing: 0.8,
                         fontFeatures: const [FontFeature.tabularFigures()],
@@ -1111,8 +1104,7 @@ class _ModeStreakCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 '$current',
-                style: Cyber.display(
-                  24,
+                style: Cyber.display(StatOzTypography.p24,
                   color: live ? accent : Colors.white.withValues(alpha: 0.5),
                   letterSpacing: 0,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -1153,9 +1145,7 @@ class _ShieldBriefing extends StatelessWidget {
           Expanded(
             child: Text(
               'Clear the Daily Sweep to forge one. Each covers a missed day.',
-              style: Cyber.bodyFor(
-                context,
-                12.5,
+              style: Cyber.bodyFor(context, StatOzTypography.p12_5,
                 color: Colors.white.withValues(alpha: 0.85),
               ),
             ),
@@ -1222,7 +1212,7 @@ class _CalendarPanel extends StatelessWidget {
                     Text(
                       _monthLabel(visibleMonth).toUpperCase(),
                       textAlign: TextAlign.center,
-                      style: Cyber.display(14),
+                      style: Cyber.display(StatOzTypography.p14),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -1230,8 +1220,7 @@ class _CalendarPanel extends StatelessWidget {
                           ? '$activeCount ACTIVE · $shieldedCount SHIELDED'
                           : '$activeCount ACTIVE DAYS',
                       textAlign: TextAlign.center,
-                      style: Cyber.label(
-                        8.5,
+                      style: Cyber.label(StatOzTypography.p8_5,
                         color: Cyber.muted,
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
@@ -1340,7 +1329,7 @@ class _WeekdayHeader extends StatelessWidget {
             child: Text(
               label,
               textAlign: TextAlign.center,
-              style: Cyber.label(9, color: Cyber.muted),
+              style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
             ),
           ),
       ],
@@ -1454,8 +1443,7 @@ class _CalendarDay extends StatelessWidget {
                           fit: BoxFit.scaleDown,
                           child: Text(
                             '${day.day}',
-                            style: Cyber.label(
-                              11.5,
+                            style: Cyber.label(StatOzTypography.p11_5,
                               color: textColor,
                               fontFeatures: const [
                                 FontFeature.tabularFigures(),
@@ -1576,7 +1564,7 @@ class _DayActivityPanel extends StatelessWidget {
               Expanded(
                 child: Text(
                   _fullDate(day).toUpperCase(),
-                  style: Cyber.display(13, color: Cyber.gold),
+                  style: Cyber.display(StatOzTypography.p13, color: Cyber.gold),
                 ),
               ),
               const SizedBox(width: 8),
@@ -1600,7 +1588,7 @@ class _DayActivityPanel extends StatelessWidget {
                         : selected.isAfter(today)
                         ? 'This day hasn’t happened yet.'
                         : 'No streak activity recorded.',
-                    style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
                   ),
                 ),
               ],
@@ -1650,17 +1638,15 @@ class _DayEventRow extends StatelessWidget {
                 event.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.bodyFor(
-                  context,
-                  13,
-                  weight: FontWeight.w800,
+                style: Cyber.bodyFor(context, StatOzTypography.p13,
+                  weight: StatOzTypography.bold,
                   height: 1.3,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 event.subtitle,
-                style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
               ),
             ],
           ),

@@ -1,10 +1,55 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:card_game/config/theme.dart';
 import 'package:card_game/widgets/cyber/cyber_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('game route changes body text and keeps Orbitron display', (
+  test('shared Material roles and body weights match the product contract', () {
+    final theme = AppTheme.darkTheme;
+    expect(theme.textTheme.bodyLarge?.fontSize, 16);
+    expect(theme.textTheme.bodyMedium?.fontSize, 14);
+    expect(theme.textTheme.bodySmall?.fontSize, 12);
+    expect(theme.textTheme.titleLarge?.fontSize, 18);
+    expect(theme.textTheme.headlineLarge?.fontSize, 24);
+    expect(theme.textTheme.displayLarge?.fontSize, 28);
+    expect(theme.textTheme.bodyMedium?.fontFamily, 'Space Grotesk');
+    expect(theme.textTheme.titleLarge?.fontFamily, 'Orbitron');
+    expect(Cyber.body(14, weight: FontWeight.w900).fontWeight, FontWeight.w700);
+    expect(StatOzTypography.control.fontWeight, FontWeight.w600);
+    expect(
+      theme.filledButtonTheme.style?.textStyle?.resolve({})?.fontFamily,
+      'Space Grotesk',
+    );
+  });
+
+  testWidgets('shared body and control preserve platform text scaling', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+          child: Scaffold(
+            body: Column(
+              children: [
+                const Text('Scaled body', style: StatOzTypography.body),
+                FilledButton(
+                  onPressed: () {},
+                  child: const Text('Scaled control'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    final context = tester.element(find.text('Scaled body'));
+    expect(MediaQuery.textScalerOf(context).scale(14), 28);
+    expect(tester.takeException(), isNull);
+  });
+  testWidgets('game routes share body typography and keep Orbitron display', (
     tester,
   ) async {
     await tester.pumpWidget(

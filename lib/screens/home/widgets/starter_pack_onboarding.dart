@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -217,8 +218,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                               offset: Offset(0, 24 * (1 - _iv(td, 0.0, 0.28))),
                               child: Text(
                                 'PITCH DUEL',
-                                style: Cyber.label(
-                                  11,
+                                style: Cyber.label(StatOzTypography.p11,
                                   color: Cyber.cyan.withValues(alpha: 0.5),
                                   letterSpacing: 6,
                                 ),
@@ -242,8 +242,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                               offset: Offset(0, 20 * (1 - _iv(td, 0.32, 0.72))),
                               child: Text(
                                 widget.reveal.statusLabel,
-                                style: Cyber.label(
-                                  12,
+                                style: Cyber.label(StatOzTypography.p12,
                                   color: Cyber.amber,
                                   letterSpacing: 8,
                                 ),
@@ -288,11 +287,9 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                                 opacity: 0.35 + 0.65 * _bgPulse.value,
                                 child: Text(
                                   'PREPARING YOUR SQUAD...',
-                                  style: Cyber.bodyFor(
-                                    context,
-                                    10,
+                                  style: Cyber.bodyFor(context, StatOzTypography.p10,
                                     color: Cyber.muted,
-                                    weight: FontWeight.w700,
+                                    weight: StatOzTypography.bold,
                                     letterSpacing: 2.5,
                                   ),
                                 ),
@@ -406,8 +403,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                         Text(
                           'ACTION CARDS',
                           textAlign: TextAlign.center,
-                          style: Cyber.display(
-                            22,
+                          style: Cyber.display(StatOzTypography.p22,
                             color: Cyber.cyan,
                             letterSpacing: 2.2,
                           ),
@@ -416,11 +412,9 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                         Text(
                           '${actions.length} ACTIONS UNLOCKED TOGETHER',
                           textAlign: TextAlign.center,
-                          style: Cyber.bodyFor(
-                            context,
-                            10,
+                          style: Cyber.bodyFor(context, StatOzTypography.p10,
                             color: Cyber.muted,
-                            weight: FontWeight.w800,
+                            weight: StatOzTypography.bold,
                             letterSpacing: 1.8,
                           ),
                         ),
@@ -448,7 +442,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                     ),
                     child: Text(
                       'CONTINUE',
-                      style: Cyber.label(14, color: Cyber.bg, letterSpacing: 2),
+                      style: Cyber.label(StatOzTypography.p14, color: Cyber.bg, letterSpacing: 2),
                     ),
                   ),
                 ),
@@ -507,8 +501,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
 
                           Text(
                             'SQUAD ASSEMBLED!',
-                            style: Cyber.display(
-                              22,
+                            style: Cyber.display(StatOzTypography.p22,
                               color: Cyber.lime,
                               letterSpacing: 2,
                             ),
@@ -517,11 +510,9 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                           Text(
                             widget.reveal.summaryLabel,
                             textAlign: TextAlign.center,
-                            style: Cyber.bodyFor(
-                              context,
-                              10,
+                            style: Cyber.bodyFor(context, StatOzTypography.p10,
                               color: Cyber.muted,
-                              weight: FontWeight.w700,
+                              weight: StatOzTypography.bold,
                               letterSpacing: 2,
                             ),
                           ),
@@ -530,11 +521,9 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                             Text(
                               widget.reveal.detailLabel!,
                               textAlign: TextAlign.center,
-                              style: Cyber.bodyFor(
-                                context,
-                                10,
+                              style: Cyber.bodyFor(context, StatOzTypography.p10,
                                 color: Cyber.cyan.withValues(alpha: 0.85),
-                                weight: FontWeight.w800,
+                                weight: StatOzTypography.bold,
                                 letterSpacing: 1.6,
                               ),
                             ),
@@ -544,8 +533,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                             Text(
                               '+${widget.reveal.xpGained} XP',
                               textAlign: TextAlign.center,
-                              style: Cyber.label(
-                                12,
+                              style: Cyber.label(StatOzTypography.p12,
                                 color: Cyber.lime.withValues(alpha: 0.9),
                                 letterSpacing: 1.6,
                               ),
@@ -556,8 +544,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                             Text(
                               'LEVEL ${widget.reveal.levelsGained.last} REACHED',
                               textAlign: TextAlign.center,
-                              style: Cyber.label(
-                                10,
+                              style: Cyber.label(StatOzTypography.p10,
                                 color: Cyber.gold.withValues(alpha: 0.9),
                                 letterSpacing: 1.8,
                               ),
@@ -572,15 +559,13 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                                 children: [
                                   Text(
                                     'TRY THIS PAIR +4',
-                                    style: Cyber.label(12, color: Cyber.cyan),
+                                    style: Cyber.label(StatOzTypography.p12, color: Cyber.cyan),
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
                                     matchingPairs.first,
                                     textAlign: TextAlign.center,
-                                    style: Cyber.bodyFor(
-                                      context,
-                                      14,
+                                    style: Cyber.bodyFor(context, StatOzTypography.p14,
                                       color: AppTheme.whiteColor,
                                     ),
                                   ),
@@ -588,9 +573,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                                   Text(
                                     'Match the scenario for another +6. Long-press a card to see its ability.',
                                     textAlign: TextAlign.center,
-                                    style: Cyber.bodyFor(
-                                      context,
-                                      12,
+                                    style: Cyber.bodyFor(context, StatOzTypography.p12,
                                       color: Cyber.muted,
                                     ),
                                   ),
@@ -622,8 +605,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                       ),
                       child: Text(
                         widget.reveal.ctaLabel,
-                        style: Cyber.label(
-                          14,
+                        style: Cyber.label(StatOzTypography.p14,
                           color: Cyber.bg,
                           letterSpacing: 2,
                         ),
@@ -741,7 +723,7 @@ class _PackGradientHeadline extends StatelessWidget {
         return Text(
           text,
           textAlign: TextAlign.center,
-          style: Cyber.display(52, letterSpacing: 4).copyWith(
+          style: Cyber.display(StatOzTypography.p52, letterSpacing: 4).copyWith(
             height: 1.08,
             foreground: Paint()
               ..shader = _gradient.createShader(
@@ -792,7 +774,7 @@ class _MysterySlot extends StatelessWidget {
         border: Border.all(color: Cyber.cyan.withValues(alpha: 0.45), width: 1),
       ),
       child: Center(
-        child: Text('?', style: Cyber.display(24, color: Cyber.cyan)),
+        child: Text('?', style: Cyber.display(StatOzTypography.p24, color: Cyber.cyan)),
       ),
     );
   }
@@ -820,16 +802,14 @@ class _SummaryGroupHeader extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           title,
-          style: Cyber.label(13, color: Cyber.cyan, letterSpacing: 2.2),
+          style: Cyber.label(StatOzTypography.p13, color: Cyber.cyan, letterSpacing: 2.2),
         ),
         const SizedBox(width: 8),
         Text(
           '$count',
-          style: Cyber.bodyFor(
-            context,
-            11,
+          style: Cyber.bodyFor(context, StatOzTypography.p11,
             color: Cyber.muted,
-            weight: FontWeight.w800,
+            weight: StatOzTypography.bold,
             letterSpacing: 1,
           ),
         ),
@@ -877,11 +857,9 @@ class _ProgressDots extends StatelessWidget {
         children: [
           Text(
             'CARD $current OF $total',
-            style: Cyber.bodyFor(
-              context,
-              10,
+            style: Cyber.bodyFor(context, StatOzTypography.p10,
               color: const Color(0xFF94A3B8),
-              weight: FontWeight.w700,
+              weight: StatOzTypography.bold,
               letterSpacing: 2.5,
             ),
           ),

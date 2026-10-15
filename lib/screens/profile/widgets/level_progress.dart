@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -53,8 +54,7 @@ class LevelChip extends StatelessWidget {
             children: [
               Text(
                 'LVL',
-                style: Cyber.label(
-                  9,
+                style: Cyber.label(StatOzTypography.p9,
                   color: Cyber.cyan.withValues(alpha: 0.85),
                   letterSpacing: 1.6,
                 ),
@@ -62,8 +62,7 @@ class LevelChip extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 '$level',
-                style: Cyber.display(
-                  20,
+                style: Cyber.display(StatOzTypography.p20,
                   color: Cyber.cyan,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
@@ -92,13 +91,12 @@ class XpMeter extends StatelessWidget {
           children: [
             Text(
               'XP',
-              style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.4),
+              style: Cyber.label(StatOzTypography.p10, color: Cyber.muted, letterSpacing: 1.4),
             ),
             const Spacer(),
             Text(
               '${p.intoLevel} / ${p.levelSpan}',
-              style: Cyber.label(
-                10,
+              style: Cyber.label(StatOzTypography.p10,
                 color: Cyber.muted,
                 letterSpacing: 0.6,
                 fontFeatures: const [FontFeature.tabularFigures()],
@@ -137,13 +135,13 @@ class MasteryStrip extends StatelessWidget {
       children: [
         Text(
           'MASTERY',
-          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.6),
+          style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.6),
         ),
         const SizedBox(height: 8),
         if (tracks.isEmpty)
           Text(
             'PLAY A MODE TO START A TRACK',
-            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+            style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.2),
           )
         else
           SizedBox(
@@ -204,8 +202,7 @@ class _MasteryChip extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: Cyber.label(
-                  8,
+                style: Cyber.label(StatOzTypography.p8,
                   color: Cyber.muted,
                   letterSpacing: 1.2,
                 ),
@@ -213,8 +210,7 @@ class _MasteryChip extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 'L$level',
-                style: Cyber.display(
-                  14,
+                style: Cyber.display(StatOzTypography.p14,
                   color: Cyber.cyan,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),

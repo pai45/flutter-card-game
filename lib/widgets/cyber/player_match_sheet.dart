@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -127,7 +128,7 @@ class _SheetGrip extends StatelessWidget {
         children: [
           Text(
             title,
-            style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 1.8),
+            style: Cyber.label(StatOzTypography.p8_5, color: Cyber.muted, letterSpacing: 1.8),
           ),
           const Spacer(),
           Container(width: 36, height: 3, color: accent.withValues(alpha: 0.5)),
@@ -166,7 +167,7 @@ class _SquadPager extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             'SWIPE FOR NEXT $noun  //  ${index + 1} OF $count',
-            style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 1.4),
+            style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted, letterSpacing: 1.4),
           ),
           const SizedBox(width: 8),
           Icon(Icons.chevron_right, size: 13, color: Cyber.muted),

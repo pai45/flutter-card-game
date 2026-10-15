@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import '../../../config/game_ladder.dart';
 import 'dart:async';
 
@@ -116,8 +117,7 @@ class _BasketballResultOverlayState extends State<BasketballResultOverlay> {
                                 won ? 'VICTORY' : 'DEFEAT',
                                 textAlign: TextAlign.center,
                                 style:
-                                    Cyber.display(
-                                      32,
+                                    Cyber.display(StatOzTypography.p32,
                                       color: accent,
                                       letterSpacing: 4,
                                     ).copyWith(
@@ -149,7 +149,7 @@ class _BasketballResultOverlayState extends State<BasketballResultOverlay> {
                             children: [
                               Text(
                                 '${summary.playerScore}',
-                                style: Cyber.display(40, color: Cyber.cyan)
+                                style: Cyber.display(StatOzTypography.p40, color: Cyber.cyan)
                                     .copyWith(
                                       fontFeatures: const [
                                         FontFeature.tabularFigures(),
@@ -162,12 +162,12 @@ class _BasketballResultOverlayState extends State<BasketballResultOverlay> {
                                 ),
                                 child: Text(
                                   '—',
-                                  style: Cyber.display(20, color: Cyber.muted),
+                                  style: Cyber.display(StatOzTypography.p20, color: Cyber.muted),
                                 ),
                               ),
                               Text(
                                 '${summary.cpuScore}',
-                                style: Cyber.display(40, color: Cyber.magenta)
+                                style: Cyber.display(StatOzTypography.p40, color: Cyber.magenta)
                                     .copyWith(
                                       fontFeatures: const [
                                         FontFeature.tabularFigures(),
@@ -200,8 +200,7 @@ class _BasketballResultOverlayState extends State<BasketballResultOverlay> {
                                 child: Text(
                                   'RECORD ${widget.stats.wins}W — ${widget.stats.losses}L'
                                   '${widget.stats.currentStreak > 1 ? ' · ${widget.stats.currentStreak} STRAIGHT' : ''}',
-                                  style: Cyber.label(
-                                    9,
+                                  style: Cyber.label(StatOzTypography.p9,
                                     color: Cyber.muted,
                                     letterSpacing: 1.6,
                                   ),
@@ -223,8 +222,7 @@ class _BasketballResultOverlayState extends State<BasketballResultOverlay> {
                                 },
                                 child: Text(
                                   'BACK TO COURT LOBBY',
-                                  style: Cyber.label(
-                                    10,
+                                  style: Cyber.label(StatOzTypography.p10,
                                     color: Cyber.muted,
                                     letterSpacing: 2,
                                   ),
@@ -303,7 +301,7 @@ class _GradePlate extends StatelessWidget {
         border: Border.all(color: color, width: 1.6),
         boxShadow: elite ? Cyber.glow(color, alpha: 0.5) : null,
       ),
-      child: Text(grade, style: Cyber.display(26, color: color)),
+      child: Text(grade, style: Cyber.display(StatOzTypography.p26, color: color)),
     );
   }
 }
@@ -343,7 +341,7 @@ class _BoxScoreGrid extends StatelessWidget {
                       children: [
                         Text(
                           entry.$2,
-                          style: Cyber.display(15).copyWith(
+                          style: Cyber.display(StatOzTypography.p15).copyWith(
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
@@ -354,8 +352,8 @@ class _BoxScoreGrid extends StatelessWidget {
                           style: const TextStyle(
                             color: Cyber.muted,
                             fontFamily: Cyber.displayFont,
-                            fontSize: 6.8,
-                            fontWeight: FontWeight.w800,
+                            fontSize: StatOzTypography.p6_8,
+                            fontWeight: StatOzTypography.extrabold,
                             letterSpacing: 0.6,
                           ),
                         ),
@@ -385,7 +383,7 @@ class _XpLine extends StatelessWidget {
         curve: Curves.easeOutCubic,
         builder: (context, t, _) => Text(
           '+${(xp * t).round()} XP',
-          style: Cyber.display(22, color: Cyber.gold).copyWith(
+          style: Cyber.display(StatOzTypography.p22, color: Cyber.gold).copyWith(
             fontFeatures: const [FontFeature.tabularFigures()],
             shadows: [
               Shadow(color: Cyber.gold.withValues(alpha: 0.5), blurRadius: 14),

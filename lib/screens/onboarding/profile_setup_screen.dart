@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -7,6 +8,7 @@ import 'package:flutter/services.dart';
 import '../../config/game_ladder.dart';
 import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
+import '../../widgets/cyber/statoz_icons.dart';
 import '../../data/followable_leagues.dart';
 import '../../models/avatar_option.dart';
 import '../../models/profile_banner_option.dart';
@@ -447,12 +449,11 @@ class _SetupTopBar extends StatelessWidget {
               children: [
                 Text(
                   'PROFILE SETUP',
-                  style: Cyber.display(15, letterSpacing: 1.6),
+                  style: Cyber.display(StatOzTypography.p15, letterSpacing: 1.6),
                 ),
                 Text(
                   'SYS://OPERATIVE-INIT',
-                  style: Cyber.label(
-                    8,
+                  style: Cyber.label(StatOzTypography.p8,
                     color: Cyber.cyan.withValues(alpha: 0.7),
                     letterSpacing: 1.6,
                   ),
@@ -470,7 +471,7 @@ class _SetupTopBar extends StatelessWidget {
             ),
             child: Text(
               skipLabel,
-              style: Cyber.label(11, color: Cyber.cyan, letterSpacing: 1.8),
+              style: Cyber.label(StatOzTypography.p11, color: Cyber.cyan, letterSpacing: 1.8),
             ),
           ),
         ],
@@ -558,7 +559,7 @@ class _SetupDock extends StatelessWidget {
                 Text(
                   helper,
                   textAlign: TextAlign.center,
-                  style: Cyber.bodyFor(context, 12, color: AppTheme.textMedium),
+                  style: Cyber.bodyFor(context, StatOzTypography.p12, color: AppTheme.textMedium),
                 ),
               ],
             ),
@@ -588,13 +589,13 @@ class _StepShell extends StatelessWidget {
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
-            child: Text(title, style: Cyber.display(23, letterSpacing: 1.0)),
+            child: Text(title, style: Cyber.display(StatOzTypography.p23, letterSpacing: 1.0)),
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 6),
             Text(
               subtitle!,
-              style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+              style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
             ),
           ],
           const SizedBox(height: 16),
@@ -801,7 +802,11 @@ class _SportTile extends StatelessWidget {
                     AnimatedScale(
                       duration: const Duration(milliseconds: 150),
                       scale: selected ? 1.1 : 1,
-                      child: Icon(module.icon, color: iconColor, size: 30),
+                      child: StatozSportIcon(
+                        sport: module.sport,
+                        color: iconColor,
+                        size: 30,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Text(
@@ -809,8 +814,7 @@ class _SportTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
-                      style: Cyber.display(
-                        14,
+                      style: Cyber.display(StatOzTypography.p14,
                         color: selected ? AppTheme.whiteColor : Cyber.muted,
                         letterSpacing: 1.2,
                       ),
@@ -821,8 +825,7 @@ class _SportTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
-                      style: Cyber.label(
-                        8,
+                      style: Cyber.label(StatOzTypography.p8,
                         color: iconColor.withValues(
                           alpha: selected ? 0.85 : 0.45,
                         ),
@@ -979,8 +982,7 @@ class _ClubLeaguePill extends StatelessWidget {
                         child: Text(
                           entry.league.shortCode,
                           textAlign: TextAlign.center,
-                          style: Cyber.display(
-                            13,
+                          style: Cyber.display(StatOzTypography.p13,
                             color: active ? pillAccent : Cyber.muted,
                           ),
                         ),
@@ -1004,8 +1006,7 @@ class _ClubLeaguePill extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
-                    style: Cyber.label(
-                      8,
+                    style: Cyber.label(StatOzTypography.p8,
                       color: Cyber.muted,
                       letterSpacing: 0.4,
                     ),
@@ -1074,8 +1075,7 @@ class _ClubTeamTile extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
-                      style: Cyber.label(
-                        8,
+                      style: Cyber.label(StatOzTypography.p8,
                         color: AppTheme.whiteColor,
                         letterSpacing: 0.3,
                       ),
@@ -1195,8 +1195,7 @@ class _LaunchSequenceState extends State<_LaunchSequence>
                   children: [
                     Text(
                       'SYS://LAUNCH-SEQUENCE',
-                      style: Cyber.label(
-                        10,
+                      style: Cyber.label(StatOzTypography.p10,
                         color: Cyber.cyan,
                         letterSpacing: 2.6,
                       ),
@@ -1210,11 +1209,9 @@ class _LaunchSequenceState extends State<_LaunchSequence>
                     const SizedBox(height: 22),
                     Text(
                       'ENTERING STATOZ…',
-                      style: Cyber.bodyFor(
-                        context,
-                        12,
+                      style: Cyber.bodyFor(context, StatOzTypography.p12,
                         color: Cyber.cyan.withValues(alpha: 0.7),
-                        weight: FontWeight.w700,
+                        weight: StatOzTypography.bold,
                         letterSpacing: 0.4,
                       ),
                     ),
@@ -1359,8 +1356,7 @@ class _LaunchIntroState extends State<_LaunchIntro>
                           offset: Offset(0, _kickerSlide.value),
                           child: Text(
                             'WELCOME TO',
-                            style: Cyber.label(
-                              13,
+                            style: Cyber.label(StatOzTypography.p13,
                               color: Cyber.muted,
                               letterSpacing: 4.0,
                             ),
@@ -1378,8 +1374,7 @@ class _LaunchIntroState extends State<_LaunchIntro>
                           child: Text(
                             'STATOZ',
                             style:
-                                Cyber.display(
-                                  54,
+                                Cyber.display(StatOzTypography.p54,
                                   color: Cyber.cyan,
                                   letterSpacing: 4.0,
                                 ).copyWith(

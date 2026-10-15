@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -271,7 +272,7 @@ class TeamLogoPainter extends CustomPainter {
           color: palette.text,
           fontFamily: fontFamily,
           fontSize: size.width * _fontScale(label),
-          fontWeight: FontWeight.w700,
+          fontWeight: StatOzTypography.bold,
           height: 1,
           letterSpacing: 0,
           decoration: TextDecoration.none,

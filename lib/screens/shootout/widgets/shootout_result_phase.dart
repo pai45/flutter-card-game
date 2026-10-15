@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import '../../../config/game_ladder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -233,7 +234,7 @@ class _ShootoutOutcomeBanner extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             won ? 'SHOOTOUT WON' : 'SHOOTOUT LOST',
-            style: Cyber.display(32, color: accent, letterSpacing: 3),
+            style: Cyber.display(StatOzTypography.p32, color: accent, letterSpacing: 3),
           ),
         ],
       ),
@@ -262,24 +263,23 @@ class _PenScoreline extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text('$playerScore', style: Cyber.display(72, color: Cyber.cyan)),
+            Text('$playerScore', style: Cyber.display(StatOzTypography.p72, color: Cyber.cyan)),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('-', style: Cyber.display(48, color: Cyber.muted)),
+              child: Text('-', style: Cyber.display(StatOzTypography.p48, color: Cyber.muted)),
             ),
             Text(
               '$opponentScore',
-              style: Cyber.display(72, color: Cyber.danger),
+              style: Cyber.display(StatOzTypography.p72, color: Cyber.danger),
             ),
           ],
         ),
         const SizedBox(height: 6),
         Text(
           suddenDeath ? 'DECIDED IN SUDDEN DEATH' : 'PENALTIES',
-          style: Cyber.label(
-            11,
+          style: Cyber.label(StatOzTypography.p11,
             color: Cyber.cyan,
-            weight: FontWeight.w700,
+            weight: StatOzTypography.bold,
             letterSpacing: 1.2,
           ),
         ),
@@ -371,9 +371,9 @@ class _ShootoutXpPanel extends StatelessWidget {
           Text(
             gained ? '+$displayedCount XP' : '−$displayedCount XP',
             style: const TextStyle(
-              fontFamily: 'Orbitron',
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
+              fontFamily: StatOzTypography.displayFont,
+              fontSize: StatOzTypography.p28,
+              fontWeight: StatOzTypography.black,
               color: Colors.white,
               letterSpacing: 1,
             ),
@@ -390,7 +390,7 @@ class _ShootoutXpPanel extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '$xpIntoLevel / $xpToNextLevel XP · LEVEL $level',
-            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.5),
+            style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 0.5),
           ),
         ],
       ),
@@ -411,10 +411,9 @@ class _KickLogSection extends StatelessWidget {
   final Map<PenaltyDirection, String> dirLabel;
   final String opponentName;
 
-  static final _headerStyle = Cyber.label(
-    10,
+  static final _headerStyle = Cyber.label(StatOzTypography.p10,
     color: Colors.white38,
-    weight: FontWeight.w700,
+    weight: StatOzTypography.bold,
     letterSpacing: 1,
   );
 
@@ -425,7 +424,7 @@ class _KickLogSection extends StatelessWidget {
       children: [
         Text(
           'KICK LOG',
-          style: Cyber.label(12, color: Cyber.cyan, letterSpacing: 2),
+          style: Cyber.label(StatOzTypography.p12, color: Cyber.cyan, letterSpacing: 2),
         ),
         const SizedBox(height: 8),
         Container(
@@ -510,7 +509,7 @@ class _KickLogRow extends StatelessWidget {
             width: 28,
             child: Text(
               '${kick.kickNumber}',
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
+              style: const TextStyle(color: Colors.white54, fontSize: StatOzTypography.p12),
             ),
           ),
           Expanded(
@@ -518,10 +517,9 @@ class _KickLogRow extends StatelessWidget {
               takerName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.label(
-                11,
+              style: Cyber.label(StatOzTypography.p11,
                 color: kick.byPlayer ? Cyber.cyan : Colors.orange,
-                weight: FontWeight.w700,
+                weight: StatOzTypography.bold,
                 letterSpacing: 0.8,
               ),
             ),
@@ -532,8 +530,8 @@ class _KickLogRow extends StatelessWidget {
               dirLabel[kick.shootDirection]!,
               style: TextStyle(
                 color: goalColor,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
+                fontWeight: StatOzTypography.bold,
+                fontSize: StatOzTypography.p12,
               ),
               textAlign: TextAlign.center,
             ),
@@ -545,8 +543,8 @@ class _KickLogRow extends StatelessWidget {
               dirLabel[kick.diveDirection]!,
               style: const TextStyle(
                 color: Colors.white38,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
+                fontWeight: StatOzTypography.bold,
+                fontSize: StatOzTypography.p12,
               ),
               textAlign: TextAlign.center,
             ),

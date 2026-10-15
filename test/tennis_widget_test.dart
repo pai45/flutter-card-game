@@ -67,7 +67,7 @@ void main() {
             onTabChanged: (_) {},
             activeMatchSportTab: 0,
             onMatchSportTabChanged: (_) {},
-            activeGamesSportTab: 4,
+            activeGamesSportTab: 5,
             onGamesSportTabChanged: (_) {},
             onNavigate: (_) {},
             onOpenMatch: (_) {},

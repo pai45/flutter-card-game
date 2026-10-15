@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -230,8 +231,7 @@ class _RewardScene extends StatelessWidget {
                           children: [
                             Text(
                               'WELCOME BONUS',
-                              style: Cyber.label(
-                                12,
+                              style: Cyber.label(StatOzTypography.p12,
                                 color: Cyber.cyan,
                                 letterSpacing: 4,
                               ),
@@ -239,8 +239,7 @@ class _RewardScene extends StatelessWidget {
                             const SizedBox(height: 8),
                             Text(
                               'SYS://WALLET LINKED',
-                              style: Cyber.label(
-                                9,
+                              style: Cyber.label(StatOzTypography.p9,
                                 color: Cyber.muted,
                                 letterSpacing: 2.2,
                               ),
@@ -308,8 +307,7 @@ class _RewardScene extends StatelessWidget {
                                   key: const ValueKey(
                                     'onboarding-reward-credited',
                                   ),
-                                  style: Cyber.label(
-                                    11,
+                                  style: Cyber.label(StatOzTypography.p11,
                                     color: AppTheme.whiteColor,
                                     letterSpacing: 2.8,
                                   ),
@@ -330,8 +328,7 @@ class _RewardScene extends StatelessWidget {
                       opacity: _interval(timeline, 0.76, 0.90),
                       child: Text(
                         'TAP TO CONTINUE',
-                        style: Cyber.label(
-                          10,
+                        style: Cyber.label(StatOzTypography.p10,
                           color: Cyber.muted,
                           letterSpacing: 2.4,
                         ),
@@ -408,7 +405,7 @@ class _BalancePlate extends StatelessWidget {
               children: [
                 Text(
                   'WALLET BALANCE',
-                  style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.8),
+                  style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.8),
                 ),
                 const SizedBox(width: 16),
                 const CoinIcon(size: 18),
@@ -417,8 +414,7 @@ class _BalancePlate extends StatelessWidget {
                   _formatInt(balance),
                   key: const ValueKey('onboarding-reward-balance'),
                   style:
-                      Cyber.display(
-                        16,
+                      Cyber.display(StatOzTypography.p16,
                         color: AppTheme.whiteColor,
                         letterSpacing: 0.8,
                       ).copyWith(

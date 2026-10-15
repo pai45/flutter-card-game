@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
@@ -79,15 +80,14 @@ class _PlayerLevelBadgeState extends State<PlayerLevelBadge> {
                     children: [
                       Text(
                         'LVL',
-                        style: Cyber.label(
-                          8,
+                        style: Cyber.label(StatOzTypography.p8,
                           color: Cyber.cyan,
                           letterSpacing: 1.5,
                         ),
                       ),
                       Text(
                         '$level',
-                        style: Cyber.display(24, color: Cyber.gold),
+                        style: Cyber.display(StatOzTypography.p24, color: Cyber.gold),
                       ),
                     ],
                   ),
@@ -128,8 +128,7 @@ class _PlayerLevelBadgeState extends State<PlayerLevelBadge> {
                                 children: [
                                   Text(
                                     'NEXT',
-                                    style: Cyber.label(
-                                      8,
+                                    style: Cyber.label(StatOzTypography.p8,
                                       color: Cyber.cyan,
                                       letterSpacing: 1.2,
                                     ),
@@ -138,8 +137,7 @@ class _PlayerLevelBadgeState extends State<PlayerLevelBadge> {
                                   Text(
                                     '${band.toNextLevel} XP',
                                     overflow: TextOverflow.ellipsis,
-                                    style: Cyber.label(
-                                      13,
+                                    style: Cyber.label(StatOzTypography.p13,
                                       color: Cyber.gold,
                                       letterSpacing: 0.8,
                                     ),
@@ -150,11 +148,9 @@ class _PlayerLevelBadgeState extends State<PlayerLevelBadge> {
                                         ? 'TOTAL $xp'
                                         : '${track.shortLabel} $xp',
                                     overflow: TextOverflow.ellipsis,
-                                    style: Cyber.bodyFor(
-                                      context,
-                                      8,
+                                    style: Cyber.bodyFor(context, StatOzTypography.p8,
                                       color: Cyber.muted,
-                                      weight: FontWeight.w800,
+                                      weight: StatOzTypography.bold,
                                       letterSpacing: 0.5,
                                     ),
                                   ),
@@ -212,7 +208,7 @@ class _XpMeter extends StatelessWidget {
         Text(
           label,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.5),
+          style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 0.5),
         ),
       ],
     );

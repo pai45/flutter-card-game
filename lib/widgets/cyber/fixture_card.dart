@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
@@ -285,7 +286,7 @@ class FixtureTagText extends StatelessWidget {
                 context,
                 fontSize,
                 color: color,
-                weight: FontWeight.w700,
+                weight: StatOzTypography.bold,
               ).copyWith(
                 letterSpacing: 1,
                 fontFeatures: const [FontFeature.tabularFigures()],
@@ -346,11 +347,9 @@ class _FixtureLiveTagState extends State<FixtureLiveTag>
         Text(
           widget.label,
           style:
-              Cyber.bodyFor(
-                context,
-                13,
+              Cyber.bodyFor(context, StatOzTypography.p13,
                 color: Cyber.danger,
-                weight: FontWeight.w800,
+                weight: StatOzTypography.bold,
               ).copyWith(
                 letterSpacing: 0.8,
                 fontFeatures: const [FontFeature.tabularFigures()],

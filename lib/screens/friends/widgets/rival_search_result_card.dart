@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import '../../../config/theme.dart';
 import '../../../data/rival_roster.dart';
@@ -44,7 +45,7 @@ class RivalSearchResultCard extends StatelessWidget {
                             seed.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: Cyber.display(18, letterSpacing: 0.5),
+                            style: Cyber.display(StatOzTypography.p18, letterSpacing: 0.5),
                           ),
                         ),
                         if (seed.isPro) ...[
@@ -56,8 +57,7 @@ class RivalSearchResultCard extends StatelessWidget {
                     const SizedBox(height: 5),
                     Text(
                       'LVL ${rivalLevelFor(seed)}  //  ${playerTagForName(seed.name)}',
-                      style: Cyber.label(
-                        10,
+                      style: Cyber.label(StatOzTypography.p10,
                         color: Cyber.muted,
                         letterSpacing: 1.2,
                         fontFeatures: const [FontFeature.tabularFigures()],

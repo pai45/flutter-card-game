@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -50,8 +51,7 @@ class AchievementBadge extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.label(
-                  8,
+                style: Cyber.label(StatOzTypography.p8,
                   color: unlocked
                       ? Colors.white
                       : Cyber.muted.withValues(alpha: 0.7),
@@ -175,8 +175,7 @@ Future<void> showAchievementDetail(
                 Text(
                   achievement.title.toUpperCase(),
                   textAlign: TextAlign.center,
-                  style: Cyber.display(
-                    20,
+                  style: Cyber.display(StatOzTypography.p20,
                     color: Colors.white,
                     letterSpacing: 1,
                   ),
@@ -185,7 +184,7 @@ Future<void> showAchievementDetail(
                 Text(
                   achievement.description,
                   textAlign: TextAlign.center,
-                  style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
                 ),
                 const SizedBox(height: 18),
                 if (unlocked)
@@ -198,8 +197,7 @@ Future<void> showAchievementDetail(
                   const SizedBox(height: 8),
                   Text(
                     '$current / ${achievement.target}',
-                    style: Cyber.label(
-                      11,
+                    style: Cyber.label(StatOzTypography.p11,
                       color: Cyber.muted,
                       letterSpacing: 1,
                       fontFeatures: const [FontFeature.tabularFigures()],

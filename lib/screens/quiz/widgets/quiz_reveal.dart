@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -138,8 +139,7 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
                             _perfect ? 'FLAWLESS SET' : 'SET CLEARED',
                             textAlign: TextAlign.center,
                             style:
-                                Cyber.display(
-                                  25,
+                                Cyber.display(StatOzTypography.p25,
                                   color: _perfect ? Cyber.gold : Cyber.success,
                                   letterSpacing: 2.2,
                                 ).copyWith(
@@ -268,8 +268,7 @@ class _ScoreLine extends StatelessWidget {
       children: [
         Text(
           '$correct / $total CORRECT',
-          style: Cyber.label(
-            12,
+          style: Cyber.label(StatOzTypography.p12,
             color: Cyber.muted,
             letterSpacing: 1.6,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -277,8 +276,7 @@ class _ScoreLine extends StatelessWidget {
         if (bestStreak >= 2)
           Text(
             'BEST STREAK ×$bestStreak',
-            style: Cyber.label(
-              12,
+            style: Cyber.label(StatOzTypography.p12,
               color: bestStreak >= 5 ? Cyber.gold : Cyber.amber,
               letterSpacing: 1.6,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -292,7 +290,7 @@ class _ScoreLine extends StatelessWidget {
             ),
             child: Text(
               'NEW BEST',
-              style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1.3),
+              style: Cyber.label(StatOzTypography.p9, color: Cyber.gold, letterSpacing: 1.3),
             ),
           ),
       ],
@@ -328,8 +326,7 @@ class _StarAward extends StatelessWidget {
               : shown == 0
               ? 'NO STARS YET · REPLAY TO EARN'
               : 'SET RECORD HELD',
-          style: Cyber.label(
-            9.5,
+          style: Cyber.label(StatOzTypography.p9_5,
             color: gained > 0 ? Cyber.gold : Cyber.muted,
             letterSpacing: 1.6,
           ),
@@ -451,11 +448,11 @@ class _AnswerReview extends StatelessWidget {
           childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
           title: Text(
             'REVIEW RESULTS',
-            style: Cyber.display(11, color: accent, letterSpacing: 1.1),
+            style: Cyber.display(StatOzTypography.p11, color: accent, letterSpacing: 1.1),
           ),
           subtitle: Text(
             'Selected and correct answers',
-            style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+            style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
           ),
           children: [
             for (var i = 0; i < results.length; i++)
@@ -498,14 +495,14 @@ class _AnswerReviewRow extends StatelessWidget {
                   'Q$index · ${result.text}',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.bodyFor(context, 11.5, weight: FontWeight.w700),
+                  style: Cyber.bodyFor(context, StatOzTypography.p11_5, weight: StatOzTypography.bold),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   result.correct
                       ? 'YOUR ANSWER · ${result.pickedLabel}'
                       : 'YOUR ANSWER · ${result.pickedLabel}  /  CORRECT · ${result.correctLabel}',
-                  style: Cyber.bodyFor(context, 10.5, color: color),
+                  style: Cyber.bodyFor(context, StatOzTypography.p10_5, color: color),
                 ),
               ],
             ),
@@ -532,7 +529,7 @@ class _XpTotal extends StatelessWidget {
       builder: (context, v, _) => Text(
         '+${v.round()} XP',
         textAlign: TextAlign.center,
-        style: Cyber.display(40, color: Cyber.gold, letterSpacing: 1.5)
+        style: Cyber.display(StatOzTypography.p40, color: Cyber.gold, letterSpacing: 1.5)
             .copyWith(
               fontFeatures: const [FontFeature.tabularFigures()],
               shadows: [
@@ -580,7 +577,7 @@ class _ClearBanner extends StatelessWidget {
               setNumber < kQuizSetCount
                   ? 'SET ${setNumber + 1} UNLOCKED'
                   : '${mode.label} LADDER COMPLETE',
-              style: Cyber.display(13, color: accent, letterSpacing: 1.6),
+              style: Cyber.display(StatOzTypography.p13, color: accent, letterSpacing: 1.6),
             ),
           ),
         ],
@@ -607,16 +604,14 @@ class _LevelLine extends StatelessWidget {
           children: [
             Text(
               'LEVEL ${after.level}',
-              style: Cyber.label(
-                10,
+              style: Cyber.label(StatOzTypography.p10,
                 color: leveled ? Cyber.gold : Cyber.muted,
                 letterSpacing: 1.3,
               ),
             ),
             Text(
               '${after.intoLevel} / ${after.levelSpan} XP',
-              style: Cyber.label(
-                9,
+              style: Cyber.label(StatOzTypography.p9,
                 color: Cyber.muted,
                 letterSpacing: 0.8,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),

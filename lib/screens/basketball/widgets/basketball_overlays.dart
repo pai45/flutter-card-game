@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -50,7 +51,7 @@ class _BasketballHalftimeOverlayState extends State<BasketballHalftimeOverlay> {
                 Center(
                   child: Text(
                     'HALFTIME',
-                    style: Cyber.display(24, letterSpacing: 3).copyWith(
+                    style: Cyber.display(StatOzTypography.p24, letterSpacing: 3).copyWith(
                       shadows: [
                         Shadow(
                           color: Cyber.gold.withValues(alpha: 0.5),
@@ -67,15 +68,15 @@ class _BasketballHalftimeOverlayState extends State<BasketballHalftimeOverlay> {
                     children: [
                       Text(
                         '${game.scorePlayer.value}',
-                        style: Cyber.display(30, color: Cyber.cyan),
+                        style: Cyber.display(StatOzTypography.p30, color: Cyber.cyan),
                       ),
                       Text(
                         '  —  ',
-                        style: Cyber.display(16, color: Cyber.muted),
+                        style: Cyber.display(StatOzTypography.p16, color: Cyber.muted),
                       ),
                       Text(
                         '${game.scoreCpu.value}',
-                        style: Cyber.display(30, color: Cyber.magenta),
+                        style: Cyber.display(StatOzTypography.p30, color: Cyber.magenta),
                       ),
                     ],
                   ),
@@ -85,7 +86,7 @@ class _BasketballHalftimeOverlayState extends State<BasketballHalftimeOverlay> {
                 const SizedBox(height: 4),
                 const Text(
                   'The bench rested to full stamina.',
-                  style: TextStyle(color: Cyber.muted, fontSize: 11),
+                  style: TextStyle(color: Cyber.muted, fontSize: StatOzTypography.p11),
                 ),
                 const SizedBox(height: 12),
                 for (var i = 0; i < widget.rosterIds.length; i++) ...[
@@ -174,7 +175,7 @@ class _SubCard extends StatelessWidget {
                     children: [
                       Text(
                         athlete.name,
-                        style: Cyber.display(13, letterSpacing: 1),
+                        style: Cyber.display(StatOzTypography.p13, letterSpacing: 1),
                       ),
                       const SizedBox(width: 8),
                       if (wasOn)
@@ -258,7 +259,7 @@ class _BasketballOvertimeOverlayState extends State<BasketballOvertimeOverlay> {
               children: [
                 Text(
                   'OVERTIME',
-                  style: Cyber.display(34, color: Cyber.gold, letterSpacing: 4)
+                  style: Cyber.display(StatOzTypography.p34, color: Cyber.gold, letterSpacing: 4)
                       .copyWith(
                     shadows: [
                       Shadow(
@@ -271,7 +272,7 @@ class _BasketballOvertimeOverlayState extends State<BasketballOvertimeOverlay> {
                 const SizedBox(height: 10),
                 Text(
                   'SUDDEN DEATH — FIRST BASKET WINS',
-                  style: Cyber.label(10, color: Colors.white, letterSpacing: 2.4),
+                  style: Cyber.label(StatOzTypography.p10, color: Colors.white, letterSpacing: 2.4),
                 ),
               ],
             ),

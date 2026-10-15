@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import '../../../config/game_ladder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -176,8 +177,7 @@ class _GrandPrixResultState extends State<GrandPrixResultOverlay>
                                       children: [
                                         Text(
                                           'CIRCUIT MASTERY EARNED',
-                                          style: Cyber.label(
-                                            10,
+                                          style: Cyber.label(StatOzTypography.p10,
                                             color: Cyber.gold,
                                           ),
                                         ),
@@ -275,12 +275,12 @@ class _VerdictBanner extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             verdict,
-            style: Cyber.display(34, color: accent, letterSpacing: 3),
+            style: Cyber.display(StatOzTypography.p34, color: accent, letterSpacing: 3),
           ),
           const SizedBox(height: 4),
           Text(
             circuitName,
-            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 2),
+            style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 2),
           ),
         ],
       ),
@@ -300,15 +300,14 @@ class _PositionReadout extends StatelessWidget {
         children: [
           Text(
             'DNF',
-            style: Cyber.display(
-              64,
+            style: Cyber.display(StatOzTypography.p64,
               color: Cyber.danger,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
           const SizedBox(height: 4),
           Text(
             'GAME OVER · STUCK ON TRACK',
-            style: Cyber.label(10, color: Cyber.danger, letterSpacing: 1.8),
+            style: Cyber.label(StatOzTypography.p10, color: Cyber.danger, letterSpacing: 1.8),
           ),
         ],
       );
@@ -331,15 +330,13 @@ class _PositionReadout extends StatelessWidget {
             children: [
               Text(
                 'P${result.position}',
-                style: Cyber.display(
-                  64,
+                style: Cyber.display(StatOzTypography.p64,
                   color: Cyber.cyan,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
               Text(
                 '/${result.fieldSize}',
-                style: Cyber.display(
-                  28,
+                style: Cyber.display(StatOzTypography.p28,
                   color: Cyber.muted,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
@@ -349,7 +346,7 @@ class _PositionReadout extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           deltaText,
-          style: Cyber.label(10, color: deltaColor, letterSpacing: 1.8),
+          style: Cyber.label(StatOzTypography.p10, color: deltaColor, letterSpacing: 1.8),
         ),
       ],
     );
@@ -385,7 +382,7 @@ class _RaceStats extends StatelessWidget {
               children: [
                 Text(
                   formatLapTime(result.lapTimeMs),
-                  style: Cyber.display(13, color: AppTheme.textPrimary)
+                  style: Cyber.display(StatOzTypography.p13, color: AppTheme.textPrimary)
                       .copyWith(
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
@@ -403,7 +400,7 @@ class _RaceStats extends StatelessWidget {
               label: 'BEST SPLIT',
               valueWidget: Text(
                 formatLapTime(result.bestLapTimeMs),
-                style: Cyber.display(12, color: Cyber.cyan),
+                style: Cyber.display(StatOzTypography.p12, color: Cyber.cyan),
               ),
             ),
             const SizedBox(height: 10),
@@ -412,7 +409,7 @@ class _RaceStats extends StatelessWidget {
             label: 'CLEAN PASSES',
             valueWidget: Text(
               '${result.cleanOvertakes}',
-              style: Cyber.display(12, color: Cyber.cyan),
+              style: Cyber.display(StatOzTypography.p12, color: Cyber.cyan),
             ),
           ),
           const SizedBox(height: 10),
@@ -442,7 +439,7 @@ class _RaceStats extends StatelessWidget {
               label: 'MVP MOVE',
               valueWidget: Text(
                 'PASSED ${result.bestOvertakeName!.toUpperCase()}',
-                style: Cyber.label(10, color: Cyber.cyan, letterSpacing: 1),
+                style: Cyber.label(StatOzTypography.p10, color: Cyber.cyan, letterSpacing: 1),
               ),
             ),
           ],
@@ -464,7 +461,7 @@ class _StatRow extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.6),
+          style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.6),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -507,8 +504,8 @@ class _XpPanel extends StatelessWidget {
         children: [
           Text(
             '+$shownXp XP',
-            style: Cyber.display(26, color: Cyber.f1Red).copyWith(
-              fontWeight: FontWeight.w900,
+            style: Cyber.display(StatOzTypography.p26, color: Cyber.f1Red).copyWith(
+              fontWeight: StatOzTypography.black,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
@@ -524,7 +521,7 @@ class _XpPanel extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '$into / $span XP · LEVEL $level',
-            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.5),
+            style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 0.5),
           ),
         ],
       ),

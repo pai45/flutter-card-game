@@ -15,6 +15,10 @@ analyzer:
     - .dart_tool/**
     - build/**
     - flutter/**
+    # final_over is a path dependency with its own integration-test package.
+    # Its device-runner dependency is resolved from final_over/pubspec.yaml.
+    - final_over/integration_test/**
+    - tool/**
     - "*.dart"
     - android/**
     - ios/**

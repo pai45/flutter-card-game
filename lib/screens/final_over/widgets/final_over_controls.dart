@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:final_over/final_over.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -169,7 +170,7 @@ class _BattingStatusStrip extends StatelessWidget {
                 children: [
                   Icon(icon, color: accent, size: 15),
                   const SizedBox(width: 8),
-                  Text(label, style: Cyber.display(10, color: Colors.white)),
+                  Text(label, style: Cyber.display(StatOzTypography.p10, color: Colors.white)),
                   const SizedBox(width: 8),
                   Container(width: 1, height: 12, color: Cyber.line),
                   const SizedBox(width: 8),
@@ -178,8 +179,7 @@ class _BattingStatusStrip extends StatelessWidget {
                       helper,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.label(
-                        7.5,
+                      style: Cyber.label(StatOzTypography.p7_5,
                         color: live ? accent : Cyber.muted,
                         letterSpacing: 1.1,
                       ),
@@ -306,8 +306,7 @@ class _RunningDeck extends StatelessWidget {
                       const SizedBox(width: 6),
                       Text(
                         riskLabel,
-                        style: Cyber.label(
-                          9,
+                        style: Cyber.label(StatOzTypography.p9,
                           color: riskColor,
                           letterSpacing: 1.4,
                         ),
@@ -318,7 +317,7 @@ class _RunningDeck extends StatelessWidget {
                 const Spacer(),
                 Text(
                   '${game.completedRuns.value}/3 RUNS',
-                  style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4),
+                  style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.4),
                 ),
               ],
             ),

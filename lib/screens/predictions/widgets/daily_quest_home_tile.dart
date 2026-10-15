@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -76,8 +77,7 @@ class DailyQuestHomeTile extends StatelessWidget {
                     children: [
                       Text(
                         '$current',
-                        style: Cyber.display(
-                          20,
+                        style: Cyber.display(StatOzTypography.p20,
                           color: flame == StreakFlameState.cold
                               ? Colors.white.withValues(alpha: 0.7)
                               : streakFlameColor(flame),
@@ -89,7 +89,7 @@ class DailyQuestHomeTile extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         current == 1 ? 'DAY' : 'DAYS',
-                        style: Cyber.label(10, color: Cyber.muted),
+                        style: Cyber.label(StatOzTypography.p10, color: Cyber.muted),
                       ),
                     ],
                   ),
@@ -112,7 +112,7 @@ class DailyQuestHomeTile extends StatelessWidget {
                                 'DAILY QUESTS',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: Cyber.label(10, letterSpacing: 1.3),
+                                style: Cyber.label(StatOzTypography.p10, letterSpacing: 1.3),
                               ),
                             ),
                             const SizedBox(width: 8),
@@ -124,8 +124,7 @@ class DailyQuestHomeTile extends StatelessWidget {
                           line,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.label(
-                            10,
+                          style: Cyber.label(StatOzTypography.p10,
                             color: lineColor,
                             letterSpacing: 0.4,
                             fontFeatures: const [FontFeature.tabularFigures()],
@@ -147,7 +146,7 @@ class DailyQuestHomeTile extends StatelessWidget {
                           ),
                           child: Text(
                             'CLAIM',
-                            style: Cyber.label(10, color: AppTheme.darkInk),
+                            style: Cyber.label(StatOzTypography.p10, color: AppTheme.darkInk),
                           ),
                         ),
                       ),

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -657,8 +658,8 @@ class _FormationTile extends StatelessWidget {
                   formation.code,
                   style: TextStyle(
                     fontFamily: Cyber.displayFont,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                    fontSize: StatOzTypography.p22,
+                    fontWeight: StatOzTypography.extrabold,
                     letterSpacing: 1,
                     color: selected ? Cyber.cyan : Colors.white,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -672,8 +673,7 @@ class _FormationTile extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               formation.label,
-              style: Cyber.label(
-                11,
+              style: Cyber.label(StatOzTypography.p11,
                 color: selected ? Cyber.cyan : Cyber.muted,
                 letterSpacing: 1.4,
               ),
@@ -683,9 +683,7 @@ class _FormationTile extends StatelessWidget {
               formation.blurb,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.bodyFor(
-                context,
-                10,
+              style: Cyber.bodyFor(context, StatOzTypography.p10,
               ).copyWith(color: Cyber.muted, height: 1.35),
             ),
           ],
@@ -826,9 +824,9 @@ class DeckFocusedSelectionPanel extends StatelessWidget {
                         'No card assigned',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontFamily: 'Orbitron',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
+                      fontFamily: StatOzTypography.displayFont,
+                      fontSize: StatOzTypography.p12,
+                      fontWeight: StatOzTypography.black,
                     ),
                   ),
                 ),
@@ -841,7 +839,7 @@ class DeckFocusedSelectionPanel extends StatelessWidget {
               selectedPlayer != null
                   ? pitchPlayerAbility(selectedPlayer!)
                   : pitchActionAbility(selectedAction!),
-              style: Cyber.bodyFor(context, 12, color: Cyber.cyan),
+              style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.cyan),
             ),
           ],
           if (lane == DeckPickerLane.action) ...[
@@ -944,9 +942,9 @@ class _LaneTab extends StatelessWidget {
           label,
           style: TextStyle(
             color: selected ? color : color.withValues(alpha: 0.5),
-            fontSize: 10,
-            fontFamily: 'Orbitron',
-            fontWeight: FontWeight.w900,
+            fontSize: StatOzTypography.p10,
+            fontFamily: StatOzTypography.displayFont,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 0.8,
           ),
         ),
@@ -982,9 +980,9 @@ class _SlotChip extends StatelessWidget {
           label,
           style: TextStyle(
             color: selected ? color : Cyber.muted,
-            fontSize: 10,
-            fontFamily: 'Orbitron',
-            fontWeight: FontWeight.w800,
+            fontSize: StatOzTypography.p10,
+            fontFamily: StatOzTypography.displayFont,
+            fontWeight: StatOzTypography.extrabold,
           ),
         ),
       ),
@@ -1008,7 +1006,7 @@ class DeckActionWarningPanel extends StatelessWidget {
           Expanded(
             child: Text(
               'Equip actions for two attacks and two defenses. Flexible actions can cover either role, once per match.',
-              style: Cyber.bodyFor(context, 12, color: AppTheme.whiteColor),
+              style: Cyber.bodyFor(context, StatOzTypography.p12, color: AppTheme.whiteColor),
             ),
           ),
         ],
@@ -1069,8 +1067,8 @@ class FiveSideDeckPanel extends StatelessWidget {
                     '5-A-SIDE DECK',
                     style: TextStyle(
                       color: Cyber.cyan.withValues(alpha: 0.65),
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
+                      fontSize: StatOzTypography.p10,
+                      fontWeight: StatOzTypography.bold,
                       letterSpacing: 2,
                     ),
                   ),
@@ -1079,8 +1077,8 @@ class FiveSideDeckPanel extends StatelessWidget {
                     deckName.toUpperCase(),
                     style: const TextStyle(
                       color: Colors.white,
-                      fontFamily: 'Orbitron',
-                      fontWeight: FontWeight.w900,
+                      fontFamily: StatOzTypography.displayFont,
+                      fontWeight: StatOzTypography.black,
                       letterSpacing: 1.3,
                     ),
                   ),
@@ -1117,8 +1115,8 @@ class FiveSideDeckPanel extends StatelessWidget {
               '6 ACTION CARDS',
               style: TextStyle(
                 color: Cyber.cyan.withValues(alpha: 0.65),
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
+                fontSize: StatOzTypography.p10,
+                fontWeight: StatOzTypography.bold,
                 letterSpacing: 1.7,
               ),
             ),
@@ -1127,7 +1125,7 @@ class FiveSideDeckPanel extends StatelessWidget {
               'ATK $actionAtk · DEF $actionDef · SPC $actionSpc',
               style: TextStyle(
                 color: Cyber.cyan.withValues(alpha: 0.45),
-                fontSize: 10,
+                fontSize: StatOzTypography.p10,
               ),
             ),
           ],
@@ -1366,9 +1364,9 @@ class _FormationSlotState extends State<FormationSlot>
               widget.label,
               style: TextStyle(
                 color: widget.highlighted ? Cyber.lime : Cyber.cyan,
-                fontFamily: 'Orbitron',
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
+                fontFamily: StatOzTypography.displayFont,
+                fontWeight: StatOzTypography.black,
+                fontSize: StatOzTypography.p12,
               ),
             ),
             const SizedBox(height: 3),
@@ -1379,7 +1377,7 @@ class _FormationSlotState extends State<FormationSlot>
                 const SizedBox(width: 3),
                 const Text(
                   'ADD',
-                  style: TextStyle(color: Cyber.muted, fontSize: 9),
+                  style: TextStyle(color: Cyber.muted, fontSize: StatOzTypography.p9),
                 ),
               ],
             ),
@@ -1410,8 +1408,8 @@ class KeeperCore extends StatelessWidget {
               'GK',
               style: TextStyle(
                 color: Cyber.magenta,
-                fontFamily: 'Orbitron',
-                fontWeight: FontWeight.w900,
+                fontFamily: StatOzTypography.displayFont,
+                fontWeight: StatOzTypography.black,
               ),
             ),
             Icon(Icons.back_hand, color: Cyber.magenta, size: 24),
@@ -1419,8 +1417,8 @@ class KeeperCore extends StatelessWidget {
               'KEEPER CORE',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
+                fontSize: StatOzTypography.p9,
+                fontWeight: StatOzTypography.bold,
               ),
             ),
           ],
@@ -1476,8 +1474,8 @@ class EmptyActionSlot extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: highlighted ? Cyber.lime : Cyber.muted,
-                fontSize: 9,
-                fontWeight: FontWeight.w800,
+                fontSize: StatOzTypography.p9,
+                fontWeight: StatOzTypography.bold,
               ),
             ),
           ],

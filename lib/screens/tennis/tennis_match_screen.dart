@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import '../../config/game_ladder.dart';
 import 'dart:async';
 
@@ -358,15 +359,13 @@ class _PauseOverlay extends StatelessWidget {
                             Text(
                               'MATCH PAUSED',
                               textAlign: TextAlign.center,
-                              style: Cyber.display(24, color: Cyber.cyan),
+                              style: Cyber.display(StatOzTypography.p24, color: Cyber.cyan),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Your exact point has been saved.',
                               textAlign: TextAlign.center,
-                              style: Cyber.bodyFor(
-                                context,
-                                13,
+                              style: Cyber.bodyFor(context, StatOzTypography.p13,
                                 color: Cyber.muted,
                               ),
                             ),
@@ -427,7 +426,7 @@ class _SettingsPanel extends StatelessWidget {
               onPressed: onBack,
               icon: const Icon(Icons.arrow_back, color: Cyber.cyan),
             ),
-            Text('ACCESSIBILITY', style: Cyber.display(17, color: Cyber.cyan)),
+            Text('ACCESSIBILITY', style: Cyber.display(StatOzTypography.p17, color: Cyber.cyan)),
           ],
         ),
         _SettingSwitch(
@@ -464,7 +463,7 @@ class _SettingsPanel extends StatelessWidget {
           onChanged: (value) => onChanged(settings.copyWith(sound: value)),
         ),
         const SizedBox(height: 10),
-        Text('CONTROL SIZE', style: Cyber.display(9, color: Cyber.muted)),
+        Text('CONTROL SIZE', style: Cyber.display(StatOzTypography.p9, color: Cyber.muted)),
         Slider(
           value: settings.controlScale,
           min: 0.8,
@@ -474,7 +473,7 @@ class _SettingsPanel extends StatelessWidget {
           onChanged: (value) =>
               onChanged(settings.copyWith(controlScale: value)),
         ),
-        Text('CONTROL OPACITY', style: Cyber.display(9, color: Cyber.muted)),
+        Text('CONTROL OPACITY', style: Cyber.display(StatOzTypography.p9, color: Cyber.muted)),
         Slider(
           value: settings.controlOpacity,
           min: 0.45,
@@ -505,7 +504,7 @@ class _SettingSwitch extends StatelessWidget {
     return SwitchListTile.adaptive(
       dense: true,
       contentPadding: EdgeInsets.zero,
-      title: Text(label, style: Cyber.display(9, color: Colors.white)),
+      title: Text(label, style: Cyber.display(StatOzTypography.p9, color: Colors.white)),
       value: value,
       activeThumbColor: Cyber.cyan,
       onChanged: onChanged,
@@ -537,7 +536,7 @@ class _PauseAction extends StatelessWidget {
           children: [
             Icon(icon, size: 18, color: color),
             const SizedBox(width: 8),
-            Text(label, style: Cyber.display(10, color: color)),
+            Text(label, style: Cyber.display(StatOzTypography.p10, color: color)),
           ],
         ),
       ),
@@ -589,7 +588,7 @@ class _ResultOverlay extends StatelessWidget {
                             ? 'CHAMPION'
                             : _resultTitle(summary),
                         textAlign: TextAlign.center,
-                        style: Cyber.display(29, color: accent),
+                        style: Cyber.display(StatOzTypography.p29, color: accent),
                       ),
                       const SizedBox(height: 6),
                       Text(
@@ -599,7 +598,7 @@ class _ResultOverlay extends StatelessWidget {
                             ? 'LESSON ${summary.trainingLesson} COMPLETE'
                             : '${summary.practiceScore} POINTS',
                         textAlign: TextAlign.center,
-                        style: Cyber.display(24, color: Colors.white),
+                        style: Cyber.display(StatOzTypography.p24, color: Colors.white),
                       ),
                       const SizedBox(height: 16),
                       Row(
@@ -641,7 +640,7 @@ class _ResultOverlay extends StatelessWidget {
                           child: Text(
                             'REPEAT BONUS SUPPRESSED - CHANGE RIVAL OR DIFFICULTY',
                             textAlign: TextAlign.center,
-                            style: Cyber.display(8, color: Cyber.amber),
+                            style: Cyber.display(StatOzTypography.p8, color: Cyber.amber),
                           ),
                         ),
                       const SizedBox(height: 20),
@@ -664,7 +663,7 @@ class _ResultOverlay extends StatelessWidget {
                           icon: const Icon(Icons.refresh, color: Cyber.muted),
                           label: Text(
                             'PLAY AGAIN',
-                            style: Cyber.display(10, color: Cyber.muted),
+                            style: Cyber.display(StatOzTypography.p10, color: Cyber.muted),
                           ),
                         ),
                       ],
@@ -700,9 +699,9 @@ class _ResultStat extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(value, style: Cyber.display(19, color: Cyber.cyan)),
+          Text(value, style: Cyber.display(StatOzTypography.p19, color: Cyber.cyan)),
           const SizedBox(height: 4),
-          Text(label, style: Cyber.display(8, color: Cyber.muted)),
+          Text(label, style: Cyber.display(StatOzTypography.p8, color: Cyber.muted)),
         ],
       ),
     );
@@ -721,9 +720,9 @@ class _PerformanceRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          Text(label, style: Cyber.display(9, color: Cyber.muted)),
+          Text(label, style: Cyber.display(StatOzTypography.p9, color: Cyber.muted)),
           const Spacer(),
-          Text(value, style: Cyber.display(10, color: Colors.white)),
+          Text(value, style: Cyber.display(StatOzTypography.p10, color: Colors.white)),
         ],
       ),
     );

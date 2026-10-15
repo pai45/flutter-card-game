@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,6 +16,7 @@ import '../../models/sport_match.dart';
 import '../../services/secure_storage_service.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
+import '../../widgets/cyber/statoz_icons.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/cyber/sport_underline_tabs.dart';
 import '../../widgets/game_scaffold.dart';
@@ -553,7 +555,7 @@ class _LoadoutHeader extends StatelessWidget {
               ),
               border: Border.all(color: accent.withValues(alpha: 0.52)),
             ),
-            child: Icon(module.icon, color: accent, size: 26),
+            child: StatozSportIcon(sport: entry.sport, color: accent, size: 26),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -565,7 +567,7 @@ class _LoadoutHeader extends StatelessWidget {
                     Expanded(
                       child: Text(
                         module.label.toUpperCase(),
-                        style: Cyber.display(13, letterSpacing: 1),
+                        style: Cyber.display(StatOzTypography.p13, letterSpacing: 1),
                       ),
                     ),
                     CyberChip(
@@ -577,7 +579,7 @@ class _LoadoutHeader extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   entry.kicker,
-                  style: Cyber.label(8, color: accent, letterSpacing: 1.1),
+                  style: Cyber.label(StatOzTypography.p8, color: accent, letterSpacing: 1.1),
                 ),
                 const SizedBox(height: 10),
                 CyberProgressBar(
@@ -590,8 +592,7 @@ class _LoadoutHeader extends StatelessWidget {
                   '${entry.filled}/${entry.total} FILLED · ${entry.meta}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.label(
-                    7,
+                  style: Cyber.label(StatOzTypography.p7,
                     color: Cyber.muted,
                     letterSpacing: 0.7,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -645,7 +646,7 @@ class _EmptyLoadoutSlot extends StatelessWidget {
                 Text(
                   label,
                   textAlign: TextAlign.center,
-                  style: Cyber.label(7, color: Cyber.muted, letterSpacing: 0.8),
+                  style: Cyber.label(StatOzTypography.p7, color: Cyber.muted, letterSpacing: 0.8),
                 ),
               ],
             ),
@@ -713,12 +714,12 @@ class _LoadoutLockedSeal extends StatelessWidget {
           Expanded(
             child: Text(
               '$label LOADOUT LOCKED',
-              style: Cyber.label(10, color: Cyber.success, letterSpacing: 1.4),
+              style: Cyber.label(StatOzTypography.p10, color: Cyber.success, letterSpacing: 1.4),
             ),
           ),
           Text(
             'SYNC://OK',
-            style: Cyber.label(7, color: Cyber.muted, letterSpacing: 1),
+            style: Cyber.label(StatOzTypography.p7, color: Cyber.muted, letterSpacing: 1),
           ),
         ],
       ),

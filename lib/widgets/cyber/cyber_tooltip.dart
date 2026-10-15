@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
@@ -41,8 +42,7 @@ class CyberTooltip extends StatelessWidget {
           ),
         ),
       ),
-      textStyle: Cyber.label(
-        9.5,
+      textStyle: Cyber.label(StatOzTypography.p9_5,
         color: AppTheme.textPrimary,
       ).copyWith(height: 1.3, letterSpacing: 1.2),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

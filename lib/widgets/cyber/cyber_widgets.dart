@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
@@ -155,13 +156,11 @@ class CyberObjectiveCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(title, style: Cyber.display(13)),
+                            Text(title, style: Cyber.display(StatOzTypography.p13)),
                             const SizedBox(height: 4),
                             Text(
                               description,
-                              style: Cyber.bodyFor(
-                                context,
-                                12.5,
+                              style: Cyber.bodyFor(context, StatOzTypography.p12_5,
                                 color: Cyber.muted,
                               ),
                             ),
@@ -249,8 +248,7 @@ class _ObjectivePlate extends StatelessWidget {
               if (icon != null) const SizedBox(height: 3),
               Text(
                 index!.toString().padLeft(2, '0'),
-                style: Cyber.label(
-                  8.5,
+                style: Cyber.label(StatOzTypography.p8_5,
                   color: accent,
                   letterSpacing: 0.4,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -313,8 +311,7 @@ class _ObjectiveRewardPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       child: Text(
         label,
-        style: Cyber.label(
-          10,
+        style: Cyber.label(StatOzTypography.p10,
           color: color,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
@@ -388,8 +385,7 @@ class _ObjectiveStampState extends State<_ObjectiveStamp>
             ],
             Text(
               widget.status,
-              style: Cyber.label(
-                10,
+              style: Cyber.label(StatOzTypography.p10,
                 color: widget.state == CyberObjectiveState.ready
                     ? color
                     : Colors.white.withValues(alpha: 0.8),
@@ -460,7 +456,7 @@ class CyberObjectiveAction extends StatelessWidget {
                   Icon(icon, size: 14, color: color),
                   const SizedBox(width: 6),
                   Flexible(
-                    child: Text(label, style: Cyber.label(10.5, color: color)),
+                    child: Text(label, style: Cyber.label(StatOzTypography.p10_5, color: color)),
                   ),
                 ],
               ),
@@ -522,9 +518,9 @@ class CyberConfirmDialog extends StatelessWidget {
                           destructive ? 'WARNING' : 'CONFIRM',
                           style: TextStyle(
                             color: accent,
-                            fontFamily: 'Orbitron',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
+                            fontFamily: StatOzTypography.displayFont,
+                            fontSize: StatOzTypography.p11,
+                            fontWeight: StatOzTypography.black,
                             letterSpacing: 2.8,
                           ),
                         ),
@@ -535,9 +531,9 @@ class CyberConfirmDialog extends StatelessWidget {
                       title.toUpperCase(),
                       style: const TextStyle(
                         color: Colors.white,
-                        fontFamily: 'Orbitron',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
+                        fontFamily: StatOzTypography.displayFont,
+                        fontSize: StatOzTypography.p14,
+                        fontWeight: StatOzTypography.black,
                         letterSpacing: 1.2,
                       ),
                     ),
@@ -547,7 +543,7 @@ class CyberConfirmDialog extends StatelessWidget {
                       style: TextStyle(
                         color: Color(0xff9aa8bb),
                         fontFamily: Cyber.bodyFontFor(context),
-                        fontSize: 12,
+                        fontSize: StatOzTypography.p12,
                         height: 1.45,
                       ),
                     ),
@@ -610,9 +606,9 @@ class _CyberDialogAction extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: color,
-              fontFamily: 'Orbitron',
-              fontSize: 11,
-              fontWeight: FontWeight.w900,
+              fontFamily: StatOzTypography.displayFont,
+              fontSize: StatOzTypography.p11,
+              fontWeight: StatOzTypography.black,
               letterSpacing: 2.2,
             ),
           ),
@@ -1115,8 +1111,8 @@ class SectionLabel extends StatelessWidget {
       label.toUpperCase(),
       style: TextStyle(
         color: Cyber.cyan.withValues(alpha: 0.7),
-        fontSize: 10,
-        fontWeight: FontWeight.w700,
+        fontSize: StatOzTypography.p10,
+        fontWeight: StatOzTypography.bold,
         letterSpacing: 2,
         fontFeatures: const [FontFeature.tabularFigures()],
       ),
@@ -1183,18 +1179,16 @@ class CyberMiniMetric extends StatelessWidget {
               label.toUpperCase(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.label(9, color: Cyber.muted),
+              style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
             ),
             const SizedBox(height: 5),
             Text(
               value,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.bodyFor(
-                context,
-                11,
+              style: Cyber.bodyFor(context, StatOzTypography.p11,
                 color: accent ?? Colors.white,
-                weight: FontWeight.w700,
+                weight: StatOzTypography.bold,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -1230,16 +1224,15 @@ class CyberStatPill extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.7)),
       ),
       child: value == null
-          ? Text(label.toUpperCase(), style: Cyber.label(9, color: color))
+          ? Text(label.toUpperCase(), style: Cyber.label(StatOzTypography.p9, color: color))
           : Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(label.toUpperCase(), style: Cyber.label(9, color: color)),
+                Text(label.toUpperCase(), style: Cyber.label(StatOzTypography.p9, color: color)),
                 const SizedBox(width: 6),
                 Text(
                   value!,
-                  style: Cyber.label(
-                    9,
+                  style: Cyber.label(StatOzTypography.p9,
                     color: Colors.white,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
@@ -1276,8 +1269,7 @@ class CyberDeltaChip extends StatelessWidget {
       ),
       child: Text(
         '${up ? '▲' : '▼'}$magnitude${suffix == null ? '' : ' $suffix'}',
-        style: Cyber.label(
-          8,
+        style: Cyber.label(StatOzTypography.p8,
           color: color,
           letterSpacing: 0.8,
           fontFeatures: const [FontFeature.tabularFigures()],
@@ -1339,7 +1331,7 @@ class CyberSearchField extends StatelessWidget {
               onSubmitted: onSubmitted,
               textInputAction: TextInputAction.search,
               cursorColor: accent,
-              style: Cyber.bodyFor(context, 14),
+              style: Cyber.bodyFor(context, StatOzTypography.p14),
               decoration: InputDecoration(
                 isDense: true,
                 filled: false,
@@ -1351,7 +1343,7 @@ class CyberSearchField extends StatelessWidget {
                 errorBorder: InputBorder.none,
                 focusedErrorBorder: InputBorder.none,
                 hintText: hintText,
-                hintStyle: Cyber.bodyFor(context, 14, color: Cyber.muted),
+                hintStyle: Cyber.bodyFor(context, StatOzTypography.p14, color: Cyber.muted),
                 contentPadding: const EdgeInsets.symmetric(vertical: 18),
               ),
             ),
@@ -1412,7 +1404,7 @@ class CyberNoDataState extends StatelessWidget {
                   const SizedBox(width: 7),
                   Text(
                     actionLabel!,
-                    style: Cyber.label(9, color: accent, letterSpacing: 1.1),
+                    style: Cyber.label(StatOzTypography.p9, color: accent, letterSpacing: 1.1),
                   ),
                 ],
               ),
@@ -1450,8 +1442,7 @@ class CyberNoDataState extends StatelessWidget {
               Text(
                 title.toUpperCase(),
                 textAlign: TextAlign.center,
-                style: Cyber.display(
-                  14,
+                style: Cyber.display(StatOzTypography.p14,
                   color: Colors.white,
                   letterSpacing: 1.2,
                 ),
@@ -1460,11 +1451,9 @@ class CyberNoDataState extends StatelessWidget {
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: Cyber.bodyFor(
-                  context,
-                  13,
+                style: Cyber.bodyFor(context, StatOzTypography.p13,
                   color: Cyber.muted,
-                  weight: FontWeight.w600,
+                  weight: StatOzTypography.semibold,
                   height: 1.35,
                 ),
               ),
@@ -1862,8 +1851,8 @@ class CyberCtaButton extends StatelessWidget {
         label.toUpperCase(),
         style: TextStyle(
           color: primary ? Cyber.bg : Cyber.cyan,
-          fontFamily: 'Orbitron',
-          fontWeight: FontWeight.w900,
+          fontFamily: StatOzTypography.displayFont,
+          fontWeight: StatOzTypography.black,
           letterSpacing: 1.2,
         ),
       ),
@@ -2022,12 +2011,12 @@ class CyberHudPanel extends StatelessWidget {
               Expanded(
                 child: Text(
                   title.toUpperCase(),
-                  style: Cyber.label(10, color: accent, letterSpacing: 1.3),
+                  style: Cyber.label(StatOzTypography.p10, color: accent, letterSpacing: 1.3),
                 ),
               ),
               Text(
                 code,
-                style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 0.6),
+                style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted, letterSpacing: 0.6),
               ),
             ],
           ),
@@ -2122,8 +2111,7 @@ class CyberMatchmakingPlayerBanner extends StatelessWidget {
                                 child: Text(
                                   name.toUpperCase(),
                                   maxLines: 1,
-                                  style: Cyber.display(
-                                    22,
+                                  style: Cyber.display(StatOzTypography.p22,
                                     color: Colors.white,
                                     letterSpacing: 1.8,
                                   ),
@@ -2177,8 +2165,7 @@ class CyberMatchmakingPlayerBanner extends StatelessWidget {
                           child: Text(
                             badge!.toUpperCase(),
                             maxLines: 1,
-                            style: Cyber.label(
-                              9,
+                            style: Cyber.label(StatOzTypography.p9,
                               color: accent,
                               letterSpacing: 1.2,
                               fontFeatures: const [
@@ -2312,7 +2299,7 @@ class CyberLobbyStatusBar extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           statusLabel.toUpperCase(),
-          style: Cyber.display(9, color: statusColor, letterSpacing: 2),
+          style: Cyber.display(StatOzTypography.p9, color: statusColor, letterSpacing: 2),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -2326,7 +2313,7 @@ class CyberLobbyStatusBar extends StatelessWidget {
             child: Text(
               systemLabel.toUpperCase(),
               maxLines: 1,
-              style: Cyber.display(8.5, color: Cyber.muted, letterSpacing: 1.2),
+              style: Cyber.display(StatOzTypography.p8_5, color: Cyber.muted, letterSpacing: 1.2),
             ),
           ),
         ),
@@ -2363,8 +2350,7 @@ class CyberHudStat extends StatelessWidget {
             fit: BoxFit.scaleDown,
             child: Text(
               value,
-              style: Cyber.display(
-                16,
+              style: Cyber.display(StatOzTypography.p16,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ),
@@ -2373,7 +2359,7 @@ class CyberHudStat extends StatelessWidget {
             label.toUpperCase(),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.display(7.5, color: Cyber.muted, letterSpacing: 0.8),
+            style: Cyber.display(StatOzTypography.p7_5, color: Cyber.muted, letterSpacing: 0.8),
           ),
         ],
       ),
@@ -2808,8 +2794,7 @@ class _PitchCardFace extends StatelessWidget {
                               top: 9,
                               child: Text(
                                 role.toUpperCase(),
-                                style: Cyber.label(
-                                  7,
+                                style: Cyber.label(StatOzTypography.p7,
                                   color: AppTheme.whiteColor,
                                   letterSpacing: 0.5,
                                 ),
@@ -2840,7 +2825,7 @@ class _PitchCardFace extends StatelessWidget {
                                           : 12,
                                       color: AppTheme.whiteColor,
                                     ).copyWith(
-                                      fontWeight: FontWeight.w800,
+                                      fontWeight: StatOzTypography.extrabold,
                                       height: 1.08,
                                     ),
                               ),
@@ -2866,8 +2851,7 @@ class _PitchCardFace extends StatelessWidget {
                                       quarterTurns: 2,
                                       child: Text(
                                         value,
-                                        style: Cyber.label(
-                                          9,
+                                        style: Cyber.label(StatOzTypography.p9,
                                           color: Cyber.muted,
                                           letterSpacing: 0,
                                         ),
@@ -3028,19 +3012,19 @@ Future<void> showPitchCardAbility(
         children: [
           Text(
             (player?.shortName ?? action!.title).toUpperCase(),
-            style: Cyber.display(18, color: AppTheme.whiteColor),
+            style: Cyber.display(StatOzTypography.p18, color: AppTheme.whiteColor),
           ),
           const SizedBox(height: 16),
           Text(
             player != null
                 ? pitchPlayerAbility(player)
                 : pitchActionAbility(action!),
-            style: Cyber.bodyFor(context, 14, color: AppTheme.whiteColor),
+            style: Cyber.bodyFor(context, StatOzTypography.p14, color: AppTheme.whiteColor),
           ),
           const SizedBox(height: 12),
           Text(
             'One affinity +4. One scenario match +6. Up to +10 combination power.',
-            style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+            style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
           ),
           const SizedBox(height: 20),
           CyberCtaButton(
@@ -3086,8 +3070,7 @@ class PitchMasteryPanel extends StatelessWidget {
                     : done
                     ? 'GOAL MASTERED'
                     : 'MATCH GOAL',
-                style: Cyber.label(
-                  8,
+                style: Cyber.label(StatOzTypography.p8,
                   color: done ? Cyber.success : Cyber.muted,
                   letterSpacing: 0.8,
                 ),
@@ -3095,23 +3078,21 @@ class PitchMasteryPanel extends StatelessWidget {
               if (progress != null)
                 Text(
                   '$progress/${goal.target}',
-                  style: Cyber.label(
-                    10,
+                  style: Cyber.label(StatOzTypography.p10,
                     color: done ? Cyber.success : Cyber.cyan,
                   ),
                 ),
               if (bestLinks != null)
                 Text(
                   'BEST: $bestLinks/4 LINKS',
-                  style: Cyber.label(8, color: Cyber.muted),
+                  style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                 ),
             ],
           ),
           const SizedBox(height: 6),
           Text(
             goal.title,
-            style: Cyber.label(
-              12,
+            style: Cyber.label(StatOzTypography.p12,
               color: done ? Cyber.success : AppTheme.whiteColor,
               letterSpacing: 0.3,
             ),
@@ -3119,7 +3100,7 @@ class PitchMasteryPanel extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             nextGoal == null ? goal.description : 'UP NEXT: ${nextGoal!.title}',
-            style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+            style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
           ),
         ],
       ),
@@ -3159,13 +3140,12 @@ class PitchContributionStrip extends StatelessWidget {
               children: [
                 Text(
                   entries[i].$1,
-                  style: Cyber.label(7, color: Cyber.muted, letterSpacing: 0.5),
+                  style: Cyber.label(StatOzTypography.p7, color: Cyber.muted, letterSpacing: 0.5),
                 ),
                 Text(
                   '${i == 0 ? '' : '+'}${entries[i].$2}',
                   style:
-                      Cyber.display(
-                        12,
+                      Cyber.display(StatOzTypography.p12,
                         color: i == 3 && power.combo > 0
                             ? Cyber.cyan
                             : AppTheme.whiteColor,
@@ -3319,8 +3299,7 @@ class _PremiumCardShellState extends State<PremiumCardShell>
                                       ),
                                       child: Text(
                                         widget.disabledLabel,
-                                        style: Cyber.label(
-                                          9,
+                                        style: Cyber.label(StatOzTypography.p9,
                                           color:
                                               widget.disabledLabel == 'RESERVED'
                                               ? Cyber.amber
@@ -3445,8 +3424,8 @@ class _SuspendedBanner extends StatelessWidget {
               style: TextStyle(
                 color: Colors.white,
                 fontFamily: Cyber.displayFont,
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
+                fontWeight: StatOzTypography.black,
+                fontSize: StatOzTypography.p12,
                 letterSpacing: 3,
               ),
             ),
@@ -3728,9 +3707,9 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
                           '${playerRoleLabel(card)} - ${card.position.split('/').first}',
                           style: TextStyle(
                             color: posColor,
-                            fontFamily: 'Orbitron',
+                            fontFamily: StatOzTypography.displayFont,
                             fontSize: small ? 6 : (large ? 8 : 7),
-                            fontWeight: FontWeight.w900,
+                            fontWeight: StatOzTypography.black,
                           ),
                         ),
                         Text(
@@ -3738,7 +3717,7 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
                             fontSize: small ? 5 : (large ? 7 : 6),
-                            fontWeight: FontWeight.w700,
+                            fontWeight: StatOzTypography.bold,
                           ),
                         ),
                       ],
@@ -3762,7 +3741,7 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.9),
                         fontSize: small ? 7 : (large ? 10 : 9),
-                        fontWeight: FontWeight.w700,
+                        fontWeight: StatOzTypography.bold,
                       ),
                     ),
                   ),
@@ -3799,8 +3778,8 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white,
-                            fontFamily: 'Orbitron',
-                            fontWeight: FontWeight.w900,
+                            fontFamily: StatOzTypography.displayFont,
+                            fontWeight: StatOzTypography.black,
                             fontSize: small ? 9 : (large ? 13 : 12),
                           ),
                         ),
@@ -3950,9 +3929,9 @@ class _OvrBadge extends StatelessWidget {
               '$rating',
               style: TextStyle(
                 color: Cyber.bg,
-                fontFamily: 'Orbitron',
+                fontFamily: StatOzTypography.displayFont,
                 fontSize: small ? 13 : (large ? 19 : 16),
-                fontWeight: FontWeight.w900,
+                fontWeight: StatOzTypography.black,
                 height: 0.9,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
@@ -3967,9 +3946,9 @@ class _OvrBadge extends StatelessWidget {
               'OVR',
               style: TextStyle(
                 color: Cyber.bg,
-                fontFamily: 'Orbitron',
+                fontFamily: StatOzTypography.displayFont,
                 fontSize: small ? 5 : 6,
-                fontWeight: FontWeight.w900,
+                fontWeight: StatOzTypography.black,
                 letterSpacing: 1,
               ),
             ),
@@ -4229,8 +4208,8 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                               actionCode(widget.card.category),
                               style: const TextStyle(
                                 color: Cyber.bg,
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
+                                fontSize: StatOzTypography.p9,
+                                fontWeight: StatOzTypography.bold,
                               ),
                             ),
                           ),
@@ -4262,8 +4241,8 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                                 // CyberPlayerCardTile's size-aware text.
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontFamily: 'Orbitron',
-                                  fontWeight: FontWeight.w900,
+                                  fontFamily: StatOzTypography.displayFont,
+                                  fontWeight: StatOzTypography.black,
                                   fontSize: large ? 14 : 9,
                                 ),
                               ),
@@ -4274,7 +4253,7 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                                 style: TextStyle(
                                   color: color.withValues(alpha: 0.76),
                                   fontSize: large ? 10 : 7,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: StatOzTypography.bold,
                                 ),
                               ),
                             ],
@@ -4323,8 +4302,8 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                                   style: TextStyle(
                                     color: ratingColor.withValues(alpha: 0.72),
                                     fontFamily: Cyber.displayFont,
-                                    fontSize: 6,
-                                    fontWeight: FontWeight.w900,
+                                    fontSize: StatOzTypography.p6,
+                                    fontWeight: StatOzTypography.black,
                                     height: 1,
                                     letterSpacing: 1.2,
                                   ),
@@ -4336,7 +4315,7 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                                     color: ratingColor,
                                     fontFamily: Cyber.displayFont,
                                     fontSize: large ? 18 : 16,
-                                    fontWeight: FontWeight.w900,
+                                    fontWeight: StatOzTypography.black,
                                     height: 1,
                                     fontFeatures: const [
                                       FontFeature.tabularFigures(),
@@ -4426,8 +4405,8 @@ class CyberChip extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontFamily: Cyber.bodyFontFor(context),
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
+          fontSize: StatOzTypography.p10,
+          fontWeight: StatOzTypography.bold,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),
@@ -4488,8 +4467,7 @@ class CyberDeckPill extends StatelessWidget {
               children: [
                 Text(
                   label.toUpperCase(),
-                  style: Cyber.display(
-                    10,
+                  style: Cyber.display(StatOzTypography.p10,
                     color: selected ? Cyber.bg : Colors.white,
                     letterSpacing: 0.8,
                   ),
@@ -4497,8 +4475,7 @@ class CyberDeckPill extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   meta.toUpperCase(),
-                  style: Cyber.label(
-                    7,
+                  style: Cyber.label(StatOzTypography.p7,
                     color: selected
                         ? Cyber.bg.withValues(alpha: 0.68)
                         : Cyber.muted,
@@ -4869,11 +4846,9 @@ class HudPagerButton extends StatelessWidget {
                   ],
                   Text(
                     label,
-                    style: Cyber.bodyFor(
-                      context,
-                      16,
+                    style: Cyber.bodyFor(context, StatOzTypography.p16,
                       color: content,
-                      weight: FontWeight.w800,
+                      weight: StatOzTypography.bold,
                     ).copyWith(letterSpacing: 0.8),
                   ),
                   if (trailingIcon != null) ...[
@@ -5085,11 +5060,9 @@ class CountdownBlock extends StatelessWidget {
         Text(
           caption,
           textAlign: TextAlign.center,
-          style: Cyber.bodyFor(
-            context,
-            12,
+          style: Cyber.bodyFor(context, StatOzTypography.p12,
             color: accent.withValues(alpha: 0.7),
-            weight: FontWeight.w700,
+            weight: StatOzTypography.bold,
             letterSpacing: 0.3,
           ),
         ),
@@ -5456,7 +5429,7 @@ class _GlidingTab extends StatelessWidget {
                 style: Cyber.label(
                   active ? 12 : 10,
                   color: color,
-                  weight: active ? FontWeight.w900 : FontWeight.w600,
+                  weight: active ? StatOzTypography.black : StatOzTypography.semibold,
                   letterSpacing: active ? 0.5 : 0.3,
                   height: active ? 1.25 : 1.5,
                 ),
@@ -5710,6 +5683,7 @@ class CyberTelemetryFooter extends StatelessWidget {
     this.leadingColor = Cyber.cyan,
     this.trailingColor = Cyber.muted,
     this.leadingIcon,
+    this.leadingMark,
     this.leadingIconColor,
     this.height = 36,
     super.key,
@@ -5720,6 +5694,7 @@ class CyberTelemetryFooter extends StatelessWidget {
   final Color leadingColor;
   final Color trailingColor;
   final IconData? leadingIcon;
+  final Widget? leadingMark;
   final Color? leadingIconColor;
   final double height;
 
@@ -5731,12 +5706,13 @@ class CyberTelemetryFooter extends StatelessWidget {
       color: Cyber.bg2,
       child: Row(
         children: [
-          if (leadingIcon != null) ...[
-            Icon(
-              leadingIcon,
-              size: 12,
-              color: leadingIconColor ?? leadingColor,
-            ),
+          if (leadingIcon != null || leadingMark != null) ...[
+            leadingMark ??
+                Icon(
+                  leadingIcon!,
+                  size: 12,
+                  color: leadingIconColor ?? leadingColor,
+                ),
             const SizedBox(width: 6),
           ],
           Expanded(
@@ -5744,8 +5720,7 @@ class CyberTelemetryFooter extends StatelessWidget {
               leading.toUpperCase(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.label(
-                10,
+              style: Cyber.label(StatOzTypography.p10,
                 color: leadingColor,
                 letterSpacing: 0.7,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -5758,8 +5733,7 @@ class CyberTelemetryFooter extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.end,
-              style: Cyber.label(
-                10,
+              style: Cyber.label(StatOzTypography.p10,
                 color: trailingColor,
                 letterSpacing: 0.4,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -5997,7 +5971,7 @@ class CyberStatusPill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Cyber.label(8, color: color, letterSpacing: 0.8),
+        style: Cyber.label(StatOzTypography.p8, color: color, letterSpacing: 0.8),
       ),
     );
   }

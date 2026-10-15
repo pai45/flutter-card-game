@@ -1,3 +1,4 @@
+import 'package:card_game/widgets/cyber/statoz_icons.dart';
 import 'package:card_game/config/theme.dart';
 import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/screens/onboarding/profile_setup_screen.dart';
@@ -39,25 +40,25 @@ void main() {
       findsNothing,
     );
     expect(find.byKey(const ValueKey('onboarding_team_grid')), findsNothing);
-    expect(_sportTile(Icons.sports_soccer), findsOneWidget);
+    expect(_sportTile(Sport.football), findsOneWidget);
     expect(
-      tester.widget<Icon>(_sportTile(Icons.sports_soccer)).color,
+      tester.widget<StatozSportIcon>(_sportTile(Sport.football)).color,
       Cyber.cyan,
     );
     expect(
-      tester.widget<Icon>(_sportTile(Icons.sports_cricket)).color,
+      tester.widget<StatozSportIcon>(_sportTile(Sport.cricket)).color,
       AppTheme.whiteColor.withValues(alpha: 0.62),
     );
     expect(
-      tester.widget<Icon>(_sportTile(Icons.sports_basketball)).color,
+      tester.widget<StatozSportIcon>(_sportTile(Sport.basketball)).color,
       Cyber.gold.withValues(alpha: 0.62),
     );
     expect(
-      tester.widget<Icon>(_sportTile(Icons.sports_tennis)).color,
+      tester.widget<StatozSportIcon>(_sportTile(Sport.tennis)).color,
       Cyber.lime.withValues(alpha: 0.62),
     );
     expect(
-      tester.widget<Icon>(_sportTile(Icons.sports_motorsports)).color,
+      tester.widget<StatozSportIcon>(_sportTile(Sport.motorsport)).color,
       Cyber.f1Red.withValues(alpha: 0.62),
     );
 
@@ -103,11 +104,11 @@ void main() {
 
     // Cricket takes over; football drops back to the calm unselected tint.
     expect(
-      tester.widget<Icon>(_sportTile(Icons.sports_cricket)).color,
+      tester.widget<StatozSportIcon>(_sportTile(Sport.cricket)).color,
       AppTheme.whiteColor,
     );
     expect(
-      tester.widget<Icon>(_sportTile(Icons.sports_soccer)).color,
+      tester.widget<StatozSportIcon>(_sportTile(Sport.football)).color,
       Cyber.cyan.withValues(alpha: 0.62),
     );
     expect(find.text('HOME SPORT'), findsOneWidget);
@@ -115,7 +116,7 @@ void main() {
     // Re-tapping the home sport never deselects it.
     await _tapTile(tester, 'CRICKET');
     expect(
-      tester.widget<Icon>(_sportTile(Icons.sports_cricket)).color,
+      tester.widget<StatozSportIcon>(_sportTile(Sport.cricket)).color,
       AppTheme.whiteColor,
     );
   });
@@ -176,9 +177,9 @@ void main() {
   });
 }
 
-Finder _sportTile(IconData icon) => find.descendant(
+Finder _sportTile(Sport sport) => find.descendant(
   of: find.byKey(const ValueKey('onboarding_sport_grid')),
-  matching: find.byIcon(icon),
+  matching: find.byWidgetPredicate((widget) => widget is StatozSportIcon && widget.sport == sport),
 );
 
 Future<void> _pumpProfileSetup(

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -233,7 +234,7 @@ class _PitchStatusBar extends StatelessWidget {
           'SYS://FINAL_OVER v1.0.0 — PITCH READY',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 1.4),
+          style: Cyber.label(StatOzTypography.p8_5, color: Cyber.muted, letterSpacing: 1.4),
         ),
       ),
     ],
@@ -274,12 +275,12 @@ class _HeroRow extends StatelessWidget {
           children: [
             Text(
               'FINAL OVER',
-              style: Cyber.display(24, color: Colors.white, letterSpacing: 2),
+              style: Cyber.display(StatOzTypography.p24, color: Colors.white, letterSpacing: 2),
             ),
             const SizedBox(height: 4),
             Text(
               'THREE OVERS. FIVE BATTERS. ONE CHASE.',
-              style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 1.4),
+              style: Cyber.label(StatOzTypography.p8_5, color: Cyber.muted, letterSpacing: 1.4),
             ),
             const SizedBox(height: 8),
             CyberChip(label: tier.blurb, color: Cyber.cyan),
@@ -328,15 +329,14 @@ class _RecordStat extends StatelessWidget {
       children: [
         Text(
           value,
-          style: Cyber.display(
-            18,
+          style: Cyber.display(StatOzTypography.p18,
             color: Colors.white,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 1),
+          style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted, letterSpacing: 1),
         ),
       ],
     ),
@@ -379,8 +379,7 @@ class _TierPicker extends StatelessWidget {
                     children: [
                       Text(
                         tier.label,
-                        style: Cyber.display(
-                          12,
+                        style: Cyber.display(StatOzTypography.p12,
                           color: tier == selected ? Cyber.cyan : Cyber.muted,
                           letterSpacing: 1.4,
                         ),
@@ -388,8 +387,7 @@ class _TierPicker extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         tier.range,
-                        style: Cyber.label(
-                          8,
+                        style: Cyber.label(StatOzTypography.p8,
                           color: Cyber.muted,
                           letterSpacing: 1,
                           fontFeatures: const [FontFeature.tabularFigures()],

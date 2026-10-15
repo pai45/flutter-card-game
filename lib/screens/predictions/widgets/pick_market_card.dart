@@ -1,9 +1,12 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
 import '../../../models/picks.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
+import '../../../widgets/cyber/match_discovery.dart';
+import '../../../models/sport_match.dart';
 import '../../../widgets/cyber/fixture_card.dart';
 import 'pick_status_style.dart';
 
@@ -31,16 +34,19 @@ class PickMarketCard extends StatefulWidget {
 
 class _PickMarketCardState extends State<PickMarketCard>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1100),
-  );
+  late final AnimationController _pulse;
 
-  bool get _isLive => widget.market.status == PickMarketStatus.live;
+  bool get _isLive =>
+      widget.market.sport == Sport.tennis &&
+      widget.market.status == PickMarketStatus.live;
 
   @override
   void initState() {
     super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    );
     if (_isLive) _pulse.repeat(reverse: true);
   }
 
@@ -62,6 +68,19 @@ class _PickMarketCardState extends State<PickMarketCard>
 
   @override
   Widget build(BuildContext context) {
+    if (widget.market.sport != Sport.tennis) {
+      return widget.market.type == PickMarketType.event
+          ? EditorialEventsPanel(
+              markets: [widget.market],
+              onOpen: (_) => widget.onOpen(),
+            )
+          : EditorialMarketCard(
+              market: widget.market,
+              positions: widget.positions,
+              onOpen: widget.onOpen,
+              onBuy: widget.onBuy,
+            );
+    }
     final market = widget.market;
     final visibleOutcomes = market.outcomes.take(3).toList();
     final showMatchTeams =
@@ -111,8 +130,8 @@ class _PickMarketCardState extends State<PickMarketCard>
               overflow: TextOverflow.ellipsis,
               style: Cyber.bodyFor(
                 context,
-                18,
-                weight: FontWeight.w700,
+                StatOzTypography.p18,
+                weight: StatOzTypography.bold,
                 height: 1.12,
               ),
             ),
@@ -124,9 +143,9 @@ class _PickMarketCardState extends State<PickMarketCard>
                 overflow: TextOverflow.ellipsis,
                 style: Cyber.bodyFor(
                   context,
-                  11,
+                  StatOzTypography.p11,
                   color: const Color(0xff9fb0c2),
-                  weight: FontWeight.w600,
+                  weight: StatOzTypography.semibold,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
@@ -174,7 +193,9 @@ class _PickMarketCardState extends State<PickMarketCard>
   String? _contextLine(PickMarket market) {
     final hasTeams = market.homeLabel != null && market.awayLabel != null;
     if (hasTeams) {
-      if (market.homeScore == null && market.awayScore == null) return null;
+      if (market.homeScore == null && market.awayScore == null) {
+        return null;
+      }
       return '${market.homeLabel} ${market.homeScore ?? '-'}'
           '  —  '
           '${market.awayScore ?? '-'} ${market.awayLabel}';
@@ -294,8 +315,8 @@ class _TeamNameText extends StatelessWidget {
         textAlign: textAlign,
         style: Cyber.bodyFor(
           context,
-          18,
-          weight: FontWeight.w700,
+          StatOzTypography.p18,
+          weight: StatOzTypography.bold,
           height: 1.12,
         ),
       ),
@@ -343,9 +364,9 @@ class _StatusTag extends StatelessWidget {
             style:
                 Cyber.bodyFor(
                   context,
-                  12.5,
+                  StatOzTypography.p12_5,
                   color: Cyber.danger,
-                  weight: FontWeight.w800,
+                  weight: StatOzTypography.bold,
                 ).copyWith(
                   letterSpacing: 0.8,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -360,9 +381,9 @@ class _StatusTag extends StatelessWidget {
         style:
             Cyber.bodyFor(
               context,
-              12,
+              StatOzTypography.p12,
               color: kFixtureTimeGold,
-              weight: FontWeight.w700,
+              weight: StatOzTypography.bold,
             ).copyWith(
               letterSpacing: 1,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -373,9 +394,9 @@ class _StatusTag extends StatelessWidget {
       pickMarketStatusLabel(market.status),
       style: Cyber.bodyFor(
         context,
-        11,
+        StatOzTypography.p11,
         color: pickMarketStatusColor(market.status),
-        weight: FontWeight.w700,
+        weight: StatOzTypography.bold,
       ).copyWith(letterSpacing: 0.6),
     );
   }
@@ -402,15 +423,20 @@ class _LeagueMark extends StatelessWidget {
             _leagueCode(label),
             maxLines: 1,
             overflow: TextOverflow.clip,
-            style: Cyber.display(12, color: ink, letterSpacing: 0.6).copyWith(
-              height: 1,
-              shadows: [
-                Shadow(
-                  color: Colors.black.withValues(alpha: 0.22),
-                  blurRadius: 6,
+            style:
+                Cyber.display(
+                  StatOzTypography.p12,
+                  color: ink,
+                  letterSpacing: 0.6,
+                ).copyWith(
+                  height: 1,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withValues(alpha: 0.22),
+                      blurRadius: 6,
+                    ),
+                  ],
                 ),
-              ],
-            ),
           ),
         ),
       ),
@@ -436,7 +462,7 @@ class _PickTypePill extends StatelessWidget {
       child: Text(
         pickMarketTypeLabel(type),
         style: Cyber.label(
-          8.5,
+          StatOzTypography.p8_5,
           color: Cyber.muted.withValues(alpha: 0.9),
           letterSpacing: 1.1,
         ),
@@ -518,7 +544,11 @@ class _OutcomeBadge extends StatelessWidget {
                   fit: BoxFit.scaleDown,
                   child: Text(
                     pickOutcomeCode(outcome.label),
-                    style: Cyber.label(15, color: ink, letterSpacing: 0.5),
+                    style: Cyber.label(
+                      StatOzTypography.p15,
+                      color: ink,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -528,8 +558,12 @@ class _OutcomeBadge extends StatelessWidget {
                     _DeltaArrow(delta: delta, ink: ink),
                     Text(
                       '${outcome.probabilityPercent}%',
-                      style: Cyber.display(15, color: ink, letterSpacing: 0)
-                          .copyWith(
+                      style:
+                          Cyber.display(
+                            StatOzTypography.p15,
+                            color: ink,
+                            letterSpacing: 0,
+                          ).copyWith(
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                     ),
@@ -601,14 +635,16 @@ class _DeltaArrow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final d = delta;
-    if (d == null || d.abs() < 2) return const SizedBox.shrink();
+    if (d == null || d.abs() < 2) {
+      return const SizedBox.shrink();
+    }
     final up = d > 0;
     return Padding(
       padding: const EdgeInsets.only(right: 4),
       child: Text(
         '${up ? '▲' : '▼'}${d.abs()}',
         style: Cyber.label(
-          8,
+          StatOzTypography.p8,
           color: ink.withValues(alpha: 0.9),
           letterSpacing: 0,
           fontFeatures: const [FontFeature.tabularFigures()],
@@ -643,7 +679,11 @@ class _Strip extends StatelessWidget {
                 Expanded(
                   child: Text(
                     'RESULT READY — TAP TO CLAIM',
-                    style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1),
+                    style: Cyber.label(
+                      StatOzTypography.p9,
+                      color: Cyber.gold,
+                      letterSpacing: 1,
+                    ),
                   ),
                 ),
               ],
@@ -676,7 +716,7 @@ class _Strip extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Cyber.label(
-                      8.5,
+                      StatOzTypography.p8_5,
                       color: Cyber.cyan,
                       letterSpacing: 0.8,
                       fontFeatures: const [FontFeature.tabularFigures()],
@@ -686,7 +726,7 @@ class _Strip extends StatelessWidget {
                 Text(
                   'VOL ${formatOzCompact(market.volumeOz)} OZ',
                   style: Cyber.label(
-                    8,
+                    StatOzTypography.p8,
                     color: Cyber.muted.withValues(alpha: 0.7),
                     letterSpacing: 0.8,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -714,7 +754,7 @@ class _Strip extends StatelessWidget {
               Text(
                 '${more}VOL ${formatOzCompact(market.volumeOz)} OZ',
                 style: Cyber.label(
-                  8,
+                  StatOzTypography.p8,
                   color: Cyber.muted.withValues(alpha: 0.7),
                   letterSpacing: 0.8,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -739,7 +779,9 @@ class _OutcomeShareBar extends StatelessWidget {
       0,
       (sum, outcome) => sum + outcome.probabilityPercent,
     );
-    if (total <= 0) return const SizedBox.shrink();
+    if (total <= 0) {
+      return const SizedBox.shrink();
+    }
 
     return SizedBox(
       height: 3,
@@ -788,16 +830,26 @@ class _OutcomeShareBarPainter extends CustomPainter {
 
 String _closesLabel(DateTime closesAt) {
   final diff = closesAt.difference(DateTime.now());
-  if (diff.isNegative) return 'SOON';
-  if (diff.inMinutes < 60) return '${diff.inMinutes}M';
-  if (diff.inHours < 24) return '${diff.inHours}H';
+  if (diff.isNegative) {
+    return 'SOON';
+  }
+  if (diff.inMinutes < 60) {
+    return '${diff.inMinutes}M';
+  }
+  if (diff.inHours < 24) {
+    return '${diff.inHours}H';
+  }
   return '${diff.inDays}D';
 }
 
 String _leagueCode(String label) {
   final compact = label.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
-  if (compact.isEmpty) return 'LGE';
-  if (compact.length <= 3) return compact.padRight(3, ' ');
+  if (compact.isEmpty) {
+    return 'LGE';
+  }
+  if (compact.length <= 3) {
+    return compact.padRight(3, ' ');
+  }
   return compact.substring(0, 3);
 }
 

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 
 import 'package:final_over/final_over.dart';
@@ -95,7 +96,7 @@ class _BowlerLine extends StatelessWidget {
             children: [
               Text(
                 'BOWLING · ${game.bowlerName.value}',
-                style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.3),
+                style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1.3),
               ),
               if (next != null) ...[
                 const SizedBox(width: 8),
@@ -127,15 +128,13 @@ class _ScoreBlock extends StatelessWidget {
             children: [
               Text(
                 '${game.score.value}',
-                style: Cyber.display(
-                  30,
+                style: Cyber.display(StatOzTypography.p30,
                   color: Colors.white,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
               Text(
                 '/${game.wickets.value}',
-                style: Cyber.display(
-                  17,
+                style: Cyber.display(StatOzTypography.p17,
                   color: Cyber.muted,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
@@ -143,7 +142,7 @@ class _ScoreBlock extends StatelessWidget {
           ),
           Text(
             'TARGET ${game.target.value}',
-            style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.4),
+            style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1.4),
           ),
         ],
       ),
@@ -177,16 +176,14 @@ class _ChaseCluster extends StatelessWidget {
           children: [
             Text(
               need <= 0 ? 'DONE' : 'NEED $need',
-              style: Cyber.display(
-                20,
+              style: Cyber.display(StatOzTypography.p20,
                 color: color,
                 letterSpacing: 1,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
             Text(
               'OFF $balls ${balls == 1 ? 'BALL' : 'BALLS'}',
-              style: Cyber.label(
-                8,
+              style: Cyber.label(StatOzTypography.p8,
                 color: desperate ? Cyber.danger : Cyber.muted,
                 letterSpacing: 1.4,
               ),
@@ -335,8 +332,7 @@ class _BallToken extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: Cyber.display(
-            11,
+          style: Cyber.display(StatOzTypography.p11,
             color: filled ? color : Cyber.muted,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
@@ -358,7 +354,7 @@ class _ExtraToken extends StatelessWidget {
     ),
     child: Text(
       result.extra == ExtraType.noBall ? 'NB' : 'WD',
-      style: Cyber.label(7, color: Cyber.amber, letterSpacing: 0.8),
+      style: Cyber.label(StatOzTypography.p7, color: Cyber.amber, letterSpacing: 0.8),
     ),
   );
 }
@@ -460,8 +456,7 @@ class FinalOverOverdriveRail extends StatelessWidget {
                                         label,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: Cyber.label(
-                                          7.5,
+                                        style: Cyber.label(StatOzTypography.p7_5,
                                           color: canArm || armed
                                               ? Cyber.gold
                                               : Cyber.muted,
@@ -485,8 +480,7 @@ class FinalOverOverdriveRail extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Text(
                                   '$segments/$requirement',
-                                  style: Cyber.label(
-                                    8,
+                                  style: Cyber.label(StatOzTypography.p8,
                                     color: canArm || armed
                                         ? Cyber.gold
                                         : Cyber.muted,

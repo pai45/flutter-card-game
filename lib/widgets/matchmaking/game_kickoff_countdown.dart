@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
@@ -124,8 +125,7 @@ class _GameKickoffCountdownState extends State<GameKickoffCountdown>
         children: [
           Text(
             'MATCH STARTING IN',
-            style: Cyber.label(
-              11,
+            style: Cyber.label(StatOzTypography.p11,
               color: Cyber.cyan.withValues(alpha: 0.55),
               letterSpacing: 2.5,
             ),
@@ -137,12 +137,11 @@ class _GameKickoffCountdownState extends State<GameKickoffCountdown>
               opacity: opacity.clamp(0.0, 1.0),
               child: Text(
                 '$_countdown',
-                style: Cyber.display(
-                  128,
+                style: Cyber.display(StatOzTypography.p128,
                   color: Cyber.lime,
                   letterSpacing: 0,
                 ).copyWith(
-                  fontWeight: FontWeight.w900,
+                  fontWeight: StatOzTypography.black,
                   shadows: [
                     Shadow(
                       color: Cyber.lime.withValues(alpha: glow),
@@ -195,8 +194,7 @@ class _GameKickoffCountdownState extends State<GameKickoffCountdown>
                   child: Text(
                     widget.goLabel,
                     style:
-                        Cyber.display(
-                          42,
+                        Cyber.display(StatOzTypography.p42,
                           color: Cyber.lime,
                           letterSpacing: 4,
                         ).copyWith(

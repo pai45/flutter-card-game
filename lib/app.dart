@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -1080,7 +1081,7 @@ class _AppShellState extends State<AppShell>
                     const SizedBox(height: 24),
                     Text(
                       'Loading...',
-                      style: TextStyle(color: Cyber.cyan, fontSize: 16),
+                      style: TextStyle(color: Cyber.cyan, fontSize: StatOzTypography.p16),
                     ),
                   ],
                 ),

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math';
 import 'package:flutter/services.dart';
 import '../../data/followable_leagues.dart';
@@ -30,6 +31,7 @@ import '../../widgets/card_unpack_animation.dart';
 import '../../widgets/cyber/cyber_filter_chips.dart';
 import '../../widgets/cyber/sport_underline_tabs.dart';
 import '../../widgets/cyber/cyber_underline_tabs.dart';
+import '../../widgets/cyber/statoz_icons.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/staggered_card_entrance.dart';
@@ -102,8 +104,11 @@ final _shopSportLabels = _shopSports
     )
     .toList(growable: false);
 
-final _shopSportIcons = _shopSports
-    .map((sport) => sportModuleFor(sport).icon)
+final _shopSportIconBuilders = _shopSports
+    .map(
+      (sport) =>
+          (Color color) => StatozSportIcon(sport: sport, color: color),
+    )
     .toList(growable: false);
 
 final _shopSportColors = _shopSports
@@ -584,7 +589,7 @@ class _ShopSportsTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     final tabs = CyberUnderlineTabs(
       labels: _shopSportLabels,
-      icons: _shopSportIcons,
+      iconBuilders: _shopSportIconBuilders,
       iconColors: _shopSportColors,
       activeIndex: activeIndex,
       accent: sportModuleFor(selectedSport).accent,
@@ -912,9 +917,9 @@ class _FinalOverKitShopTile extends StatelessWidget {
                           kit.name,
                           style: TextStyle(
                             color: Colors.white,
-                            fontFamily: 'Orbitron',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
+                            fontFamily: StatOzTypography.displayFont,
+                            fontSize: StatOzTypography.p16,
+                            fontWeight: StatOzTypography.black,
                             letterSpacing: 1.2,
                           ),
                         ),
@@ -923,9 +928,9 @@ class _FinalOverKitShopTile extends StatelessWidget {
                           'FINAL OVER KIT',
                           style: TextStyle(
                             color: Colors.white54,
-                            fontFamily: 'Orbitron',
-                            fontSize: 8,
-                            fontWeight: FontWeight.w700,
+                            fontFamily: StatOzTypography.displayFont,
+                            fontSize: StatOzTypography.p8,
+                            fontWeight: StatOzTypography.bold,
                             letterSpacing: 1.2,
                           ),
                         ),
@@ -970,9 +975,9 @@ class _FinalOverKitShopTile extends StatelessWidget {
           isFinalOverKitFree(kit) ? 'FREE // OWNED' : 'OWNED',
           style: TextStyle(
             color: kit.accent,
-            fontFamily: 'Orbitron',
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
+            fontFamily: StatOzTypography.displayFont,
+            fontSize: StatOzTypography.p10,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 1.4,
           ),
         ),
@@ -1056,9 +1061,9 @@ class _GrandPrixLiveryShopTile extends StatelessWidget {
                           spec.name,
                           style: TextStyle(
                             color: Colors.white,
-                            fontFamily: 'Orbitron',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
+                            fontFamily: StatOzTypography.displayFont,
+                            fontSize: StatOzTypography.p16,
+                            fontWeight: StatOzTypography.black,
                             letterSpacing: 1.2,
                           ),
                         ),
@@ -1067,9 +1072,9 @@ class _GrandPrixLiveryShopTile extends StatelessWidget {
                           'GRAND PRIX LIVERY',
                           style: TextStyle(
                             color: Colors.white54,
-                            fontFamily: 'Orbitron',
-                            fontSize: 8,
-                            fontWeight: FontWeight.w700,
+                            fontFamily: StatOzTypography.displayFont,
+                            fontSize: StatOzTypography.p8,
+                            fontWeight: StatOzTypography.bold,
                             letterSpacing: 1.2,
                           ),
                         ),
@@ -1112,9 +1117,9 @@ class _GrandPrixLiveryShopTile extends StatelessWidget {
           isGrandPrixLiveryFree(spec.livery) ? 'FREE // OWNED' : 'OWNED',
           style: TextStyle(
             color: spec.accent,
-            fontFamily: 'Orbitron',
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
+            fontFamily: StatOzTypography.displayFont,
+            fontSize: StatOzTypography.p10,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 1.4,
           ),
         ),
@@ -1248,9 +1253,9 @@ class _BasketballTeamShopTile extends StatelessWidget {
                           team.name.toUpperCase(),
                           style: const TextStyle(
                             color: Colors.white,
-                            fontFamily: 'Orbitron',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
+                            fontFamily: StatOzTypography.displayFont,
+                            fontSize: StatOzTypography.p16,
+                            fontWeight: StatOzTypography.black,
                             letterSpacing: 1.2,
                           ),
                         ),
@@ -1259,9 +1264,9 @@ class _BasketballTeamShopTile extends StatelessWidget {
                           'HOOP DUEL JERSEY',
                           style: TextStyle(
                             color: Colors.white54,
-                            fontFamily: 'Orbitron',
-                            fontSize: 8,
-                            fontWeight: FontWeight.w700,
+                            fontFamily: StatOzTypography.displayFont,
+                            fontSize: StatOzTypography.p8,
+                            fontWeight: StatOzTypography.bold,
                             letterSpacing: 1.2,
                           ),
                         ),
@@ -1310,9 +1315,9 @@ class _BasketballTeamShopTile extends StatelessWidget {
           isBasketballTeamFree(team) ? 'FREE // OWNED' : 'OWNED',
           style: TextStyle(
             color: team.accent,
-            fontFamily: 'Orbitron',
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
+            fontFamily: StatOzTypography.displayFont,
+            fontSize: StatOzTypography.p10,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 1.4,
           ),
         ),
@@ -1483,9 +1488,9 @@ class _FrameShopTile extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontFamily: 'Orbitron',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
+                      fontFamily: StatOzTypography.displayFont,
+                      fontSize: StatOzTypography.p11,
+                      fontWeight: StatOzTypography.extrabold,
                       letterSpacing: 0.6,
                     ),
                   ),
@@ -1509,9 +1514,9 @@ class _FrameShopTile extends StatelessWidget {
           'EQUIPPED',
           style: TextStyle(
             color: primary,
-            fontFamily: 'Orbitron',
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
+            fontFamily: StatOzTypography.displayFont,
+            fontSize: StatOzTypography.p10,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 1.4,
           ),
         ),
@@ -1531,9 +1536,9 @@ class _FrameShopTile extends StatelessWidget {
             'EQUIP',
             style: TextStyle(
               color: primary,
-              fontFamily: 'Orbitron',
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
+              fontFamily: StatOzTypography.displayFont,
+              fontSize: StatOzTypography.p10,
+              fontWeight: StatOzTypography.black,
               letterSpacing: 1.4,
             ),
           ),
@@ -1648,9 +1653,9 @@ class _AvatarShopTile extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontFamily: 'Orbitron',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
+                          fontFamily: StatOzTypography.displayFont,
+                          fontSize: StatOzTypography.p11,
+                          fontWeight: StatOzTypography.extrabold,
                           letterSpacing: 0.6,
                         ),
                       ),
@@ -1676,9 +1681,9 @@ class _AvatarShopTile extends StatelessWidget {
           'OWNED',
           style: TextStyle(
             color: _cyan,
-            fontFamily: 'Orbitron',
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
+            fontFamily: StatOzTypography.displayFont,
+            fontSize: StatOzTypography.p10,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 1.4,
           ),
         ),
@@ -1809,9 +1814,9 @@ class _BannerShopTile extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontFamily: 'Orbitron',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
+                      fontFamily: StatOzTypography.displayFont,
+                      fontSize: StatOzTypography.p11,
+                      fontWeight: StatOzTypography.extrabold,
                       letterSpacing: 0.6,
                     ),
                   ),
@@ -1835,9 +1840,9 @@ class _BannerShopTile extends StatelessWidget {
           'OWNED',
           style: TextStyle(
             color: item.accent,
-            fontFamily: 'Orbitron',
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
+            fontFamily: StatOzTypography.displayFont,
+            fontSize: StatOzTypography.p10,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 1.4,
           ),
         ),
@@ -2091,9 +2096,9 @@ class _CoinTierTile extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontFamily: 'Orbitron',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w800,
+                          fontFamily: StatOzTypography.displayFont,
+                          fontSize: StatOzTypography.p11,
+                          fontWeight: StatOzTypography.extrabold,
                           letterSpacing: 0.6,
                         ),
                       ),
@@ -2300,9 +2305,9 @@ class _PackRevealSequenceScreenState extends State<_PackRevealSequenceScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: widget.packAccent,
-                  fontFamily: 'Orbitron',
-                  fontWeight: FontWeight.w900,
-                  fontSize: 20,
+                  fontFamily: StatOzTypography.displayFont,
+                  fontWeight: StatOzTypography.black,
+                  fontSize: StatOzTypography.p20,
                   letterSpacing: 1.2,
                   shadows: [
                     Shadow(
@@ -2318,9 +2323,9 @@ class _PackRevealSequenceScreenState extends State<_PackRevealSequenceScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: widget.packAccent.withValues(alpha: 0.7),
-                  fontFamily: 'Orbitron',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+                  fontFamily: StatOzTypography.displayFont,
+                  fontSize: StatOzTypography.p11,
+                  fontWeight: StatOzTypography.bold,
                   letterSpacing: 1.4,
                 ),
               ),
@@ -2344,9 +2349,9 @@ class _PackRevealSequenceScreenState extends State<_PackRevealSequenceScreen> {
                       'TOP PULL',
                       style: TextStyle(
                         color: widget.packAccent,
-                        fontFamily: 'Orbitron',
-                        fontWeight: FontWeight.w900,
-                        fontSize: 11,
+                        fontFamily: StatOzTypography.displayFont,
+                        fontWeight: StatOzTypography.black,
+                        fontSize: StatOzTypography.p11,
                         letterSpacing: 2,
                       ),
                     ),
@@ -2376,9 +2381,9 @@ class _PackRevealSequenceScreenState extends State<_PackRevealSequenceScreen> {
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontFamily: 'Orbitron',
-                  fontWeight: FontWeight.w900,
-                  fontSize: 13,
+                  fontFamily: StatOzTypography.displayFont,
+                  fontWeight: StatOzTypography.black,
+                  fontSize: StatOzTypography.p13,
                   letterSpacing: 0.6,
                 ),
               ),
@@ -2388,9 +2393,9 @@ class _PackRevealSequenceScreenState extends State<_PackRevealSequenceScreen> {
                   'REST OF PACK',
                   style: TextStyle(
                     color: _cyan.withValues(alpha: 0.7),
-                    fontFamily: 'Orbitron',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
+                    fontFamily: StatOzTypography.displayFont,
+                    fontSize: StatOzTypography.p10,
+                    fontWeight: StatOzTypography.black,
                     letterSpacing: 2,
                   ),
                 ),
@@ -2428,9 +2433,9 @@ class _PackRevealSequenceScreenState extends State<_PackRevealSequenceScreen> {
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontFamily: 'Orbitron',
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
+                                  fontFamily: StatOzTypography.displayFont,
+                                  fontSize: StatOzTypography.p9,
+                                  fontWeight: StatOzTypography.bold,
                                 ),
                               ),
                             ],
@@ -2521,8 +2526,8 @@ class _PackTile extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: accent,
-                          fontFamily: 'Orbitron',
-                          fontWeight: FontWeight.w900,
+                          fontFamily: StatOzTypography.displayFont,
+                          fontWeight: StatOzTypography.black,
                           fontSize: titleSize,
                           letterSpacing: 0.6,
                           height: 1.15,
@@ -2543,8 +2548,8 @@ class _PackTile extends StatelessWidget {
                             '${pack.cardCount} CARDS',
                             style: TextStyle(
                               color: _cyan,
-                              fontFamily: 'Orbitron',
-                              fontWeight: FontWeight.w700,
+                              fontFamily: StatOzTypography.displayFont,
+                              fontWeight: StatOzTypography.bold,
                               fontSize: metaSize,
                               letterSpacing: 1.0,
                             ),
@@ -2579,9 +2584,9 @@ class _PackTile extends StatelessWidget {
               'CLAIMED',
               style: TextStyle(
                 color: accent.withValues(alpha: 0.5),
-                fontFamily: 'Orbitron',
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
+                fontFamily: StatOzTypography.displayFont,
+                fontSize: StatOzTypography.p10,
+                fontWeight: StatOzTypography.black,
                 letterSpacing: 1.4,
               ),
             ),
@@ -2603,9 +2608,9 @@ class _PackTile extends StatelessWidget {
                         'FREE',
                         style: TextStyle(
                           color: accent,
-                          fontFamily: 'Orbitron',
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
+                          fontFamily: StatOzTypography.displayFont,
+                          fontSize: StatOzTypography.p12,
+                          fontWeight: StatOzTypography.black,
                           letterSpacing: 1.4,
                         ),
                       )
@@ -2623,9 +2628,9 @@ class _PackTile extends StatelessWidget {
                     '₹${_formatInt(pack.inrPrice)}',
                     style: TextStyle(
                       color: accent,
-                      fontFamily: 'Orbitron',
-                      fontWeight: FontWeight.w900,
-                      fontSize: 12,
+                      fontFamily: StatOzTypography.displayFont,
+                      fontWeight: StatOzTypography.black,
+                      fontSize: StatOzTypography.p12,
                     ),
                   ),
                 ),
@@ -3095,8 +3100,8 @@ class _PackDesignPainter extends CustomPainter {
           color: gradientAccent
               ? const Color(0xffff3df7)
               : accent.withValues(alpha: 0.90),
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
+          fontSize: StatOzTypography.p11,
+          fontWeight: StatOzTypography.bold,
           letterSpacing: 1.5,
         ),
       ),
@@ -3298,9 +3303,9 @@ class _PurchasableCardTile extends StatelessWidget {
                   'OWNED',
                   style: TextStyle(
                     color: rarityColor,
-                    fontFamily: 'Orbitron',
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
+                    fontFamily: StatOzTypography.displayFont,
+                    fontSize: StatOzTypography.p10,
+                    fontWeight: StatOzTypography.black,
                     letterSpacing: 1.4,
                   ),
                 ),
@@ -3322,9 +3327,9 @@ class _PurchasableCardTile extends StatelessWidget {
                         _formatInt(coinPrice),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontFamily: 'Orbitron',
-                          fontWeight: FontWeight.w900,
-                          fontSize: 12,
+                          fontFamily: StatOzTypography.displayFont,
+                          fontWeight: StatOzTypography.black,
+                          fontSize: StatOzTypography.p12,
                         ),
                       ),
                     ],
@@ -3341,9 +3346,9 @@ class _PurchasableCardTile extends StatelessWidget {
                     '₹${_formatInt(_cardInrPrice(card))}',
                     style: TextStyle(
                       color: rarityColor,
-                      fontFamily: 'Orbitron',
-                      fontWeight: FontWeight.w900,
-                      fontSize: 12,
+                      fontFamily: StatOzTypography.displayFont,
+                      fontWeight: StatOzTypography.black,
+                      fontSize: StatOzTypography.p12,
                     ),
                   ),
                 ),
@@ -3545,9 +3550,9 @@ class _CelebrationOverlay extends StatelessWidget {
             '+${_formatInt(amount)} COINS',
             style: const TextStyle(
               color: _cyan,
-              fontFamily: 'Orbitron',
-              fontSize: 34,
-              fontWeight: FontWeight.w900,
+              fontFamily: StatOzTypography.displayFont,
+              fontSize: StatOzTypography.p34,
+              fontWeight: StatOzTypography.black,
               fontFeatures: [FontFeature.tabularFigures()],
             ),
           ),
@@ -3587,9 +3592,9 @@ Future<bool> _confirmPurchase(
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontFamily: 'Orbitron',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
+                    fontFamily: StatOzTypography.displayFont,
+                    fontSize: StatOzTypography.p18,
+                    fontWeight: StatOzTypography.black,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -3599,9 +3604,9 @@ Future<bool> _confirmPurchase(
                   price,
                   style: const TextStyle(
                     color: _cyan,
-                    fontFamily: 'Orbitron',
-                    fontWeight: FontWeight.w900,
-                    fontSize: 20,
+                    fontFamily: StatOzTypography.displayFont,
+                    fontWeight: StatOzTypography.black,
+                    fontSize: StatOzTypography.p20,
                     fontFeatures: [FontFeature.tabularFigures()],
                   ),
                 ),

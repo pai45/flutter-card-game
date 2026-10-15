@@ -647,7 +647,7 @@ two surfaces share one goal instead of each re-deriving it.
 Tapping a league's standing strip opens the per-league hub, which carries five
 tabs: **TABLE**, **LEADERS**, **STATS**, **GAMES**, and **PICKS**.
 
-On the MATCHES feed, each sport's league standing strip uses compact Onest type
+On the MATCHES feed, each sport's league standing strip uses compact Space Grotesk type
 for the league name, preserving room for the standing action and long
 competition names without competing with the fixture cards below.
 
@@ -1006,3 +1006,33 @@ basics quiz used by these seeded fixtures.
 - [`test/returning_profile_preset_test.dart`](../../../test/returning_profile_preset_test.dart)
 - [`test/basketball_cricket_match_package_service_test.dart`](../../../test/basketball_cricket_match_package_service_test.dart)
 - [`test/basketball_cricket_match_stats_view_test.dart`](../../../test/basketball_cricket_match_stats_view_test.dart)
+
+## Match Trending editorial discovery
+
+Match Trending starts with one manual winner-Pick carousel (football, cricket, basketball, motorsport, extra football), then repeats one sport at a time: two wide fixtures, up to three Event rows, and a paired grid of one standalone sport quiz, one different compact fixture, and up to two free XP quiz missions. Missing records produce partial modules; no filler is created. Gold reveal strips and Futures stay in their dedicated lists.
+
+Football team logos sit above names at the outer edges (home left, away right); the central score owns the hierarchy. Cricket and basketball use stacked left-aligned identities and right-aligned scores. Racing displays available session results, never driver standings as race classification. Events use 14px/500 questions, 12px/400 answers, independent details navigation and signed percentage-point movement. All cards have padded lifecycle/timing areas and complete labels. The revised cadence uses 20px page margins, 16px card padding, 16px match/grid gaps and 24px module gaps. The grid collapses below 360px or at 1.4 text scale.
+
+
+
+Final review: Validation completed: 31 final affected Flutter card/hub/trade widget tests passed; the earlier 85-test card/prediction/settlement run passed. Targeted analysis of 12 files is clean. Web lint, TypeScript, five focused cycle/status/tint tests and the production build passed. Shared generated-output checks pass. Actual local review covers all four sports at 393px, 320px and desktop widths; web 1.4 text scale collapses the grid at phone and desktop sizes without horizontal overflow. Keyboard carousel controls, guest trade guard, independent Event navigation, return scroll and slide restoration passed browser checks. Selection haptics are retained in code/widget callbacks; physical-device haptic feel was not measured. Preview data comes from existing bundled product records, so Flutter/web fixture values can differ.
+
+
+### Match discovery visual and entrance refinement
+
+Match discovery now uses etched inner chamfer frames, a short sport-colored top rail, existing sport marks, inset Orbitron score plates, beveled team-colored percentage controls, gold XP reward labels and discrete progress segments from genuine answered-question counts. The navy fill and restrained top-right lifecycle/team tint remain. Lifecycle tabs dock at the top-right frame edge with zero outer inset; their text retains its internal padding. Wide headers reserve the measured tag width, and compact headers reserve height before metadata. Embedded Events dock each row's own lifecycle to its right edge. Event questions remain Space Grotesk 14px/500 and answers 12px/400. No extra match footer was restored.
+
+Cards enter once when at least 8% visible: 420ms easeOutCubic, opacity 0 to 1, translation 12px to 0, and the short signal rail extends from 20% to full width. Viewport bands stagger by 48ms, capped at three bands. Motion pauses offscreen, on inactive routes/pages and in the background. Reduced motion shows the final pose immediately. Stable card identities retain the entered state when returning; focus or press settles the entrance immediately so navigation never waits. This adds no ambient border pulse or audio.
+
+The shared local JSON/adapters own geometry and entrance timings. Validation and actual release-widget captures are recorded in Designer `test-results/match-cyber-polish/review`. Existing navigation, trade guards and settlement behavior are retained.
+
+
+### Carousel edge spacing · 2026-10-15
+
+Featured Picks scroll through the full feed width, with 20px leading/trailing content insets and the header aligned to page content. Indicators retain their touch targets and sit 4px below the cards. Event percentages retain outcome color and signed movement without an underline. Other feed modules keep their page margins.
+
+Future tail per sport (2026-10-15): one full-width Future market follows each sport grid, using the existing editorial market plate and up to three existing outcomes with colored percentage CTAs. Available championship/title/season markets lead; stable IDs preserve return/scroll order. Skip unavailable markets, exclude featured carousel records, and retain existing trade/detail guards. Futures also remain in their dedicated list.
+
+UCL 2026/27, NBA 2027 and F1 2027 championship markets are user-approved local demo examples. Their competition markers explicitly say DEMO, volumes are zero, and percentages are illustrative. They live only in the existing mock-data owners and do not add production schemas, settlement behavior or external feeds. The existing IPL market is reused.
+
+Carousel header removal (2026-10-15): remove the entire visible header strip, including Featured Picks, All Picks and previous/next arrows. Cards start directly in the scrolling rail; swipe, dot selection, keyboard navigation and return-position restoration remain available.

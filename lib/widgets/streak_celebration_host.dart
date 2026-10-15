@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -250,13 +251,12 @@ class _QuestRewardRevealState extends State<_QuestRewardReveal>
                             Text(
                               'QUEST REWARDS',
                               textAlign: TextAlign.center,
-                              style: Cyber.display(18, color: Cyber.gold),
+                              style: Cyber.display(StatOzTypography.p18, color: Cyber.gold),
                             ),
                             const SizedBox(height: 6),
                             Text(
                               'DAILY OPS PAYOUT',
-                              style: Cyber.label(
-                                9,
+                              style: Cyber.label(StatOzTypography.p9,
                                 color: Cyber.muted,
                                 letterSpacing: 1.8,
                               ),
@@ -274,8 +274,7 @@ class _QuestRewardRevealState extends State<_QuestRewardReveal>
                               builder: (context, value, child) => Text(
                                 '+${value.round()}',
                                 style:
-                                    Cyber.display(
-                                      46,
+                                    Cyber.display(StatOzTypography.p46,
                                       color: Cyber.gold,
                                       letterSpacing: 0,
                                     ).copyWith(
@@ -288,8 +287,7 @@ class _QuestRewardRevealState extends State<_QuestRewardReveal>
                             const SizedBox(height: 4),
                             Text(
                               'OZ COINS',
-                              style: Cyber.label(
-                                10,
+                              style: Cyber.label(StatOzTypography.p10,
                                 color: Cyber.muted,
                                 letterSpacing: 1.4,
                               ),
@@ -300,7 +298,7 @@ class _QuestRewardRevealState extends State<_QuestRewardReveal>
                               icon: Icons.check,
                               accent: Cyber.gold,
                               height: 52,
-                              labelStyle: Cyber.display(18),
+                              labelStyle: Cyber.display(StatOzTypography.p18),
                               tapSound: SoundEffect.uiConfirm,
                               onTap: _consume,
                             ),
@@ -621,7 +619,7 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
         Text(
           title,
           textAlign: TextAlign.center,
-          style: Cyber.display(20, color: accent),
+          style: Cyber.display(StatOzTypography.p20, color: accent),
         ),
         const SizedBox(height: 10),
         if (_type == StreakCelebrationType.shieldEarned) ...[
@@ -632,15 +630,14 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
           const SizedBox(height: 10),
           Text(
             '$shields/$streakShieldCap SHIELDS ARMED',
-            style: Cyber.label(11, letterSpacing: 1.2),
+            style: Cyber.label(StatOzTypography.p11, letterSpacing: 1.2),
           ),
         ] else ...[
           Transform.scale(
             scale: numberScale,
             child: Text(
               '${_visibleStreakValue(celebration.streak, reducedMotion)}',
-              style: Cyber.display(
-                58,
+              style: Cyber.display(StatOzTypography.p58,
                 letterSpacing: 0,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
@@ -648,7 +645,7 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
           const SizedBox(height: 4),
           Text(
             celebration.streak == 1 ? 'DAY' : 'DAYS',
-            style: Cyber.label(11, color: Cyber.muted, letterSpacing: 1.6),
+            style: Cyber.label(StatOzTypography.p11, color: Cyber.muted, letterSpacing: 1.6),
           ),
         ],
         const SizedBox(height: 14),
@@ -667,10 +664,8 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
               child: Text(
                 subline,
                 textAlign: TextAlign.center,
-                style: Cyber.bodyFor(
-                  context,
-                  14,
-                  weight: FontWeight.w800,
+                style: Cyber.bodyFor(context, StatOzTypography.p14,
+                  weight: StatOzTypography.bold,
                   height: 1.3,
                 ),
               ),
@@ -697,7 +692,7 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
           Text(
             '${next.days - celebration.streak} days to ${next.rewardLabel}',
             textAlign: TextAlign.center,
-            style: Cyber.bodyFor(context, 12.5, color: Cyber.muted),
+            style: Cyber.bodyFor(context, StatOzTypography.p12_5, color: Cyber.muted),
           ),
         ],
         if (_type == StreakCelebrationType.shieldSaved) ...[
@@ -706,7 +701,7 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
           const SizedBox(height: 6),
           Text(
             '$shields LEFT IN THE BANK',
-            style: Cyber.label(9.5, color: Cyber.muted, letterSpacing: 1),
+            style: Cyber.label(StatOzTypography.p9_5, color: Cyber.muted, letterSpacing: 1),
           ),
           const SizedBox(height: 20),
           HudCtaButton(
@@ -714,7 +709,7 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
             icon: Icons.local_fire_department,
             accent: Cyber.cyan,
             height: 52,
-            labelStyle: Cyber.display(17),
+            labelStyle: Cyber.display(StatOzTypography.p17),
             tapSound: SoundEffect.uiConfirm,
             onTap: _consume,
           ),
@@ -724,7 +719,7 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
           Text(
             'Miss a day and this shield keeps your run alive.',
             textAlign: TextAlign.center,
-            style: Cyber.bodyFor(context, 12.5, color: Cyber.muted),
+            style: Cyber.bodyFor(context, StatOzTypography.p12_5, color: Cyber.muted),
           ),
         ],
         if (_type == StreakCelebrationType.milestone) ...[
@@ -734,7 +729,7 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
             icon: Icons.redeem,
             accent: accent,
             height: 56,
-            labelStyle: Cyber.display(18),
+            labelStyle: Cyber.display(StatOzTypography.p18),
             tapSound: SoundEffect.uiConfirm,
             onTap: _claim,
           ),

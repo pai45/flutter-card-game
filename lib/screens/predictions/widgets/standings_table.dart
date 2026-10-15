@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -44,7 +45,7 @@ class DetailTopBar extends StatelessWidget {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.display(15, letterSpacing: 1.6),
+              style: Cyber.display(StatOzTypography.p15, letterSpacing: 1.6),
             ),
           ),
           ?trailing,
@@ -111,8 +112,7 @@ class LeagueHeader extends StatelessWidget {
             child: FittedBox(
               child: Text(
                 code,
-                style: Cyber.display(
-                  15,
+                style: Cyber.display(StatOzTypography.p15,
                   color: _inkOn(accent),
                   letterSpacing: 0.5,
                 ),
@@ -133,8 +133,7 @@ class LeagueHeader extends StatelessWidget {
                       league.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.display(
-                        19,
+                      style: Cyber.display(StatOzTypography.p19,
                         color: Colors.white,
                         letterSpacing: 0.4,
                       ),
@@ -161,8 +160,7 @@ class LeagueHeader extends StatelessWidget {
               else
                 Text(
                   subtitle ?? '$teamCount TEAMS // SEASON STANDINGS',
-                  style: Cyber.label(
-                    10,
+                  style: Cyber.label(StatOzTypography.p10,
                     color: Cyber.muted,
                     letterSpacing: 1.2,
                   ),
@@ -221,8 +219,7 @@ class _LeagueSeasonMenu extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     season.shortLabel,
-                    style: Cyber.display(
-                      11,
+                    style: Cyber.display(StatOzTypography.p11,
                       color: season.year == selectedYear
                           ? accent
                           : Colors.white,
@@ -231,7 +228,7 @@ class _LeagueSeasonMenu extends StatelessWidget {
                   ),
                   if (season.isCurrent) ...[
                     const Spacer(),
-                    Text('LIVE', style: Cyber.label(8, color: Cyber.cyan)),
+                    Text('LIVE', style: Cyber.label(StatOzTypography.p8, color: Cyber.cyan)),
                   ],
                 ],
               ),
@@ -251,7 +248,7 @@ class _LeagueSeasonMenu extends StatelessWidget {
               children: [
                 Text(
                   selected.shortLabel,
-                  style: Cyber.display(10, color: accent, letterSpacing: 0.8),
+                  style: Cyber.display(StatOzTypography.p10, color: accent, letterSpacing: 0.8),
                 ),
                 const SizedBox(width: 6),
                 Icon(Icons.expand_more, color: accent, size: 16),
@@ -319,7 +316,7 @@ class _LeagueFollowButton extends StatelessWidget {
                         : followed
                         ? 'FOLLOWING'
                         : 'FOLLOW',
-                    style: Cyber.label(8, color: color, letterSpacing: 0.8),
+                    style: Cyber.label(StatOzTypography.p8, color: color, letterSpacing: 0.8),
                   ),
                 ],
               ),
@@ -369,7 +366,7 @@ class StandingsTable extends StatelessWidget {
     if (rows.isEmpty) {
       return Text(
         'Standings unavailable.',
-        style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+        style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
       );
     }
     // Basketball is tested first: it has no draws either, so a null `drawn`
@@ -501,7 +498,7 @@ class _QualificationLine extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(label, style: Cyber.label(7.5, color: tint, letterSpacing: 1.1)),
+          Text(label, style: Cyber.label(StatOzTypography.p7_5, color: tint, letterSpacing: 1.1)),
         ],
       ),
     );
@@ -518,7 +515,7 @@ class _HeaderRow extends StatelessWidget {
     Widget label(String t, {TextAlign align = TextAlign.center}) => Text(
       t,
       textAlign: align,
-      style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.8),
+      style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 0.8),
     );
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
@@ -584,8 +581,7 @@ class _DataRow extends StatelessWidget {
                 width: 22,
                 child: Text(
                   '${row.rank}',
-                  style: Cyber.label(
-                    12,
+                  style: Cyber.label(StatOzTypography.p12,
                     color: rankColor,
                     letterSpacing: 0.2,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -606,11 +602,9 @@ class _DataRow extends StatelessWidget {
                   row.tableName ?? row.team.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.bodyFor(
-                    context,
-                    13,
+                  style: Cyber.bodyFor(context, StatOzTypography.p13,
                     color: AppTheme.whiteColor,
-                    weight: FontWeight.w700,
+                    weight: StatOzTypography.bold,
                     height: 1,
                   ),
                 ),
@@ -621,8 +615,7 @@ class _DataRow extends StatelessWidget {
                   child: Text(
                     c.value(row),
                     textAlign: TextAlign.center,
-                    style: Cyber.label(
-                      11,
+                    style: Cyber.label(StatOzTypography.p11,
                       color: c.strong ? Colors.white : Cyber.muted,
                       letterSpacing: 0.2,
                       fontFeatures: const [FontFeature.tabularFigures()],
@@ -689,7 +682,7 @@ class TeamHeader extends StatelessWidget {
             children: [
               Text(
                 team.name,
-                style: Cyber.display(19, color: teamColor, letterSpacing: 0.4),
+                style: Cyber.display(StatOzTypography.p19, color: teamColor, letterSpacing: 0.4),
               ),
               const SizedBox(height: 5),
               if (s != null)
@@ -697,8 +690,7 @@ class TeamHeader extends StatelessWidget {
                   children: [
                     Text(
                       'RANK #${s.rank}  ·  ${s.points} PTS',
-                      style: Cyber.label(
-                        10,
+                      style: Cyber.label(StatOzTypography.p10,
                         color: Cyber.muted,
                         letterSpacing: 1,
                       ),
@@ -744,7 +736,7 @@ class FormPips extends StatelessWidget {
               ),
               child: Text(
                 c,
-                style: Cyber.label(7, color: colorFor(c), letterSpacing: 0),
+                style: Cyber.label(StatOzTypography.p7, color: colorFor(c), letterSpacing: 0),
               ),
             ),
           ),

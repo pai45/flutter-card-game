@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -305,8 +306,8 @@ class _CourtStatusBar extends StatelessWidget {
           style: TextStyle(
             color: Cyber.success,
             fontFamily: Cyber.displayFont,
-            fontSize: 9,
-            fontWeight: FontWeight.w900,
+            fontSize: StatOzTypography.p9,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 2,
           ),
         ),
@@ -323,8 +324,8 @@ class _CourtStatusBar extends StatelessWidget {
           style: TextStyle(
             color: Cyber.muted,
             fontFamily: Cyber.displayFont,
-            fontSize: 8.5,
-            fontWeight: FontWeight.w800,
+            fontSize: StatOzTypography.p8_5,
+            fontWeight: StatOzTypography.extrabold,
             letterSpacing: 1.2,
           ),
         ),
@@ -350,7 +351,7 @@ class _HeroRow extends StatelessWidget {
             children: [
               Text(
                 'HOOP DUEL',
-                style: Cyber.display(23, letterSpacing: 1.2).copyWith(
+                style: Cyber.display(StatOzTypography.p23, letterSpacing: 1.2).copyWith(
                   shadows: [
                     Shadow(
                       color: Cyber.gold.withValues(alpha: 0.45),
@@ -365,8 +366,8 @@ class _HeroRow extends StatelessWidget {
                 style: TextStyle(
                   color: Cyber.muted,
                   fontFamily: Cyber.displayFont,
-                  fontSize: 8.5,
-                  fontWeight: FontWeight.w800,
+                  fontSize: StatOzTypography.p8_5,
+                  fontWeight: StatOzTypography.extrabold,
                   letterSpacing: 1.8,
                 ),
               ),
@@ -523,8 +524,8 @@ class _RecordStat extends StatelessWidget {
               style: TextStyle(
                 color: accent,
                 fontFamily: Cyber.displayFont,
-                fontSize: 17,
-                fontWeight: FontWeight.w900,
+                fontSize: StatOzTypography.p17,
+                fontWeight: StatOzTypography.black,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -536,8 +537,8 @@ class _RecordStat extends StatelessWidget {
             style: const TextStyle(
               color: Cyber.muted,
               fontFamily: Cyber.displayFont,
-              fontSize: 7,
-              fontWeight: FontWeight.w800,
+              fontSize: StatOzTypography.p7,
+              fontWeight: StatOzTypography.extrabold,
               letterSpacing: 0.6,
             ),
           ),
@@ -590,8 +591,7 @@ class _DifficultyPicker extends StatelessWidget {
                   children: [
                     Text(
                       basketballDifficultyLabel(difficulty),
-                      style: Cyber.display(
-                        11,
+                      style: Cyber.display(StatOzTypography.p11,
                         color: difficulty == selected
                             ? Cyber.gold
                             : Cyber.muted,
@@ -603,7 +603,7 @@ class _DifficultyPicker extends StatelessWidget {
                       BasketballDifficulty.rookie => 'Forgiving',
                       BasketballDifficulty.pro => 'Balanced',
                       BasketballDifficulty.allStar => 'Ruthless',
-                    }, style: const TextStyle(color: Cyber.muted, fontSize: 9)),
+                    }, style: const TextStyle(color: Cyber.muted, fontSize: StatOzTypography.p9)),
                   ],
                 ),
               ),
@@ -633,8 +633,8 @@ class _HudLink extends StatelessWidget {
         style: const TextStyle(
           color: Cyber.gold,
           fontFamily: Cyber.displayFont,
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
+          fontSize: StatOzTypography.p11,
+          fontWeight: StatOzTypography.black,
           letterSpacing: 1.4,
         ),
       ),

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -135,8 +136,7 @@ class HeadToHeadPowerMeter extends StatelessWidget {
                       : '» $winnerRole EDGE +$marginShown «',
                   maxLines: 1,
                   style:
-                      Cyber.label(
-                        12,
+                      Cyber.label(StatOzTypography.p12,
                         color: margin == 0 ? Cyber.muted : winnerAccent,
                         letterSpacing: 1.8,
                       ).copyWith(
@@ -174,13 +174,12 @@ class _PowerLabel extends StatelessWidget {
       children: [
         Text(
           role,
-          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+          style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.2),
         ),
         const SizedBox(height: 2),
         Text(
           '$value',
-          style: Cyber.display(
-            20,
+          style: Cyber.display(StatOzTypography.p20,
             color: accent,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
@@ -283,8 +282,7 @@ class VerdictHero extends StatelessWidget {
                           const SizedBox(width: 12),
                           Text(
                             outcomeLabel(outcome).toUpperCase(),
-                            style: Cyber.display(
-                              34,
+                            style: Cyber.display(StatOzTypography.p34,
                               color: accent,
                               letterSpacing: 3,
                             ),
@@ -301,9 +299,7 @@ class VerdictHero extends StatelessWidget {
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.bodyFor(
-                        context,
-                        13,
+                      style: Cyber.bodyFor(context, StatOzTypography.p13,
                         color: Cyber.muted,
                         height: 1.25,
                       ),
@@ -370,7 +366,7 @@ class ScoreImpactStrip extends StatelessWidget {
           children: [
             Text(
               'SCORE',
-              style: Cyber.label(11, color: Cyber.muted, letterSpacing: 1.6),
+              style: Cyber.label(StatOzTypography.p11, color: Cyber.muted, letterSpacing: 1.6),
             ),
             Expanded(
               child: Center(
@@ -387,7 +383,7 @@ class ScoreImpactStrip extends StatelessWidget {
                         glow: goalScored && scoringIsPlayer && popped,
                       ),
                       const SizedBox(width: 12),
-                      Text('—', style: Cyber.display(18, color: Cyber.line)),
+                      Text('—', style: Cyber.display(StatOzTypography.p18, color: Cyber.line)),
                       const SizedBox(width: 12),
                       _ScoreCell(
                         label: opponentLabel,
@@ -409,7 +405,7 @@ class ScoreImpactStrip extends StatelessWidget {
               ),
               child: Text(
                 goalScored ? '+1 GOAL' : 'HELD',
-                style: Cyber.label(10, color: tagColor, letterSpacing: 1.2),
+                style: Cyber.label(StatOzTypography.p10, color: tagColor, letterSpacing: 1.2),
               ),
             ),
           ],
@@ -441,7 +437,7 @@ class _ScoreCell extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+          style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.2),
         ),
         const SizedBox(height: 2),
         Transform.scale(
@@ -452,8 +448,7 @@ class _ScoreCell extends StatelessWidget {
             ),
             child: Text(
               '$value',
-              style: Cyber.display(
-                22,
+              style: Cyber.display(StatOzTypography.p22,
                 color: color,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
@@ -568,7 +563,7 @@ class OutcomeStingerOverlay extends StatelessWidget {
           final aberration = 6.0 * (1 - slamT);
 
           final label = k == StingerKind.goal ? 'GOAL!' : 'DENIED!';
-          final style = Cyber.display(54, color: accent, letterSpacing: 4)
+          final style = Cyber.display(StatOzTypography.p54, color: accent, letterSpacing: 4)
               .copyWith(
                 shadows: [
                   Shadow(color: accent.withValues(alpha: 0.8), blurRadius: 26),

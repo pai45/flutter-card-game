@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -228,7 +229,7 @@ class _RivalHero extends StatelessWidget {
                             name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: Cyber.display(22, letterSpacing: 0.6),
+                            style: Cyber.display(StatOzTypography.p22, letterSpacing: 0.6),
                           ),
                         ),
                         if (pro) ...[
@@ -240,8 +241,7 @@ class _RivalHero extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       'OPERATIVE // RANK ${rank.toString().padLeft(2, '0')}',
-                      style: Cyber.label(
-                        10,
+                      style: Cyber.label(StatOzTypography.p10,
                         color: Cyber.muted,
                         letterSpacing: 1.6,
                       ),
@@ -273,7 +273,7 @@ class _ProChip extends StatelessWidget {
       ),
       child: Text(
         'PRO',
-        style: Cyber.label(9, color: Cyber.violet, letterSpacing: 1.2),
+        style: Cyber.label(StatOzTypography.p9, color: Cyber.violet, letterSpacing: 1.2),
       ),
     );
   }
@@ -360,11 +360,11 @@ class _VsYouCard extends StatelessWidget {
             children: [
               const Icon(Icons.bolt, color: Cyber.gold, size: 18),
               const SizedBox(width: 8),
-              Text('VS YOU', style: Cyber.display(15, letterSpacing: 1.2)),
+              Text('VS YOU', style: Cyber.display(StatOzTypography.p15, letterSpacing: 1.2)),
               const Spacer(),
               Text(
                 'HEAD-TO-HEAD',
-                style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4),
+                style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.4),
               ),
             ],
           ),
@@ -423,8 +423,7 @@ class _VsRow extends StatelessWidget {
             width: 54,
             child: Text(
               '$rival$suffix',
-              style: Cyber.display(
-                18,
+              style: Cyber.display(StatOzTypography.p18,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ),
@@ -433,12 +432,12 @@ class _VsRow extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.4),
+                  style: Cyber.label(StatOzTypography.p10, color: Cyber.muted, letterSpacing: 1.4),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   deltaText,
-                  style: Cyber.label(11, color: deltaColor, letterSpacing: 1),
+                  style: Cyber.label(StatOzTypography.p11, color: deltaColor, letterSpacing: 1),
                 ),
               ],
             ),
@@ -448,7 +447,7 @@ class _VsRow extends StatelessWidget {
             child: Text(
               '$you$suffix',
               textAlign: TextAlign.right,
-              style: Cyber.display(18, color: Cyber.muted).copyWith(
+              style: Cyber.display(StatOzTypography.p18, color: Cyber.muted).copyWith(
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),

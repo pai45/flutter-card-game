@@ -99,7 +99,7 @@ class _ShopSearchScreenState extends State<ShopSearchScreen> {
                   )
                 : Text(
                     '${results.length} ITEMS FOUND',
-                    style: Cyber.label(10, color: Cyber.cyan),
+                    style: Cyber.label(StatOzTypography.p10, color: Cyber.cyan),
                   ),
           ),
         ),
@@ -107,7 +107,7 @@ class _ShopSearchScreenState extends State<ShopSearchScreen> {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             sliver: SliverToBoxAdapter(
-              child: Text(group.key, style: Cyber.label(10)),
+              child: Text(group.key, style: Cyber.label(StatOzTypography.p10)),
             ),
           ),
           SliverPadding(

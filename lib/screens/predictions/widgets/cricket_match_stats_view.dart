@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -91,7 +92,7 @@ class _CricketOverview extends StatelessWidget {
             children: [
               Text(
                 details?.league.toUpperCase() ?? match.leagueId.toUpperCase(),
-                style: Cyber.display(15, letterSpacing: 0.8),
+                style: Cyber.display(StatOzTypography.p15, letterSpacing: 0.8),
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -135,12 +136,12 @@ class _CricketOverview extends StatelessWidget {
               children: [
                 Text(
                   details.result,
-                  style: Cyber.display(13, color: Cyber.success),
+                  style: Cyber.display(StatOzTypography.p13, color: Cyber.success),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   details.seriesNote,
-                  style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
                 ),
               ],
             ),
@@ -651,7 +652,7 @@ class _CricketFeedState extends State<_CricketFeed> {
                 sliver: SliverToBoxAdapter(
                   child: Text(
                     '${selected.abbreviation.toUpperCase()} // ${commentary.length} BALL ENTRIES // INNINGS ${selected.number}',
-                    style: Cyber.label(8, color: Cyber.cyan),
+                    style: Cyber.label(StatOzTypography.p8, color: Cyber.cyan),
                   ),
                 ),
               ),
@@ -715,32 +716,32 @@ class _BallCard extends StatelessWidget {
                 if (ball.preText != null) ...[
                   Text(
                     ball.preText!,
-                    style: Cyber.bodyFor(context, 10.5, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, StatOzTypography.p10_5, color: Cyber.muted),
                   ),
                   const SizedBox(height: 4),
                 ],
-                Text(ball.shortText, style: Cyber.label(8, color: accent)),
+                Text(ball.shortText, style: Cyber.label(StatOzTypography.p8, color: accent)),
                 const SizedBox(height: 4),
-                Text(ball.text, style: Cyber.bodyFor(context, 12)),
+                Text(ball.text, style: Cyber.bodyFor(context, StatOzTypography.p12)),
                 if (ball.dismissal != null) ...[
                   const SizedBox(height: 4),
                   Text(
                     ball.dismissal!.toUpperCase(),
-                    style: Cyber.label(8, color: Cyber.danger),
+                    style: Cyber.label(StatOzTypography.p8, color: Cyber.danger),
                   ),
                 ],
                 if (ball.postText != null) ...[
                   const SizedBox(height: 4),
                   Text(
                     ball.postText!,
-                    style: Cyber.bodyFor(context, 10.5, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, StatOzTypography.p10_5, color: Cyber.muted),
                   ),
                 ],
                 const SizedBox(height: 6),
                 Text(
                   '${ball.score} // ${ball.runs} RUNS // RR ${ball.runRate.toStringAsFixed(2)}'
                   '${ball.required == null ? '' : ' // NEED ${ball.required!.runs} OFF ${ball.required!.balls} @ ${ball.required!.runRate.toStringAsFixed(2)}'}',
-                  style: Cyber.label(7.2, color: Cyber.muted),
+                  style: Cyber.label(StatOzTypography.p7_2, color: Cyber.muted),
                 ),
               ],
             ),
@@ -767,10 +768,10 @@ class _CricketInfo extends StatelessWidget {
             width: 96,
             child: Text(
               label.toUpperCase(),
-              style: Cyber.label(7.5, color: Cyber.muted),
+              style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted),
             ),
           ),
-          Expanded(child: Text(value, style: Cyber.bodyFor(context, 11.5))),
+          Expanded(child: Text(value, style: Cyber.bodyFor(context, StatOzTypography.p11_5))),
         ],
       ),
     );

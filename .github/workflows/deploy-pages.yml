@@ -1,10 +1,19 @@
 name: Deploy to GitHub Pages
+run-name: ${{ inputs.release_request_id && format('Designer release {0}', inputs.release_request_id) || github.event.head_commit.message || 'Deploy main' }}
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
-
+    inputs:
+      source_sha:
+        description: Reviewed source commit (blank uses the triggering revision)
+        required: false
+        type: string
+      release_request_id:
+        description: Designer release request ID
+        required: false
+        type: string
 # Allow the workflow to publish to GitHub Pages.
 permissions:
   contents: read
@@ -22,6 +31,26 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_sha || github.sha }}
+
+      - name: Validate reviewed source
+        env:
+          REVIEWED_SHA: ${{ inputs.source_sha }}
+        run: |
+          if [ -n "$REVIEWED_SHA" ]; then
+            [[ "$REVIEWED_SHA" =~ ^[a-f0-9]{40}$ ]] || exit 1
+            test "$(git rev-parse HEAD)" = "$REVIEWED_SHA"
+          fi
+
+
+      - name: Set up Node for typography verification
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Verify shared typography
+        run: node scripts/typography-library.mjs --check
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -38,9 +67,50 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Analyze Flutter
+        run: flutter analyze --no-pub
+
+      - name: Test Flutter
+        # Keep release verification deterministic. The wider legacy suite
+        # includes device/golden and live-fixture tests that run in their own
+        # validation context.
+        run: >-
+          flutter test --no-pub --concurrency=1
+          test/statoz_icons_test.dart
+          test/cyber_underline_tabs_test.dart
+          test/profile_setup_screen_test.dart
+          test/game_hero_cta_test.dart
+          test/game_discovery_test.dart
+          test/match_discovery_contract_test.dart
+          test/match_editorial_test.dart
+          test/match_editorial_motion_test.dart
+          test/trending_hub_test.dart
+          test/widget_test.dart
+
       # base-href must match the project Pages path: /<repo-name>/
       - name: Build web
         run: flutter build web --release --base-href "/flutter-card-game/"
+
+      - name: Write public build manifest
+        env:
+          APP_ID: card_game
+          OUTPUT_DIR: build/web
+          APP_BASE_PATH: /flutter-card-game
+          RELEASE_BUILD_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          python3 - <<'PY'
+          import datetime, json, os, pathlib, subprocess
+          manifest = {"schemaVersion": 1, "appId": os.environ["APP_ID"], "sourceSha": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(), "buildId": os.environ["RELEASE_BUILD_ID"], "builtAt": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"), "basePath": os.environ["APP_BASE_PATH"]}
+          (pathlib.Path(os.environ["OUTPUT_DIR"]) / "release-manifest.json").write_text(json.dumps(manifest))
+          PY
+
+      - name: Upload downloadable static build
+        uses: actions/upload-artifact@v4
+        with:
+          name: statoz-card_game-static
+          path: build/web
+          retention-days: 30
+          if-no-files-found: error
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

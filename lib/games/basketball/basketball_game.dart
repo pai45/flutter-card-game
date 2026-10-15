@@ -9,6 +9,8 @@
 /// exception.
 library;
 
+import 'package:card_game/design_system/typography.dart';
+
 import 'dart:collection';
 import 'dart:math';
 import 'dart:ui';
@@ -723,28 +725,25 @@ class _CourtComponent extends PositionComponent
   }
 
   static final TextPaint _clockText = TextPaint(
-    style: Cyber.label(
-      13,
+    style: Cyber.label(StatOzTypography.p13,
       color: Cyber.gold,
-      weight: FontWeight.w800,
+      weight: StatOzTypography.extrabold,
       letterSpacing: 0,
       fontFeatures: const [FontFeature.tabularFigures()],
     ),
   );
   static final TextPaint _clockTextDanger = TextPaint(
-    style: Cyber.label(
-      13,
+    style: Cyber.label(StatOzTypography.p13,
       color: Cyber.danger,
-      weight: FontWeight.w800,
+      weight: StatOzTypography.extrabold,
       letterSpacing: 0,
       fontFeatures: const [FontFeature.tabularFigures()],
     ),
   );
   static final TextPaint _tickerStyle = TextPaint(
-    style: Cyber.label(
-      10,
+    style: Cyber.label(StatOzTypography.p10,
       color: Cyber.cyan.withValues(alpha: 0.5),
-      weight: FontWeight.w700,
+      weight: StatOzTypography.bold,
       letterSpacing: 2,
       fontFeatures: const [FontFeature.tabularFigures()],
     ),
@@ -752,34 +751,30 @@ class _CourtComponent extends PositionComponent
 
   // Cached ticker layout — rebuilt only when the score/half changes.
   static final TextPaint _bannerStyle = TextPaint(
-    style: Cyber.label(
-      8,
+    style: Cyber.label(StatOzTypography.p8,
       color: AppTheme.textContrast.withValues(alpha: 0.84),
-      weight: FontWeight.w800,
+      weight: StatOzTypography.extrabold,
       letterSpacing: 1.3,
     ),
   );
   static final TextPaint _goldCourtLabel = TextPaint(
-    style: Cyber.label(
-      8,
+    style: Cyber.label(StatOzTypography.p8,
       color: Cyber.gold.withValues(alpha: 0.52),
-      weight: FontWeight.w800,
+      weight: StatOzTypography.extrabold,
       letterSpacing: 1.5,
     ),
   );
   static final TextPaint _cyanCourtLabel = TextPaint(
-    style: Cyber.label(
-      8,
+    style: Cyber.label(StatOzTypography.p8,
       color: Cyber.cyan.withValues(alpha: 0.46),
-      weight: FontWeight.w800,
+      weight: StatOzTypography.extrabold,
       letterSpacing: 1.5,
     ),
   );
   static final TextPaint _emblemStyle = TextPaint(
-    style: Cyber.label(
-      8,
+    style: Cyber.label(StatOzTypography.p8,
       color: Cyber.cyan.withValues(alpha: 0.38),
-      weight: FontWeight.w900,
+      weight: StatOzTypography.black,
       letterSpacing: 1.8,
     ),
   );
@@ -1843,10 +1838,9 @@ class _LandingMarkerComponent extends PositionComponent
   final Paint _fillPaint = Paint();
 
   static final TextPaint _labelStyle = TextPaint(
-    style: Cyber.label(
-      7,
+    style: Cyber.label(StatOzTypography.p7,
       color: Cyber.gold.withValues(alpha: 0.82),
-      weight: FontWeight.w900,
+      weight: StatOzTypography.black,
       letterSpacing: 1.2,
     ),
   );

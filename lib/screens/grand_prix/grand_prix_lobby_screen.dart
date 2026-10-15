@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -64,12 +65,12 @@ class _CircuitMastery extends StatelessWidget {
             children: [
               Text(
                 'CIRCUIT MASTERY',
-                style: Cyber.label(9, color: Cyber.muted),
+                style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
               ),
               const Spacer(),
               Text(
                 '${earned.length}/3',
-                style: Cyber.display(12, color: Cyber.gold),
+                style: Cyber.display(StatOzTypography.p12, color: Cyber.gold),
               ),
             ],
           ),
@@ -90,7 +91,7 @@ class _CircuitMastery extends StatelessWidget {
             remaining.isEmpty
                 ? 'Circuit mastered. Chase your next personal best.'
                 : 'NEXT // ${remaining.first.goal}',
-            style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+            style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
           ),
         ],
       ),
@@ -390,8 +391,8 @@ class _PitLaneStatusBar extends StatelessWidget {
           style: TextStyle(
             color: Cyber.success,
             fontFamily: Cyber.displayFont,
-            fontSize: 9,
-            fontWeight: FontWeight.w900,
+            fontSize: StatOzTypography.p9,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 2,
           ),
         ),
@@ -408,8 +409,8 @@ class _PitLaneStatusBar extends StatelessWidget {
           style: TextStyle(
             color: Cyber.muted,
             fontFamily: Cyber.displayFont,
-            fontSize: 8.5,
-            fontWeight: FontWeight.w800,
+            fontSize: StatOzTypography.p8_5,
+            fontWeight: StatOzTypography.extrabold,
             letterSpacing: 1.2,
           ),
         ),
@@ -435,7 +436,7 @@ class _HeroRow extends StatelessWidget {
             children: [
               Text(
                 'GRAND PRIX DASH',
-                style: Cyber.display(21, letterSpacing: 1.2).copyWith(
+                style: Cyber.display(StatOzTypography.p21, letterSpacing: 1.2).copyWith(
                   shadows: [
                     Shadow(
                       color: Cyber.f1Red.withValues(alpha: 0.45),
@@ -450,8 +451,8 @@ class _HeroRow extends StatelessWidget {
                 style: TextStyle(
                   color: Cyber.muted,
                   fontFamily: Cyber.displayFont,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
+                  fontSize: StatOzTypography.p9,
+                  fontWeight: StatOzTypography.extrabold,
                   letterSpacing: 2.2,
                 ),
               ),
@@ -605,8 +606,8 @@ class _RecordStat extends StatelessWidget {
               style: TextStyle(
                 color: accent,
                 fontFamily: Cyber.displayFont,
-                fontSize: 17,
-                fontWeight: FontWeight.w900,
+                fontSize: StatOzTypography.p17,
+                fontWeight: StatOzTypography.black,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -618,8 +619,8 @@ class _RecordStat extends StatelessWidget {
             style: const TextStyle(
               color: Cyber.muted,
               fontFamily: Cyber.displayFont,
-              fontSize: 7.5,
-              fontWeight: FontWeight.w800,
+              fontSize: StatOzTypography.p7_5,
+              fontWeight: StatOzTypography.extrabold,
               letterSpacing: 0.8,
             ),
           ),
@@ -710,8 +711,7 @@ class _CircuitPickerState extends State<_CircuitPicker> {
                           circuit.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.display(
-                            11,
+                          style: Cyber.display(StatOzTypography.p11,
                             color: isSelected ? Cyber.f1Red : Colors.white,
                             letterSpacing: 0.8,
                           ),
@@ -733,7 +733,7 @@ class _CircuitPickerState extends State<_CircuitPicker> {
                     '${'★' * circuit.difficultyStars}${'☆' * (4 - circuit.difficultyStars)}',
                     style: TextStyle(
                       color: Cyber.amber.withValues(alpha: 0.9),
-                      fontSize: 11,
+                      fontSize: StatOzTypography.p11,
                       letterSpacing: 2,
                     ),
                   ),
@@ -743,8 +743,8 @@ class _CircuitPickerState extends State<_CircuitPicker> {
                     style: TextStyle(
                       color: bestLap != null ? Cyber.cyan : Cyber.muted,
                       fontFamily: Cyber.displayFont,
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
+                      fontSize: StatOzTypography.p9,
+                      fontWeight: StatOzTypography.extrabold,
                       letterSpacing: 1,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
@@ -838,8 +838,7 @@ class _LapOption extends StatelessWidget {
                 Text(
                   '$laps',
                   style:
-                      Cyber.display(
-                        22,
+                      Cyber.display(StatOzTypography.p22,
                         color: isSelected ? Cyber.f1Red : Colors.white,
                       ).copyWith(
                         fontFeatures: const [FontFeature.tabularFigures()],
@@ -847,8 +846,7 @@ class _LapOption extends StatelessWidget {
                 ),
                 Text(
                   laps == 1 ? ' LAP' : ' LAPS',
-                  style: Cyber.display(
-                    9,
+                  style: Cyber.display(StatOzTypography.p9,
                     color: Cyber.muted,
                     letterSpacing: 0.8,
                   ),
@@ -863,8 +861,8 @@ class _LapOption extends StatelessWidget {
               style: TextStyle(
                 color: isSelected ? Colors.white : Cyber.muted,
                 fontFamily: Cyber.displayFont,
-                fontSize: 7,
-                fontWeight: FontWeight.w800,
+                fontSize: StatOzTypography.p7,
+                fontWeight: StatOzTypography.extrabold,
                 letterSpacing: 1.1,
               ),
             ),

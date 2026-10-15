@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -244,7 +245,7 @@ class _PredictionPicksHistoryScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: const Color(0xff121b30),
-          content: Text(result.message, style: Cyber.bodyFor(context, 12)),
+          content: Text(result.message, style: Cyber.bodyFor(context, StatOzTypography.p12)),
         ),
       );
       return;
@@ -402,8 +403,7 @@ class _PickCardBody extends StatelessWidget {
           '${position.leagueLabel} · ${pickMarketTypeLabel(position.marketType)}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.label(
-            8,
+          style: Cyber.label(StatOzTypography.p8,
             color: Cyber.muted.withValues(alpha: 0.85),
             letterSpacing: 1.2,
           ),
@@ -413,10 +413,8 @@ class _PickCardBody extends StatelessWidget {
           position.marketQuestion,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.bodyFor(
-            context,
-            15,
-            weight: FontWeight.w700,
+          style: Cyber.bodyFor(context, StatOzTypography.p15,
+            weight: StatOzTypography.bold,
             height: 1.15,
           ),
         ),
@@ -426,11 +424,9 @@ class _PickCardBody extends StatelessWidget {
             context0,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.bodyFor(
-              context,
-              11,
+            style: Cyber.bodyFor(context, StatOzTypography.p11,
               color: const Color(0xff9fb0c2),
-              weight: FontWeight.w600,
+              weight: StatOzTypography.semibold,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
@@ -448,8 +444,7 @@ class _PickCardBody extends StatelessWidget {
                 children: [
                   Text(
                     'YOUR PICK',
-                    style: Cyber.label(
-                      7,
+                    style: Cyber.label(StatOzTypography.p7,
                       color: Cyber.muted,
                       letterSpacing: 1.2,
                     ),
@@ -459,7 +454,7 @@ class _PickCardBody extends StatelessWidget {
                     position.outcomeLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.bodyFor(context, 13, weight: FontWeight.w800),
+                    style: Cyber.bodyFor(context, StatOzTypography.p13, weight: StatOzTypography.bold),
                   ),
                 ],
               ),
@@ -471,7 +466,7 @@ class _PickCardBody extends StatelessWidget {
               children: [
                 Text(
                   'TO WIN',
-                  style: Cyber.label(7, color: Cyber.muted, letterSpacing: 1.2),
+                  style: Cyber.label(StatOzTypography.p7, color: Cyber.muted, letterSpacing: 1.2),
                 ),
                 const SizedBox(height: 3),
                 Row(
@@ -481,10 +476,8 @@ class _PickCardBody extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       '${position.stakeOz} → ${position.maxPayoutOz}',
-                      style: Cyber.bodyFor(
-                        context,
-                        12.5,
-                        weight: FontWeight.w700,
+                      style: Cyber.bodyFor(context, StatOzTypography.p12_5,
+                        weight: StatOzTypography.bold,
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
@@ -535,7 +528,7 @@ class _HeldBadge extends StatelessWidget {
               fit: BoxFit.scaleDown,
               child: Text(
                 pickOutcomeCode(label),
-                style: Cyber.label(11, color: ink, letterSpacing: 0.5),
+                style: Cyber.label(StatOzTypography.p11, color: ink, letterSpacing: 0.5),
               ),
             ),
           ),
@@ -576,7 +569,7 @@ class _PickHistoryStrip extends StatelessWidget {
                     'RESULT READY — TAP TO CLAIM',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1)
+                    style: Cyber.label(StatOzTypography.p9, color: Cyber.gold, letterSpacing: 1)
                         .copyWith(
                           shadows: [
                             Shadow(
@@ -590,8 +583,7 @@ class _PickHistoryStrip extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   '+${position.maxPayoutOz} OZ',
-                  style: Cyber.label(
-                    9,
+                  style: Cyber.label(StatOzTypography.p9,
                     color: Cyber.gold,
                     letterSpacing: 0.8,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -610,11 +602,9 @@ class _PickHistoryStrip extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 '+${position.realizedProfit} OZ PROFIT',
-                style: Cyber.bodyFor(
-                  context,
-                  12,
+                style: Cyber.bodyFor(context, StatOzTypography.p12,
                   color: Cyber.success,
-                  weight: FontWeight.w800,
+                  weight: StatOzTypography.bold,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
@@ -626,11 +616,9 @@ class _PickHistoryStrip extends StatelessWidget {
           topBorder: Cyber.red.withValues(alpha: 0.18),
           child: Text(
             '−${position.stakeOz} OZ',
-            style: Cyber.bodyFor(
-              context,
-              12,
+            style: Cyber.bodyFor(context, StatOzTypography.p12,
               color: Cyber.red.withValues(alpha: 0.9),
-              weight: FontWeight.w800,
+              weight: StatOzTypography.bold,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
@@ -639,8 +627,7 @@ class _PickHistoryStrip extends StatelessWidget {
         return FixtureCardStrip(
           child: Text(
             'REFUNDED ${position.stakeOz} OZ',
-            style: Cyber.label(
-              9,
+            style: Cyber.label(StatOzTypography.p9,
               color: Cyber.muted,
               letterSpacing: 0.8,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -657,8 +644,7 @@ class _PickHistoryStrip extends StatelessWidget {
               const Spacer(),
               Text(
                 m == null ? 'OPEN' : 'VOL ${formatOzCompact(m.volumeOz)} OZ',
-                style: Cyber.label(
-                  8,
+                style: Cyber.label(StatOzTypography.p8,
                   color: Cyber.muted.withValues(alpha: 0.7),
                   letterSpacing: 0.8,
                   fontFeatures: const [FontFeature.tabularFigures()],

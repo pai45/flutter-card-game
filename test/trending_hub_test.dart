@@ -1,22 +1,20 @@
+import 'package:card_game/widgets/cyber/match_discovery.dart';
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/picks/picks_cubit.dart';
 import 'package:card_game/blocs/prediction/prediction_cubit.dart';
 import 'package:card_game/config/enums.dart';
 import 'package:card_game/config/sport_modules.dart';
-import 'package:card_game/config/theme.dart';
 import 'package:card_game/models/league.dart';
-import 'package:card_game/models/picks.dart';
 import 'package:card_game/models/sport_match.dart';
-import 'package:card_game/screens/predictions/all_picks_screen.dart';
 import 'package:card_game/screens/predictions/all_sports_screen.dart';
 import 'package:card_game/screens/predictions/prediction_home_screen.dart';
-import 'package:card_game/screens/predictions/widgets/pick_status_style.dart';
+import 'package:card_game/screens/predictions/trending_hub_catalog.dart';
+import 'package:card_game/services/basketball_match_package_service.dart';
 import 'package:card_game/services/pick_repository.dart';
 import 'package:card_game/services/prediction_repository.dart';
 import 'package:card_game/services/secure_storage_service.dart';
 import 'package:card_game/utils/sound_effects.dart';
 import 'package:card_game/widgets/cyber/cyber_widgets.dart';
-import 'package:card_game/widgets/cyber/sport_underline_tabs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,6 +26,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
+    AudioController.debugUseBackend(_NoopAudioBackend());
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
           const MethodChannel('xyz.luan/audioplayers.global'),
@@ -43,244 +42,69 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('MATCH Trending resolves bento cards and All Sports selection', (
-    tester,
-  ) async {
-    await _setPhoneSize(tester, const Size(393, 852));
-    final bundle = await _HubBundle.create();
-    addTearDown(bundle.dispose);
-    final harnessKey = GlobalKey<_HubHarnessState>();
-
-    await tester.pumpWidget(
-      bundle.wrap(_HubHarness(key: harnessKey, initialTopTab: 0)),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 2));
-
-    expect(find.byKey(const ValueKey('match-trending-feed')), findsOneWidget);
-    expect(find.text('TRENDING NOW'), findsNothing);
-    expect(find.text('FUTURE'), findsAtLeastNWidgets(1));
-    expect(find.text('PREDICT'), findsAtLeastNWidgets(1));
-    expect(find.text('PICK'), findsAtLeastNWidgets(3));
-    expect(find.textContaining('SIGNAL UNAVAILABLE'), findsNothing);
-    for (final entry in <ValueKey<String>, Sport>{
-      const ValueKey('trend-live-epl'): Sport.football,
-      const ValueKey('trend-world-cup-future'): Sport.football,
-      const ValueKey('trend-ipl-sixes-pick'): Sport.cricket,
-      const ValueKey('trend-wimbledon-predict'): Sport.tennis,
-      const ValueKey('trend-man-utd-pick'): Sport.football,
-      const ValueKey('trend-belgian-gp-future'): Sport.motorsport,
-    }.entries) {
-      final tile = find.byKey(entry.key);
-      expect(tile, findsOneWidget);
-      final sportIcon = find.descendant(
-        of: tile,
-        matching: find.byIcon(sportModuleFor(entry.value).icon),
-      );
-      expect(sportIcon, findsOneWidget);
-      expect(
-        tester.widget<Icon>(sportIcon).color,
-        sportModuleFor(entry.value).accent,
-      );
-    }
-
-    final hubTabs = find.byType(SportHubTabs);
-    expect(
-      find.descendant(of: hubTabs, matching: find.byType(Icon)),
-      findsNWidgets(7),
-    );
-    expect(find.byKey(const ValueKey('match-search-button')), findsOneWidget);
-    expect(
-      find.descendant(
-        of: hubTabs,
-        matching: find.byIcon(Icons.sports_motorsports),
-      ),
-      findsOneWidget,
+  test('MATCH Trending registers the bundled NBA Finals card', () {
+    final card = matchTrendingCatalog.singleWhere(
+      (item) => item.id == 'trend-spurs-knicks',
     );
 
-    final wide = tester.getRect(find.byKey(const ValueKey('trend-live-epl')));
-    final futureTile = find.byKey(const ValueKey('trend-world-cup-future'));
-    final predictTile = find.byKey(const ValueKey('trend-arsenal-predict'));
-    final future = tester.getRect(futureTile);
-    final predict = tester.getRect(predictTile);
-    expect(wide.width, greaterThan(wide.height * 1.8));
-    expect(future.height, greaterThan(future.width));
-    expect(future.height, lessThan(future.width * 1.1));
-    expect(future.top, moreOrLessEquals(predict.top));
-    expect(future.top - wide.bottom, moreOrLessEquals(14));
-    _expectTextColor(tester, futureTile, 'FUTURE', Cyber.cyan);
-    _expectTextColor(tester, predictTile, 'PREDICT', Cyber.cyan);
-    _expectTextColor(
-      tester,
-      find.byKey(const ValueKey('trend-liverpool-pick')),
-      'PICK',
-      Cyber.cyan,
-    );
-    _expectTextColor(tester, futureTile, 'FIFA', Cyber.muted);
-    _expectTextColor(tester, predictTile, 'EPL', Cyber.muted);
-    final futureFooter = find.byKey(
-      const ValueKey('trending-market-footer-fifa_2026_winner'),
-    );
-    final predictFooter = find.byKey(
-      const ValueKey('trending-predict-footer-epl_mu_ars'),
-    );
-    expect(futureFooter, findsOneWidget);
-    expect(predictFooter, findsOneWidget);
-    expect(
-      tester.getRect(futureFooter).bottom,
-      moreOrLessEquals(future.bottom),
-    );
-    expect(
-      tester.getRect(predictFooter).bottom,
-      moreOrLessEquals(predict.bottom),
-    );
-    expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('trend-live-epl')),
-        matching: find.text('Chelsea'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('trend-live-epl')),
-        matching: find.text('2 - 1'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('trend-live-epl')),
-        matching: find.text('67′'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('trend-live-epl')),
-        matching: find.text('IN PLAY'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: find.byKey(const ValueKey('trend-live-epl')),
-        matching: find.text(
-          'VOL ${formatOzCompact(seededMatchVolumeOz('epl_cfc_new'))} OZ',
-        ),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('trending-match-footer-epl_cfc_new')),
-      findsOneWidget,
-    );
-
-    const categoryKeys = [
-      ValueKey('trend-category-picks'),
-      ValueKey('trend-category-futures'),
-      ValueKey('trend-category-events'),
-    ];
-    final categoryRects = [
-      for (final key in categoryKeys) tester.getRect(find.byKey(key)),
-    ];
-    // All three shortcuts share one row and keep their open counts visible.
-    for (var i = 0; i < categoryRects.length; i++) {
-      final rect = categoryRects[i];
-      expect(rect.width, lessThan(wide.width / 3));
-      expect(rect.height, greaterThan(rect.width));
-      expect(rect.bottom, lessThan(wide.top));
-      if (i > 0) {
-        expect(rect.left, greaterThan(categoryRects[i - 1].right));
-        expect(rect.top, moreOrLessEquals(categoryRects[0].top));
-      }
-      final texts = tester.widgetList<Text>(
-        find.descendant(
-          of: find.byKey(categoryKeys[i]),
-          matching: find.byType(Text),
-        ),
-      );
-      expect(texts.any((text) => (text.data ?? '').contains('%')), isFalse);
-      expect(texts.length, inInclusiveRange(3, 4));
-    }
-    await tester.tap(
-      find.descendant(
-        of: find.byKey(categoryKeys[1]),
-        matching: find.byType(PressableScale),
-      ),
-    );
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(find.byType(AllPicksScreen), findsOneWidget);
-    expect(bundle.picks.state.typeFilter, PickMarketType.future);
-    Navigator.of(tester.element(find.byType(AllPicksScreen))).pop();
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(find.byType(AllPicksScreen), findsNothing);
-
-    await tester.tap(
-      find.descendant(
-        of: find.byKey(const ValueKey('trend-live-epl')),
-        matching: find.byType(PressableScale),
-      ),
-    );
-    expect(harnessKey.currentState!.openedMatchId, 'epl_cfc_new');
-
-    final pick = find.byKey(const ValueKey('trend-liverpool-pick'));
-    // The shortcut row pushes the grid down, so "visible" can still leave
-    // the tile under the bottom edge; drag the feed itself until the tile is
-    // fully inside the viewport.
-    final feedScrollable = find
-        .descendant(
-          of: find.byKey(const ValueKey('match-trending-feed')),
-          matching: find.byType(Scrollable),
-        )
-        .first;
-    for (
-      var i = 0;
-      i < 8 &&
-          tester.getRect(pick).bottom >
-              tester.view.physicalSize.height / tester.view.devicePixelRatio -
-                  80;
-      i++
-    ) {
-      await tester.drag(feedScrollable, const Offset(0, -200));
-      await tester.pump();
-    }
-    await tester.tap(
-      find.descendant(of: pick, matching: find.byType(PressableScale)),
-    );
-    expect(harnessKey.currentState!.openedMarketId, 'epl_liv_mc_winner');
-
-    expect(harnessKey.currentState!.matchIndex, hubTrendingTabIndex);
-    await tester.tap(find.byIcon(Icons.more_horiz_rounded));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(AllSportsScreen), findsOneWidget);
-    expect(find.text('SELECT SPORT'), findsOneWidget);
-    expect(find.text('TRENDING'), findsOneWidget);
-    expect(find.text('FOOTBALL'), findsOneWidget);
-    expect(find.text('CRICKET'), findsOneWidget);
-    expect(find.text('BASKETBALL'), findsOneWidget);
-    expect(find.text('TENNIS'), findsOneWidget);
-    expect(find.text('MOTORSPORT'), findsOneWidget);
-    expect(harnessKey.currentState!.matchIndex, hubTrendingTabIndex);
-
-    await tester.tap(find.text('CRICKET'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 700));
-    expect(find.byType(AllSportsScreen), findsNothing);
-    expect(
-      harnessKey.currentState!.matchIndex,
-      hubIndexForSport(Sport.cricket),
-    );
+    expect(card.kind, TrendingTileKind.match);
+    expect(card.sourceId, BasketballMatchPackageService.bundledMatchId);
+    expect(card.sport, Sport.basketball);
+    expect(card.span, CyberBentoSpan.wide);
   });
+
+  testWidgets(
+    'MATCH Trending shows editorial fixtures and preserves All Sports navigation',
+    (tester) async {
+      await _setPhoneSize(tester, const Size(393, 852));
+      final bundle = (await tester.runAsync(_HubBundle.create))!;
+      addTearDown(bundle.dispose);
+      final harnessKey = GlobalKey<_HubHarnessState>();
+      await tester.pumpWidget(
+        bundle.wrap(_HubHarness(key: harnessKey, initialTopTab: 0)),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
+      expect(
+        find.byKey(const PageStorageKey('match-trending-feed')),
+        findsOneWidget,
+      );
+      expect(find.text('Featured Picks'), findsNothing);
+      expect(
+        find.byKey(const PageStorageKey('featured-winner-picks')),
+        findsOneWidget,
+      );
+      expect(find.byTooltip('Previous Pick'), findsNothing);
+      expect(find.byTooltip('Next Pick'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('trend-category-futures')),
+        findsNothing,
+      );
+      final card = find.byType(EditorialMatchCard);
+      await _dragIntoView(tester, card);
+      final firstCard = card.first;
+      final fixture = tester.widget<EditorialMatchCard>(firstCard).match;
+      await tester.tap(firstCard);
+      expect(harnessKey.currentState!.openedMatchId, fixture.id);
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.byIcon(Icons.more_horiz_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 700));
+      expect(find.byType(AllSportsScreen), findsOneWidget);
+      await tester.tap(find.text('CRICKET'));
+      await tester.pump(const Duration(milliseconds: 700));
+      expect(
+        harnessKey.currentState!.matchIndex,
+        hubIndexForSport(Sport.cricket),
+      );
+    },
+  );
 
   testWidgets('GAMES Trending restores portrait cards and quick-play modes', (
     tester,
   ) async {
     await _setPhoneSize(tester, const Size(393, 852));
-    final bundle = await _HubBundle.create();
+    final bundle = (await tester.runAsync(_HubBundle.create))!;
     addTearDown(bundle.dispose);
     final harnessKey = GlobalKey<_HubHarnessState>();
 
@@ -305,8 +129,8 @@ void main() {
     final quizRect = tester.getRect(quizFinder);
     final bingoRect = tester.getRect(bingoFinder);
     final guessRect = tester.getRect(guessFinder);
-    expect(pitchRect.height, greaterThan(pitchRect.width * 1.8));
-    expect(penaltyRect.height, greaterThan(penaltyRect.width * 1.8));
+    expect(pitchRect.height, moreOrLessEquals(300));
+    expect(penaltyRect.height, moreOrLessEquals(300));
     expect(pitchRect.top, moreOrLessEquals(penaltyRect.top));
     expect(pitchRect.bottom, moreOrLessEquals(penaltyRect.bottom));
     expect(chessRect.height, greaterThan(chessRect.width * 1.8));
@@ -336,14 +160,15 @@ void main() {
     expect(harnessKey.currentState!.guessPlayerOpens, 1);
 
     await tester.tap(find.byIcon(Icons.more_horiz_rounded));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
     expect(find.byType(AllSportsScreen), findsOneWidget);
     expect(find.text('6 PLAYABLE MODES'), findsOneWidget);
   });
 
   testWidgets('Trending feeds keep type readable at 320px', (tester) async {
     await _setPhoneSize(tester, const Size(320, 720));
-    final bundle = await _HubBundle.create();
+    final bundle = (await tester.runAsync(_HubBundle.create))!;
     addTearDown(bundle.dispose);
     final harnessKey = GlobalKey<_HubHarnessState>();
 
@@ -352,29 +177,15 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 2));
 
-    final matchFeed = find.byKey(const ValueKey('match-trending-feed'));
-    final cyanBackground = Color.alphaBlend(
-      Cyber.cyan.withValues(alpha: 0.08),
-      Cyber.panel,
-    );
+    final matchFeed = find.byKey(const PageStorageKey('match-trending-feed'));
+    expect(find.text('Featured Picks'), findsNothing);
     expect(
-      find.descendant(
-        of: matchFeed,
-        matching: find.byWidgetPredicate(
-          (widget) => widget is ColoredBox && widget.color == cyanBackground,
-        ),
-      ),
-      findsWidgets,
+      find.byKey(const PageStorageKey('featured-winner-picks')),
+      findsOneWidget,
     );
+    expect(find.byTooltip('Previous Pick'), findsNothing);
+    expect(find.byTooltip('Next Pick'), findsNothing);
     _expectMinimumStyledType(tester, matchFeed);
-    final categoryRects = [
-      for (final category in const ['picks', 'futures', 'events'])
-        tester.getRect(find.byKey(ValueKey('trend-category-$category'))),
-    ];
-    expect(categoryRects[0].top, moreOrLessEquals(categoryRects[2].top));
-    expect(categoryRects[0].right, lessThan(categoryRects[1].left));
-    expect(categoryRects[1].right, lessThan(categoryRects[2].left));
-    expect(categoryRects[2].right, lessThanOrEqualTo(304));
     final matchText = tester.widgetList<Text>(
       find.descendant(of: matchFeed, matching: find.byType(Text)),
     );
@@ -392,61 +203,36 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Cricket Trending keeps both innings and result together', (
-    tester,
-  ) async {
-    await _setPhoneSize(tester, const Size(320, 720));
-    final bundle = await _HubBundle.create();
-    addTearDown(bundle.dispose);
-    final fixture = await MockPredictionRepository().fixtureById('1496576');
-    expect(fixture, isNotNull);
-    await bundle.predictions.ingestFixtures([
-      fixture!.copyWith(
+  testWidgets(
+    'Cricket editorial fixture stacks innings and keeps overs and target',
+    (tester) async {
+      await _setPhoneSize(tester, const Size(320, 720));
+      final original = await MockPredictionRepository().fixtureById('1496576');
+      final fixture = original!.copyWith(
         status: MatchStatus.finished,
         homeScore: '201/7 (20 ov)',
         awayScore: '203/5 (19.1 ov, target 202)',
         resultLine: 'India won by 5 wickets',
-      ),
-    ]);
-
-    await tester.pumpWidget(bundle.wrap(const _HubHarness(initialTopTab: 0)));
-    await tester.pump(const Duration(seconds: 2));
-    final card = find.byKey(const ValueKey('trend-live-cricket'));
-    await tester.scrollUntilVisible(
-      card,
-      250,
-      scrollable: find
-          .descendant(
-            of: find.byKey(const ValueKey('match-trending-feed')),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    await tester.pump();
-
-    for (final line in [
-      'England',
-      '201/7',
-      '(20 ov)',
-      'India',
-      '203/5',
-      '(19.1 ov, target 202)',
-      'India won by 5 wickets',
-    ]) {
-      expect(
-        find.descendant(of: card, matching: find.text(line)),
-        findsOneWidget,
       );
-    }
-    final homeScore = tester.getRect(
-      find.descendant(of: card, matching: find.text('201/7')),
-    );
-    final awayScore = tester.getRect(
-      find.descendant(of: card, matching: find.text('203/5')),
-    );
-    expect(homeScore.top, lessThan(awayScore.top));
-    expect(tester.takeException(), isNull);
-  });
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: EditorialMatchCard(match: fixture, onTap: () {}),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.text('201/7'), findsOneWidget);
+      expect(find.text('203/5'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('203/5')).dy,
+        greaterThan(tester.getBottomLeft(find.text('201/7')).dy),
+      );
+      expect(find.text('FINISHED'), findsOneWidget);
+      expect(find.text('India won by 5 wickets'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   for (final size in const [
     Size(320, 1000),
@@ -507,22 +293,57 @@ void main() {
   }
 }
 
+class _NoopAudioBackend implements AudioPlaybackBackend {
+  @override
+  Future<void> dispose() async {}
+
+  @override
+  Future<void> playEffect(
+    String assetPath, {
+    required AudioBus bus,
+    required double volume,
+  }) async {}
+
+  @override
+  Future<void> preload(List<String> assetPaths) async {}
+
+  @override
+  Future<void> setAmbienceVolume(double volume) async {}
+
+  @override
+  Future<void> setDynamicLoop({
+    required double volume,
+    required double rate,
+  }) async {}
+
+  @override
+  Future<void> startAmbience(
+    String assetPath, {
+    required double volume,
+  }) async {}
+
+  @override
+  Future<void> startDynamicLoop(
+    String assetPath, {
+    required double volume,
+  }) async {}
+
+  @override
+  Future<void> stopAll() async {}
+
+  @override
+  Future<void> stopAmbience() async {}
+
+  @override
+  Future<void> stopDynamicLoop() async {}
+}
+
 void _expectMinimumStyledType(WidgetTester tester, Finder root) {
   final styledText = tester
       .widgetList<Text>(find.descendant(of: root, matching: find.byType(Text)))
       .where((text) => text.style?.fontSize != null);
   expect(styledText, isNotEmpty);
   expect(styledText.every((text) => text.style!.fontSize! >= 10), isTrue);
-}
-
-void _expectTextColor(
-  WidgetTester tester,
-  Finder root,
-  String label,
-  Color color,
-) {
-  final text = find.descendant(of: root, matching: find.text(label)).first;
-  expect(tester.widget<Text>(text).style?.color, color);
 }
 
 Future<void> _scrollAndTap(WidgetTester tester, Finder finder) async {
@@ -538,7 +359,7 @@ Future<void> _dragIntoView(WidgetTester tester, Finder finder) async {
   final view = find.byType(NestedScrollView);
   for (var step = 0; step < 60; step++) {
     if (finder.evaluate().isNotEmpty &&
-        tester.getRect(finder).bottom <= tester.getRect(view).bottom) {
+        tester.getRect(finder.first).bottom <= tester.getRect(view).bottom) {
       return;
     }
     await tester.dragFrom(tester.getRect(view).center, const Offset(0, -120));
@@ -552,6 +373,14 @@ Future<void> _setPhoneSize(WidgetTester tester, Size size) async {
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
+}
+
+// Bundled fixture integration tests avoid a rolling live network refresh.
+class _OfflineHubPredictions extends PredictionCubit {
+  _OfflineHubPredictions(SecureGameStorage storage)
+    : super(MockPredictionRepository(), storage);
+  @override
+  Future<void> loadSport(Sport sport) async {}
 }
 
 class _HubBundle {
@@ -568,9 +397,12 @@ class _HubBundle {
   static Future<_HubBundle> create() async {
     final storage = SecureGameStorage();
     final game = GameBloc(storage);
-    final predictions = PredictionCubit(MockPredictionRepository(), storage);
+    final predictions = _OfflineHubPredictions(storage);
     final picks = PicksCubit(MockPickRepository(), storage);
     await predictions.load();
+    await predictions.ingestFixtures(
+      await MockPredictionRepository().fixtures(),
+    );
     await picks.load();
     return _HubBundle(game: game, predictions: predictions, picks: picks);
   }

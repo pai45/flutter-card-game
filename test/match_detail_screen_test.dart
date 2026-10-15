@@ -903,12 +903,7 @@ const _paraguay = SportTeam(
   color: Color(0xffd7263d),
 );
 
-final _kickoff = DateTime(
-  DateTime.now().year,
-  DateTime.now().month,
-  DateTime.now().day,
-  18,
-);
+final _kickoff = DateTime.now().add(const Duration(days: 1));
 
 final _match = SportMatch(
   id: 'fifa_fra_par',

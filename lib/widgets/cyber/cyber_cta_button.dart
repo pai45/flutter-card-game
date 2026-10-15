@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -352,7 +353,7 @@ class _HudCtaButtonState extends State<HudCtaButton>
                                     children: [
                                       if (widget.wrapLabel)
                                         Text(displayLabel, textAlign: TextAlign.center,
-                                          style: Cyber.display(14, color: contentColor, letterSpacing: 1))
+                                          style: Cyber.display(StatOzTypography.p14, color: contentColor, letterSpacing: 1))
                                       else FittedBox(
                                         fit: BoxFit.scaleDown,
                                         child: Text(
@@ -366,8 +367,8 @@ class _HudCtaButtonState extends State<HudCtaButton>
                                                       ).style)
                                                   .copyWith(
                                                     color: contentColor,
-                                                    fontSize: 20,
-                                                    fontWeight: FontWeight.w800,
+                                                    fontSize: StatOzTypography.p20,
+                                                    fontWeight: StatOzTypography.extrabold,
                                                     letterSpacing: 3,
                                                     shadows: [
                                                       Shadow(
@@ -390,8 +391,8 @@ class _HudCtaButtonState extends State<HudCtaButton>
                                             color: contentColor.withValues(
                                               alpha: 0.72,
                                             ),
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w700,
+                                            fontSize: StatOzTypography.p11,
+                                            fontWeight: StatOzTypography.bold,
                                             letterSpacing: 0.8,
                                           ),
                                         ),
@@ -592,7 +593,7 @@ class _CyberFuseCtaButtonState extends State<CyberFuseCtaButton>
                                     child: Text(
                                       widget.label,
                                       maxLines: 1,
-                                      style: Cyber.display(17, letterSpacing: 1.4),
+                                      style: Cyber.display(StatOzTypography.p17, letterSpacing: 1.4),
                                     ),
                                   ),
                                   if (helper != null) ...[
@@ -601,8 +602,7 @@ class _CyberFuseCtaButtonState extends State<CyberFuseCtaButton>
                                       helper,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: Cyber.label(
-                                        9.5,
+                                      style: Cyber.label(StatOzTypography.p9_5,
                                         color: bright,
                                         letterSpacing: 1,
                                       ),

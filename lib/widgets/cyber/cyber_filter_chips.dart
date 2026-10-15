@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
@@ -88,8 +89,8 @@ class CyberFilterChip extends StatelessWidget {
           style: TextStyle(
             color: color,
             fontFamily: Cyber.displayFont,
-            fontSize: 11,
-            fontWeight: FontWeight.w900,
+            fontSize: StatOzTypography.p11,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 0.8,
           ),
         ),

@@ -1,13 +1,16 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../config/game_ladder.dart';
 import '../../config/theme.dart';
 import 'cyber_widgets.dart' show ChamferedActionSurface, HudChamferClipper;
 import 'game_launch_art.dart';
+import 'statoz_icons.dart';
 
 export 'game_launch_art.dart' show CyberGameArt, CyberGameIllustration;
 
-/// Shared discovery CTA: an etched simulation, a game title and a launch rail.
+/// Shared discovery CTA: a filled sport scene, a game title and a launch rail.
 /// The whole card is one target, including its illustration and action rail.
 class CyberGameLaunchCard extends StatefulWidget {
   const CyberGameLaunchCard({
@@ -18,6 +21,7 @@ class CyberGameLaunchCard extends StatefulWidget {
     required this.art,
     required this.accent,
     required this.onTap,
+    this.game,
     this.titleLines,
     this.portrait = false,
     this.animate = true,
@@ -34,6 +38,7 @@ class CyberGameLaunchCard extends StatefulWidget {
   final CyberGameArt art;
   final Color accent;
   final VoidCallback onTap;
+  final ArcadeGame? game;
   final bool portrait;
   final bool animate;
   final bool locked;
@@ -125,7 +130,10 @@ class _CyberGameLaunchCardState extends State<CyberGameLaunchCard> {
     final label = compact ? widget.badge.split('//').last.trim() : widget.badge;
     return Row(
       children: [
-        Container(width: 3, height: 10, color: widget.accent),
+        if (widget.game == null)
+          Container(width: 3, height: 10, color: widget.accent)
+        else
+          StatozGameIcon(game: widget.game!, size: 20, color: widget.accent),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
@@ -133,7 +141,7 @@ class _CyberGameLaunchCardState extends State<CyberGameLaunchCard> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Cyber.label(
-              10,
+              StatOzTypography.p10,
               color: widget.accent,
               letterSpacing: compact ? 0.6 : 1,
             ),
@@ -144,10 +152,22 @@ class _CyberGameLaunchCardState extends State<CyberGameLaunchCard> {
   }
 
   Widget _illustration() => IgnorePointer(
-    child: CyberGameIllustration(
-      art: widget.art,
-      accent: widget.accent,
-      animate: widget.animate && !widget.locked,
+    child: AnimatedScale(
+      scale:
+          (_hover || _focus) &&
+              !widget.locked &&
+              !MediaQuery.disableAnimationsOf(context)
+          ? 1.02
+          : 1,
+      duration: Duration(
+        milliseconds: MediaQuery.disableAnimationsOf(context) ? 0 : 120,
+      ),
+      child: CyberGameIllustration(
+        art: widget.art,
+        game: widget.game,
+        accent: widget.accent,
+        animate: widget.animate && !widget.locked,
+      ),
     ),
   );
 
@@ -187,8 +207,9 @@ class _CyberGameLaunchCardState extends State<CyberGameLaunchCard> {
     widget.subtitle,
     maxLines: 3,
     overflow: TextOverflow.ellipsis,
-    style: Cyber.label(
-      10,
+    style: Cyber.bodyFor(
+      context,
+      StatOzTypography.p10,
       color: widget.accent,
       letterSpacing: 0.4,
     ).copyWith(height: 1.4),
@@ -256,7 +277,7 @@ class _CyberGameLaunchCardState extends State<CyberGameLaunchCard> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Cyber.label(
-                  10,
+                  StatOzTypography.p10,
                   color: widget.accent,
                   letterSpacing: compact ? 0.6 : 1.4,
                 ),

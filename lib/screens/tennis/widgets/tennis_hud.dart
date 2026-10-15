@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -154,7 +155,7 @@ class _ModeTag extends StatelessWidget {
           config.mode == TennisMode.training
               ? 'TRAINING // ${config.trainingLesson}'
               : config.mode.label,
-          style: Cyber.display(9, color: Cyber.cyan, letterSpacing: 1),
+          style: Cyber.display(StatOzTypography.p9, color: Cyber.cyan, letterSpacing: 1),
         ),
       ),
     );
@@ -200,7 +201,7 @@ class _MatchScoreboard extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 5),
                     child: Text(
                       score.tieBreak ? 'TIEBREAK' : 'DEUCE',
-                      style: Cyber.display(8, color: Cyber.lime),
+                      style: Cyber.display(StatOzTypography.p8, color: Cyber.lime),
                     ),
                   ),
               ],
@@ -245,17 +246,17 @@ class _ScoreRow extends StatelessWidget {
             name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.display(10, color: Colors.white),
+            style: Cyber.display(StatOzTypography.p10, color: Colors.white),
           ),
         ),
-        Text('$games', style: Cyber.display(18, color: accent)),
+        Text('$games', style: Cyber.display(StatOzTypography.p18, color: accent)),
         const SizedBox(width: 18),
         SizedBox(
           width: 43,
           child: Text(
             points,
             textAlign: TextAlign.right,
-            style: Cyber.display(16, color: Colors.white),
+            style: Cyber.display(StatOzTypography.p16, color: Colors.white),
           ),
         ),
       ],
@@ -300,9 +301,9 @@ class _PracticeScoreboard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
             child: Row(
               children: [
-                Text(primary, style: Cyber.display(15, color: Cyber.lime)),
+                Text(primary, style: Cyber.display(StatOzTypography.p15, color: Cyber.lime)),
                 const Spacer(),
-                Text(secondary, style: Cyber.display(8, color: Cyber.muted)),
+                Text(secondary, style: Cyber.display(StatOzTypography.p8, color: Cyber.muted)),
               ],
             ),
           ),
@@ -344,7 +345,7 @@ class _ServeMeter extends StatelessWidget {
                           game.engine.serveNumber == 1
                               ? '1ST SERVE'
                               : '2ND SERVE',
-                          style: Cyber.display(8, color: Cyber.muted),
+                          style: Cyber.display(StatOzTypography.p8, color: Cyber.muted),
                         ),
                       ),
                     ),
@@ -355,7 +356,7 @@ class _ServeMeter extends StatelessWidget {
                         alignment: Alignment.centerRight,
                         child: Text(
                           'RELEASE IN GREEN',
-                          style: Cyber.display(7, color: Cyber.lime),
+                          style: Cyber.display(StatOzTypography.p7, color: Cyber.lime),
                         ),
                       ),
                     ),
@@ -402,11 +403,11 @@ class _Meter extends StatelessWidget {
       children: [
         Row(
           children: [
-            Text(label, style: Cyber.display(8, color: Cyber.muted)),
+            Text(label, style: Cyber.display(StatOzTypography.p8, color: Cyber.muted)),
             const Spacer(),
             Text(
               '${(value * 100).round()}%',
-              style: Cyber.display(8, color: color),
+              style: Cyber.display(StatOzTypography.p8, color: color),
             ),
           ],
         ),

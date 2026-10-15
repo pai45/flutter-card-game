@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../blocs/picks/picks_state.dart';
@@ -219,8 +220,7 @@ class _PickSettlementOverlayState extends State<_PickSettlementOverlay>
                           children: [
                             Text(
                               'RESULTS ARE IN',
-                              style: Cyber.label(
-                                10,
+                              style: Cyber.label(StatOzTypography.p10,
                                 color: Cyber.cyan,
                                 letterSpacing: 2.2,
                               ),
@@ -231,10 +231,8 @@ class _PickSettlementOverlayState extends State<_PickSettlementOverlay>
                               textAlign: TextAlign.center,
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
-                              style: Cyber.bodyFor(
-                                context,
-                                15,
-                                weight: FontWeight.w700,
+                              style: Cyber.bodyFor(context, StatOzTypography.p15,
+                                weight: StatOzTypography.bold,
                                 height: 1.25,
                               ),
                             ),
@@ -242,8 +240,7 @@ class _PickSettlementOverlayState extends State<_PickSettlementOverlay>
                             Text(
                               _data.subtitle,
                               textAlign: TextAlign.center,
-                              style: Cyber.label(
-                                10,
+                              style: Cyber.label(StatOzTypography.p10,
                                 color: Cyber.muted,
                                 letterSpacing: 1.3,
                                 fontFeatures: const [
@@ -288,8 +285,7 @@ class _PickSettlementOverlayState extends State<_PickSettlementOverlay>
                               ),
                               child: Text(
                                 stampLabel,
-                                style: Cyber.display(
-                                  34,
+                                style: Cyber.display(StatOzTypography.p34,
                                   color: accent,
                                   letterSpacing: 3,
                                 ),
@@ -364,8 +360,7 @@ class _PickSettlementOverlayState extends State<_PickSettlementOverlay>
                                       const SizedBox(width: 6),
                                       Text(
                                         'WIN STREAK ×${_data.winStreak}',
-                                        style: Cyber.label(
-                                          11,
+                                        style: Cyber.label(StatOzTypography.p11,
                                           color: Cyber.gold,
                                           letterSpacing: 1.2,
                                           fontFeatures: const [
@@ -385,8 +380,7 @@ class _PickSettlementOverlayState extends State<_PickSettlementOverlay>
                       opacity: hintIn,
                       child: Text(
                         'TAP TO CONTINUE',
-                        style: Cyber.label(
-                          9,
+                        style: Cyber.label(StatOzTypography.p9,
                           color: Cyber.muted,
                           letterSpacing: 1.4,
                         ),
@@ -415,8 +409,7 @@ class _PickSettlementOverlayState extends State<_PickSettlementOverlay>
           child: Center(
             child: Text(
               '−${formatOzGrouped(_data.stakeOz)} OZ',
-              style: Cyber.display(
-                24,
+              style: Cyber.display(StatOzTypography.p24,
                 color: Cyber.danger,
                 letterSpacing: 1,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -431,7 +424,7 @@ class _PickSettlementOverlayState extends State<_PickSettlementOverlay>
         child: Center(
           child: Text(
             'STAKE REFUNDED',
-            style: Cyber.label(13, color: Cyber.muted, letterSpacing: 1.6),
+            style: Cyber.label(StatOzTypography.p13, color: Cyber.muted, letterSpacing: 1.6),
           ),
         ),
       );
@@ -446,7 +439,7 @@ class _PickSettlementOverlayState extends State<_PickSettlementOverlay>
             const SizedBox(width: 10),
             Text(
               '+${formatOzGrouped((_data.payoutOz * coinIn).round())} OZ',
-              style: Cyber.display(32, color: Cyber.gold, letterSpacing: 1)
+              style: Cyber.display(StatOzTypography.p32, color: Cyber.gold, letterSpacing: 1)
                   .copyWith(
                     fontFeatures: const [FontFeature.tabularFigures()],
                     shadows: [
@@ -487,8 +480,7 @@ class _SummaryTile extends StatelessWidget {
           children: [
             Text(
               label,
-              style: Cyber.label(
-                8,
+              style: Cyber.label(StatOzTypography.p8,
                 color: Cyber.muted.withValues(alpha: 0.72),
                 letterSpacing: 1,
               ),
@@ -497,8 +489,7 @@ class _SummaryTile extends StatelessWidget {
               value,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.label(
-                13,
+              style: Cyber.label(StatOzTypography.p13,
                 color: color ?? Colors.white,
                 letterSpacing: 0.3,
                 fontFeatures: const [FontFeature.tabularFigures()],

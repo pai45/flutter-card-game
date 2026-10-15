@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -247,8 +248,8 @@ class RankWinnerTile extends StatelessWidget {
                       style: TextStyle(
                         color: color,
                         fontFamily: Cyber.displayFont,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
+                        fontSize: StatOzTypography.p15,
+                        fontWeight: StatOzTypography.black,
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
@@ -278,8 +279,8 @@ class RankWinnerTile extends StatelessWidget {
                             style: TextStyle(
                               color: Colors.white,
                               fontFamily: Cyber.bodyFontFor(context),
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
+                              fontSize: StatOzTypography.p15,
+                              fontWeight: StatOzTypography.bold,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -294,8 +295,8 @@ class RankWinnerTile extends StatelessWidget {
                             style: TextStyle(
                               color: color,
                               fontFamily: Cyber.displayFont,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w900,
+                              fontSize: StatOzTypography.p13,
+                              fontWeight: StatOzTypography.black,
                               fontFeatures: const [
                                 FontFeature.tabularFigures(),
                               ],
@@ -336,8 +337,8 @@ class _WinnerCopy extends StatelessWidget {
               style: TextStyle(
                 color: color,
                 fontFamily: Cyber.displayFont,
-                fontSize: 17,
-                fontWeight: FontWeight.w900,
+                fontSize: StatOzTypography.p17,
+                fontWeight: StatOzTypography.black,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -355,8 +356,8 @@ class _WinnerCopy extends StatelessWidget {
           style: TextStyle(
             color: Colors.white,
             fontFamily: Cyber.bodyFontFor(context),
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
+            fontSize: StatOzTypography.p20,
+            fontWeight: StatOzTypography.bold,
             height: 1.05,
           ),
         ),
@@ -366,7 +367,7 @@ class _WinnerCopy extends StatelessWidget {
             entry.subtitle!,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.9),
+            style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 0.9),
           ),
         ],
         if (entry.badge != null) ...[
@@ -405,8 +406,8 @@ class _WinnerScore extends StatelessWidget {
               style: TextStyle(
                 color: color,
                 fontFamily: Cyber.displayFont,
-                fontSize: 24,
-                fontWeight: FontWeight.w900,
+                fontSize: StatOzTypography.p24,
+                fontWeight: StatOzTypography.black,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -416,8 +417,8 @@ class _WinnerScore extends StatelessWidget {
             style: TextStyle(
               color: color.withValues(alpha: 0.72),
               fontFamily: Cyber.displayFont,
-              fontSize: 9,
-              fontWeight: FontWeight.w900,
+              fontSize: StatOzTypography.p9,
+              fontWeight: StatOzTypography.black,
               letterSpacing: 0.4,
             ),
           ),
@@ -472,8 +473,8 @@ class RankRow extends StatelessWidget {
               style: TextStyle(
                 color: rankColor,
                 fontFamily: Cyber.displayFont,
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
+                fontSize: StatOzTypography.p14,
+                fontWeight: StatOzTypography.black,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -501,10 +502,10 @@ class RankRow extends StatelessWidget {
                         style: TextStyle(
                           color: Colors.white,
                           fontFamily: Cyber.bodyFontFor(context),
-                          fontSize: 15,
+                          fontSize: StatOzTypography.p15,
                           fontWeight: isUser
-                              ? FontWeight.w800
-                              : FontWeight.w600,
+                              ? StatOzTypography.extrabold
+                              : StatOzTypography.semibold,
                         ),
                       ),
                     ),
@@ -528,8 +529,7 @@ class RankRow extends StatelessWidget {
                           entry.subtitle!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.label(
-                            9,
+                          style: Cyber.label(StatOzTypography.p9,
                             color: Cyber.muted,
                             letterSpacing: 0.9,
                           ),
@@ -558,8 +558,8 @@ class RankRow extends StatelessWidget {
                     style: TextStyle(
                       color: accent,
                       fontFamily: Cyber.displayFont,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
+                      fontSize: StatOzTypography.p16,
+                      fontWeight: StatOzTypography.black,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
@@ -569,8 +569,8 @@ class RankRow extends StatelessWidget {
                   style: TextStyle(
                     color: Cyber.muted.withValues(alpha: 0.82),
                     fontFamily: Cyber.displayFont,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
+                    fontSize: StatOzTypography.p9,
+                    fontWeight: StatOzTypography.extrabold,
                     letterSpacing: 0.4,
                   ),
                 ),
@@ -646,8 +646,8 @@ class RankUserBar extends StatelessWidget {
                       style: TextStyle(
                         color: accent.withValues(alpha: 0.85),
                         fontFamily: Cyber.displayFont,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
+                        fontSize: StatOzTypography.p11,
+                        fontWeight: StatOzTypography.extrabold,
                         letterSpacing: 0.1,
                       ),
                     ),
@@ -666,7 +666,7 @@ class RankUserBar extends StatelessWidget {
                         color: Colors.white,
                         fontFamily: Cyber.displayFont,
                         fontSize: rankText == null ? 28 : 20,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: StatOzTypography.black,
                         height: 1,
                       ),
                     ),
@@ -679,8 +679,8 @@ class RankUserBar extends StatelessWidget {
                         style: TextStyle(
                           color: Colors.white,
                           fontFamily: Cyber.bodyFontFor(context),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
+                          fontSize: StatOzTypography.p15,
+                          fontWeight: StatOzTypography.bold,
                         ),
                       ),
                     ),
@@ -692,7 +692,7 @@ class RankUserBar extends StatelessWidget {
                     user.subtitle!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1),
+                    style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1),
                   ),
                 ],
               ],
@@ -708,8 +708,8 @@ class RankUserBar extends StatelessWidget {
                   style: TextStyle(
                     color: accent,
                     fontFamily: Cyber.displayFont,
-                    fontSize: 21,
-                    fontWeight: FontWeight.w900,
+                    fontSize: StatOzTypography.p21,
+                    fontWeight: StatOzTypography.black,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
@@ -718,8 +718,8 @@ class RankUserBar extends StatelessWidget {
                   style: TextStyle(
                     color: accent.withValues(alpha: 0.7),
                     fontFamily: Cyber.displayFont,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
+                    fontSize: StatOzTypography.p9,
+                    fontWeight: StatOzTypography.black,
                     letterSpacing: 0.4,
                   ),
                 ),
@@ -731,7 +731,7 @@ class RankUserBar extends StatelessWidget {
               children: [
                 Text(
                   ctaLabel!,
-                  style: Cyber.label(10, color: accent, letterSpacing: 1.2),
+                  style: Cyber.label(StatOzTypography.p10, color: accent, letterSpacing: 1.2),
                 ),
                 const SizedBox(width: 2),
                 Icon(Icons.chevron_right, color: accent, size: 20),
@@ -826,8 +826,8 @@ class RankTag extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontFamily: Cyber.displayFont,
-          fontSize: 9,
-          fontWeight: FontWeight.w900,
+          fontSize: StatOzTypography.p9,
+          fontWeight: StatOzTypography.black,
           letterSpacing: 0.8,
         ),
       ),
@@ -858,8 +858,8 @@ class MovementBadge extends StatelessWidget {
       style: TextStyle(
         color: Cyber.muted,
         fontFamily: Cyber.displayFont,
-        fontSize: 11,
-        fontWeight: FontWeight.w900,
+        fontSize: StatOzTypography.p11,
+        fontWeight: StatOzTypography.black,
       ),
     );
   }
@@ -870,8 +870,8 @@ class MovementBadge extends StatelessWidget {
       style: TextStyle(
         color: color,
         fontFamily: Cyber.displayFont,
-        fontSize: 11,
-        fontWeight: FontWeight.w900,
+        fontSize: StatOzTypography.p11,
+        fontWeight: StatOzTypography.black,
         letterSpacing: 0.3,
         fontFeatures: const [FontFeature.tabularFigures()],
       ),
@@ -912,8 +912,8 @@ class CountdownPill extends StatelessWidget {
             style: TextStyle(
               color: accent,
               fontFamily: Cyber.displayFont,
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
+              fontSize: StatOzTypography.p10,
+              fontWeight: StatOzTypography.black,
               letterSpacing: 0.5,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),

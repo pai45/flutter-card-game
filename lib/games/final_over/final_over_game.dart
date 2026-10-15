@@ -11,6 +11,8 @@
 /// only ever hears about the coarse beats (match ended).
 library;
 
+import 'package:card_game/design_system/typography.dart';
+
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
@@ -849,8 +851,7 @@ class FinalOverGame extends FlameGame {
         canvas,
         labels[i],
         rect,
-        Cyber.label(
-          7,
+        Cyber.label(StatOzTypography.p7,
           color: accent.withValues(alpha: 0.85),
           letterSpacing: 1.4,
         ),

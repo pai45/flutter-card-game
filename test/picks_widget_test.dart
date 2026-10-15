@@ -62,7 +62,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('LEAGUE'), findsOneWidget);
     expect(find.text('FIFA'), findsOneWidget);
-    await tester.tapAt(const Offset(20, 20)); // dismiss the settings sheet
+    Navigator.of(tester.element(find.text('LEAGUE'))).pop(); // dismiss settings
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -70,9 +70,10 @@ void main() {
     // the initial viewport — scroll it into view rather than assuming it
     // renders on the first frame.
     await tester.scrollUntilVisible(
-      find.text('Punjab'),
-      300,
+      find.byKey(const ValueKey('pick-market-ipl_pjk_rcb_winner')),
+      500,
       scrollable: find.byType(Scrollable).first,
+      maxScrolls: 150,
     );
     await tester.pump();
     expect(find.text('Punjab'), findsAtLeastNWidgets(1));
@@ -124,16 +125,18 @@ void main() {
       find.text('Who will win IPL 2026?'),
       300,
       scrollable: find.byType(Scrollable).first,
+      maxScrolls: 150,
     );
     await tester.pump();
 
     expect(find.text('Who will win IPL 2026?'), findsOneWidget);
-    expect(find.text('MUM'), findsOneWidget);
-    expect(find.text('CHE'), findsOneWidget);
-    expect(find.text('BLR'), findsOneWidget);
-    expect(find.text('KOL'), findsOneWidget);
-    expect(find.text('HYD'), findsOneWidget);
-    expect(find.text('PJB'), findsOneWidget);
+    final market = await MockPickRepository().markets().then(
+      (markets) =>
+          markets.firstWhere((m) => m.question == 'Who will win IPL 2026?'),
+    );
+    for (final outcome in market.outcomes) {
+      expect(find.text(outcome.label), findsAtLeastNWidgets(1));
+    }
   });
 
   testWidgets('buy pick sheet accepts typed stake and validates multiples', (
@@ -170,13 +173,21 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     await tester.scrollUntilVisible(
-      find.text('68%'),
+      find.byKey(const ValueKey('pick-market-ipl_pjk_rcb_winner')),
       500,
       scrollable: find.byType(Scrollable).first,
+      maxScrolls: 150,
     );
     await tester.pump();
 
-    await tester.tap(find.text('68%').first);
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('pick-market-ipl_pjk_rcb_winner')),
+            matching: find.text('68%'),
+          )
+          .first,
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
@@ -269,6 +280,7 @@ void main() {
         find.byKey(const ValueKey('same_match_prediction_quiz_cta')),
         500,
         scrollable: find.byType(Scrollable).first,
+        maxScrolls: 150,
       );
       await tester.pump();
 

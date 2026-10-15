@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
@@ -129,8 +130,8 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
                               '/',
                               style: TextStyle(
                                 color: Cyber.cyan,
-                                fontFamily: 'Orbitron',
-                                fontWeight: FontWeight.w900,
+                                fontFamily: StatOzTypography.displayFont,
+                                fontWeight: StatOzTypography.black,
                               ),
                             ),
                             const SizedBox(width: 6),
@@ -141,9 +142,9 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontFamily: 'Orbitron',
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
+                                  fontFamily: StatOzTypography.displayFont,
+                                  fontSize: StatOzTypography.p18,
+                                  fontWeight: StatOzTypography.black,
                                   letterSpacing: 1.3,
                                 ),
                               ),
@@ -159,8 +160,8 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Cyber.muted,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
+                              fontSize: StatOzTypography.p11,
+                              fontWeight: StatOzTypography.bold,
                             ),
                           ),
                       ],

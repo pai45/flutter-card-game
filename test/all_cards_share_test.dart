@@ -1,3 +1,5 @@
+import 'package:card_game/models/sport_match.dart';
+import 'package:card_game/widgets/cyber/statoz_icons.dart';
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/game/game_state.dart';
 import 'package:card_game/config/enums.dart';
@@ -93,7 +95,7 @@ void main() {
     addTearDown(bloc.close);
 
     await tester.pumpWidget(_AllCardsHarness(bloc: bloc, share: share));
-    await tester.tap(find.byIcon(Icons.sports_cricket));
+    await tester.tap(find.byWidgetPredicate((widget) => widget is StatozSportIcon && widget.sport == Sport.cricket));
     await tester.pumpAndSettle();
 
     expect(find.byType(CyberPlayerCardTile), findsOneWidget);

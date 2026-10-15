@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -46,7 +47,7 @@ class TeamSeasonMatchCard extends StatelessWidget {
                   const Spacer(),
                   Text(
                     _date(match.kickoff),
-                    style: Cyber.label(8, color: Cyber.muted),
+                    style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                   ),
                 ],
               ),
@@ -68,7 +69,7 @@ class TeamSeasonMatchCard extends StatelessWidget {
                           match.hasScore
                               ? '${match.homeScore ?? '-'}  -  ${match.awayScore ?? '-'}'
                               : 'VS',
-                          style: Cyber.display(20, color: Colors.white),
+                          style: Cyber.display(StatOzTypography.p20, color: Colors.white),
                         ),
                         if (match.resultLine != null) ...[
                           const SizedBox(height: 4),
@@ -79,7 +80,7 @@ class TeamSeasonMatchCard extends StatelessWidget {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: Cyber.label(7.5, color: Cyber.muted),
+                              style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted),
                             ),
                           ),
                         ],
@@ -135,7 +136,7 @@ class _Team extends StatelessWidget {
         team.shortName,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: Cyber.display(10, color: Colors.white),
+        style: Cyber.display(StatOzTypography.p10, color: Colors.white),
       ),
     ],
   );

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -220,7 +221,7 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
               followed
                   ? '${followable.league.shortCode} REMOVED FROM FOLLOWING'
                   : '${followable.league.shortCode} ADDED TO FOLLOWING',
-              style: Cyber.label(9, color: Cyber.success, letterSpacing: 1.0),
+              style: Cyber.label(StatOzTypography.p9, color: Cyber.success, letterSpacing: 1.0),
             ),
           ),
         );
@@ -232,7 +233,7 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
           backgroundColor: Cyber.panel2,
           content: Text(
             'COULD NOT UPDATE FOLLOWING',
-            style: Cyber.label(9, color: Cyber.danger),
+            style: Cyber.label(StatOzTypography.p9, color: Cyber.danger),
           ),
         ),
       );
@@ -1086,7 +1087,7 @@ class _ArchivedPickResultCard extends StatelessWidget {
                   const Spacer(),
                   Text(
                     _archiveDate(match.kickoff),
-                    style: Cyber.label(8, color: Cyber.muted),
+                    style: Cyber.label(StatOzTypography.p8, color: Cyber.muted),
                   ),
                 ],
               ),
@@ -1100,12 +1101,12 @@ class _ArchivedPickResultCard extends StatelessWidget {
                       children: [
                         Text(
                           '${match.homeScore ?? '-'}  -  ${match.awayScore ?? '-'}',
-                          style: Cyber.display(20, color: Colors.white),
+                          style: Cyber.display(StatOzTypography.p20, color: Colors.white),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           result,
-                          style: Cyber.label(8, color: Cyber.success),
+                          style: Cyber.label(StatOzTypography.p8, color: Cyber.success),
                         ),
                       ],
                     ),
@@ -1142,7 +1143,7 @@ class _ArchiveTeam extends StatelessWidget {
           team.shortName,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.display(10, color: Colors.white),
+          style: Cyber.display(StatOzTypography.p10, color: Colors.white),
         ),
       ],
     );
@@ -1186,7 +1187,7 @@ class _HubLoader extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             label,
-            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.6),
+            style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.6),
           ),
         ],
       ),

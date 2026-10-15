@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -79,11 +80,11 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text("LET'S GET STARTED", style: Cyber.display(24)),
+                        Text("LET'S GET STARTED", style: Cyber.display(StatOzTypography.p24)),
                         const SizedBox(height: 24),
                         Text(
                           'Enter Your Email',
-                          style: Cyber.bodyFor(context, 16, color: Cyber.muted),
+                          style: Cyber.bodyFor(context, StatOzTypography.p16, color: Cyber.muted),
                         ),
                         const SizedBox(height: 12),
                         TextField(
@@ -94,7 +95,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                           textInputAction: TextInputAction.done,
                           autocorrect: false,
                           enableSuggestions: false,
-                          style: Cyber.bodyFor(context, 16),
+                          style: Cyber.bodyFor(context, StatOzTypography.p16),
                           onChanged: (_) => setState(() => _edited = true),
                           onSubmitted: (_) {
                             setState(() => _edited = true);
@@ -102,9 +103,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                           },
                           decoration: InputDecoration(
                             hintText: 'champion@arena.com',
-                            hintStyle: Cyber.bodyFor(
-                              context,
-                              16,
+                            hintStyle: Cyber.bodyFor(context, StatOzTypography.p16,
                               color: Cyber.muted,
                             ),
                             filled: true,
@@ -124,9 +123,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                             errorText: _edited && !_valid
                                 ? 'Enter a valid email to continue.'
                                 : null,
-                            errorStyle: Cyber.bodyFor(
-                              context,
-                              12,
+                            errorStyle: Cyber.bodyFor(context, StatOzTypography.p12,
                               color: Cyber.danger,
                             ),
                           ),
@@ -139,7 +136,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 16,
                               ),
-                              child: Text('OR', style: Cyber.display(20)),
+                              child: Text('OR', style: Cyber.display(StatOzTypography.p20)),
                             ),
                             const Expanded(child: Divider(color: Cyber.line)),
                           ],
@@ -149,7 +146,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                           key: const ValueKey('onboarding-google'),
                           label: 'SIGN IN WITH GOOGLE',
                           outlined: true,
-                          labelStyle: Cyber.label(20),
+                          labelStyle: Cyber.label(StatOzTypography.p20),
                           icon: Icons.login,
                           glow: false,
                           enabled: !_continuing,
@@ -158,7 +155,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                         const SizedBox(height: 16),
                         Text(
                           'By continuing, you agree to our',
-                          style: Cyber.bodyFor(context, 14, color: Cyber.muted),
+                          style: Cyber.bodyFor(context, StatOzTypography.p14, color: Cyber.muted),
                         ),
                         Wrap(
                           crossAxisAlignment: WrapCrossAlignment.center,
@@ -169,9 +166,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                             ),
                             Text(
                               ' & ',
-                              style: Cyber.bodyFor(
-                                context,
-                                14,
+                              style: Cyber.bodyFor(context, StatOzTypography.p14,
                                 color: Cyber.muted,
                               ),
                             ),
@@ -187,7 +182,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                           label: _continuing
                               ? 'ENTERING SETUP'
                               : 'LOGIN / SIGNUP',
-                          labelStyle: Cyber.label(20),
+                          labelStyle: Cyber.label(StatOzTypography.p20),
                           icon: Icons.arrow_forward,
                           enabled: _valid && !_continuing,
                           glow: _valid && !_continuing,
@@ -197,7 +192,7 @@ class _LoginSignupScreenState extends State<LoginSignupScreen> {
                         Text(
                           'Preview — no account will be created',
                           textAlign: TextAlign.center,
-                          style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+                          style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
                         ),
                       ],
                     ),
@@ -226,9 +221,7 @@ class _PolicyLink extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Text(
           label,
-          style: Cyber.bodyFor(
-            context,
-            14,
+          style: Cyber.bodyFor(context, StatOzTypography.p14,
             color: Cyber.cyan,
           ).copyWith(decoration: TextDecoration.underline),
         ),

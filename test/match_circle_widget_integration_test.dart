@@ -13,6 +13,7 @@ import 'package:card_game/services/secure_storage_service.dart';
 import 'package:card_game/utils/sound_effects.dart';
 import 'package:card_game/widgets/match_summary_header.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +23,9 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
+    for (final channel in ['xyz.luan/audioplayers.global', 'xyz.luan/audioplayers']) {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(MethodChannel(channel), (_) async => null);
+    }
     AudioController.instance.muted.value = true;
     SharedPreferences.setMockInitialValues({});
     FlutterSecureStorage.setMockInitialValues({

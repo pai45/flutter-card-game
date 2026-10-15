@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -229,6 +230,7 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
         _selectedMatchSport == null
             ? _TrendingMatchesTab(
                 questTile: _questTile(),
+                onOpenQuiz: widget.onOpenQuiz,
                 onOpenMatch: widget.onOpenMatch,
                 onOpenMarket: widget.onOpenMarket,
                 animateIntro: _shouldAnimateIntro(0),
@@ -356,6 +358,7 @@ class _PredictionBackground extends StatelessWidget {
 class _TrendingMatchesTab extends StatelessWidget {
   const _TrendingMatchesTab({
     required this.questTile,
+    required this.onOpenQuiz,
     required this.onOpenMatch,
     required this.onOpenMarket,
     required this.animateIntro,
@@ -367,11 +370,13 @@ class _TrendingMatchesTab extends StatelessWidget {
   final bool animateIntro;
   final VoidCallback onIntroPlayed;
   final Widget questTile;
+  final ValueChanged<Sport> onOpenQuiz;
 
   @override
   Widget build(BuildContext context) {
     return TrendingMatchesView(
       header: questTile,
+      onOpenQuiz: onOpenQuiz,
       onOpenMatch: onOpenMatch,
       onOpenMarket: onOpenMarket,
       animateIntro: animateIntro,
@@ -906,9 +911,9 @@ class _MatchesTabState extends State<_MatchesTab> {
                               entry.key.shortCode,
                               style: Cyber.bodyFor(
                                 context,
-                                13,
+                                StatOzTypography.p13,
                                 color: Cyber.cyan.withValues(alpha: 0.85),
-                                weight: FontWeight.w700,
+                                weight: StatOzTypography.bold,
                                 letterSpacing: 0.4,
                                 height: 1,
                               ),
@@ -924,7 +929,7 @@ class _MatchesTabState extends State<_MatchesTab> {
                             Text(
                               'STANDING',
                               style: Cyber.label(
-                                9,
+                                StatOzTypography.p9,
                                 color: Cyber.muted,
                                 letterSpacing: 1.2,
                               ),
@@ -1039,7 +1044,10 @@ class _NewGamesReleaseCard extends StatelessWidget {
                       'BRAND NEW GAMES',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.display(17, letterSpacing: 1.1),
+                      style: Cyber.display(
+                        StatOzTypography.p17,
+                        letterSpacing: 1.1,
+                      ),
                     ),
                   ),
                   if (onClose != null)
@@ -1058,7 +1066,7 @@ class _NewGamesReleaseCard extends StatelessWidget {
                 'Two new ways to play are live: tactical card battles in Pitch Duel and high-pressure spot kicks in Penalty Shootout.',
                 style: Cyber.bodyFor(
                   context,
-                  12,
+                  StatOzTypography.p12,
                   color: Cyber.muted,
                   height: 1.35,
                 ),
@@ -1097,7 +1105,11 @@ class _ReleaseMiniChip extends StatelessWidget {
       child: Text(
         label,
         maxLines: 1,
-        style: Cyber.label(13, color: accent, letterSpacing: 1),
+        style: Cyber.label(
+          StatOzTypography.p13,
+          color: accent,
+          letterSpacing: 1,
+        ),
       ),
     );
   }
@@ -1149,7 +1161,7 @@ class _NewGamesReleaseScreen extends StatelessWidget {
                         'Fresh game modes are now live. Use your squad in faster, more tactical football challenges built for quick sessions and big moments.',
                         style: Cyber.bodyFor(
                           context,
-                          13,
+                          StatOzTypography.p13,
                           color: Cyber.muted,
                           height: 1.45,
                         ),
@@ -1230,7 +1242,10 @@ class _ReleaseGameFeatureCard extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.display(18, letterSpacing: 1.1),
+                  style: Cyber.display(
+                    StatOzTypography.p18,
+                    letterSpacing: 1.1,
+                  ),
                 ),
               ),
             ],
@@ -1238,7 +1253,12 @@ class _ReleaseGameFeatureCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             description,
-            style: Cyber.bodyFor(context, 13, color: Cyber.muted, height: 1.4),
+            style: Cyber.bodyFor(
+              context,
+              StatOzTypography.p13,
+              color: Cyber.muted,
+              height: 1.4,
+            ),
           ),
           const SizedBox(height: 16),
           _ReleaseGameButton(
@@ -1341,7 +1361,7 @@ class _ReleaseGameButton extends StatelessWidget {
                         label,
                         maxLines: 1,
                         style: Cyber.label(
-                          10,
+                          StatOzTypography.p10,
                           color: accent,
                           letterSpacing: 1.1,
                         ),
@@ -1404,14 +1424,20 @@ class _MatchDayNavigator extends StatelessWidget {
                     dayLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.display(15, letterSpacing: 1.5),
+                    style: Cyber.display(
+                      StatOzTypography.p15,
+                      letterSpacing: 1.5,
+                    ),
                   ),
                 ),
                 if (matchCount != null) ...[
                   const SizedBox(width: 6),
                   Text(
                     '($matchCount)',
-                    style: Cyber.label(13, color: Cyber.muted),
+                    style: Cyber.label(
+                      StatOzTypography.p13,
+                      color: Cyber.muted,
+                    ),
                   ),
                 ],
                 const SizedBox(width: 8),
@@ -1502,7 +1528,11 @@ class _DayDividerRow extends StatelessWidget {
       child: Center(
         child: Text(
           header,
-          style: Cyber.display(15, color: Cyber.cyan, letterSpacing: 1.5),
+          style: Cyber.display(
+            StatOzTypography.p15,
+            color: Cyber.cyan,
+            letterSpacing: 1.5,
+          ),
         ),
       ),
     );
@@ -1737,7 +1767,11 @@ class _YourClubPinState extends State<_YourClubPin> {
                 'YOUR CLUB',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.label(10, color: accent, letterSpacing: 1.6),
+                style: Cyber.label(
+                  StatOzTypography.p10,
+                  color: accent,
+                  letterSpacing: 1.6,
+                ),
               ),
             ),
             const SizedBox(width: 10),
@@ -1788,7 +1822,11 @@ class _ClubPinReadout extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               'LIVE NOW',
-              style: Cyber.label(9.5, color: Cyber.danger, letterSpacing: 1.2),
+              style: Cyber.label(
+                StatOzTypography.p9_5,
+                color: Cyber.danger,
+                letterSpacing: 1.2,
+              ),
             ),
           ],
         ),
@@ -1800,7 +1838,11 @@ class _ClubPinReadout extends StatelessWidget {
     if (remaining.isNegative) {
       return Text(
         'KICKING OFF',
-        style: Cyber.label(9.5, color: accent, letterSpacing: 1.2),
+        style: Cyber.label(
+          StatOzTypography.p9_5,
+          color: accent,
+          letterSpacing: 1.2,
+        ),
       );
     }
     return Row(
@@ -1808,13 +1850,17 @@ class _ClubPinReadout extends StatelessWidget {
       children: [
         Text(
           'KICKS OFF',
-          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+          style: Cyber.label(
+            StatOzTypography.p9,
+            color: Cyber.muted,
+            letterSpacing: 1.2,
+          ),
         ),
         const SizedBox(width: 6),
         Text(
           _formatCountdown(remaining),
           style: Cyber.label(
-            11,
+            StatOzTypography.p11,
             color: accent,
             letterSpacing: 1,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -1917,7 +1963,11 @@ class _LeagueViewMoreRow extends StatelessWidget {
           children: [
             Text(
               'VIEW MORE',
-              style: Cyber.label(9, color: accent, letterSpacing: 1.1),
+              style: Cyber.label(
+                StatOzTypography.p9,
+                color: accent,
+                letterSpacing: 1.1,
+              ),
             ),
             const SizedBox(width: 4),
             Icon(
@@ -2079,6 +2129,15 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
                 span: MediaQuery.textScalerOf(context).scale(10) > 12
                     ? CyberBentoSpan.wide
                     : catalog[index].span,
+                // The opening pair occupies one compact portrait row.
+                rowHeight:
+                    catalog[index].sourceId == 'pitch-duel' ||
+                        catalog[index].sourceId == 'penalty-shootout'
+                    ? 300 +
+                          (MediaQuery.textScalerOf(context).scale(13) - 13)
+                                  .clamp(0, 32) *
+                              6
+                    : null,
                 child: StaggeredCardEntrance(
                   key: ValueKey(catalog[index].id),
                   index: index,
@@ -2098,6 +2157,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
   ) {
     return switch (config.sourceId) {
       'pitch-duel' => _ArcadeHeroGameTile(
+        game: ArcadeGame.pitchDuel,
         key: const ValueKey('trending-pitch-duel-card'),
         title: 'PITCH DUEL',
         subtitle: 'TACTICAL CARD GAME',
@@ -2111,6 +2171,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: widget.onOpenGame,
       ),
       'penalty-shootout' => _ArcadeHeroGameTile(
+        game: ArcadeGame.penaltyShootout,
         key: const ValueKey('trending-penalty-card'),
         title: 'PENALTY SHOOTOUT',
         titleLines: const ['PENALTY', 'SHOOTOUT'],
@@ -2125,6 +2186,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: widget.onOpenShootout,
       ),
       'football-chess' => _ArcadeHeroGameTile(
+        game: ArcadeGame.footballChess,
         key: const ValueKey('trending-football-chess-card'),
         title: '5V5 FOOTBALL CHESS',
         titleLines: const ['5V5 FOOTBALL', 'CHESS'],
@@ -2138,6 +2200,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: widget.onOpenFootballChess,
       ),
       'football-quiz' => _QuickGameTile(
+        game: ArcadeGame.footballQuiz,
         title: 'FOOTBALL QUIZ',
         subtitle: 'TRIVIA GAUNTLET',
         art: CyberGameArt.quiz,
@@ -2146,6 +2209,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: () => widget.onOpenQuiz(Sport.football),
       ),
       'football-bingo' => _QuickGameTile(
+        game: ArcadeGame.footballBingo,
         title: 'FOOTBALL BINGO',
         subtitle: 'BUILD A WINNING GRID',
         art: CyberGameArt.bingo,
@@ -2154,6 +2218,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: widget.onOpenFootballBingo,
       ),
       'guess-player' => _QuickGameTile(
+        game: ArcadeGame.footballGuessPlayer,
         title: 'GUESS THE PLAYER',
         subtitle: 'DAILY FOOTBALL MYSTERY',
         art: CyberGameArt.player,
@@ -2162,6 +2227,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: widget.onOpenGuessPlayer,
       ),
       'final-over' => _ArcadeHeroGameTile(
+        game: ArcadeGame.finalOver,
         key: const ValueKey('trending-final-over-card'),
         title: 'FINAL OVER',
         subtitle: 'SIX-BALL CRICKET CHASE',
@@ -2173,6 +2239,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: widget.onOpenFinalOver,
       ),
       'hoop-duel' => _ArcadeHeroGameTile(
+        game: ArcadeGame.hoopDuel,
         key: const ValueKey('trending-hoop-duel-card'),
         title: 'HOOP DUEL',
         subtitle: 'STREET 1-ON-1',
@@ -2184,6 +2251,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: widget.onOpenBasketball,
       ),
       'grand-prix-dash' => _ArcadeHeroGameTile(
+        game: ArcadeGame.grandPrixDash,
         key: const ValueKey('trending-grand-prix-card'),
         title: 'GRAND PRIX DASH',
         titleLines: const ['GRAND PRIX', 'DASH'],
@@ -2196,6 +2264,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         onTap: widget.onOpenGrandPrix,
       ),
       'tennis-rally' => _ArcadeHeroGameTile(
+        game: ArcadeGame.tennisRally,
         key: const ValueKey('trending-tennis-rally-card'),
         title: 'TENNIS RALLY',
         subtitle: '2D ARCADE SETS // 5 MODES',
@@ -2225,7 +2294,7 @@ class _TrendingGameUnavailable extends StatelessWidget {
           'MODE OFFLINE\n$id',
           textAlign: TextAlign.center,
           style: Cyber.label(
-            10,
+            StatOzTypography.p10,
             color: Cyber.muted,
             letterSpacing: 0.6,
           ).copyWith(height: 1.3),
@@ -2378,6 +2447,7 @@ class _GamesTabState extends State<_GamesTab> {
           startIndex: 1,
           games: [
             _QuickGameEntry(
+              game: ArcadeGame.tennisQuiz,
               key: const ValueKey('tennis-quiz-grid-card'),
               lock: _lockFor(ArcadeGame.tennisQuiz),
               title: 'TENNIS QUIZ',
@@ -2387,6 +2457,7 @@ class _GamesTabState extends State<_GamesTab> {
               onTap: () => widget.onOpenQuiz(Sport.tennis),
             ),
             _QuickGameEntry(
+              game: ArcadeGame.guessWinner,
               key: const ValueKey('tennis-guess-winner-grid-card'),
               lock: _lockFor(ArcadeGame.guessWinner),
               title: 'GUESS THE WINNER',
@@ -2410,6 +2481,7 @@ class _GamesTabState extends State<_GamesTab> {
           index: 0,
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
+            game: ArcadeGame.hoopDuel,
             key: const ValueKey('hoop-duel-hero-card'),
             lock: _lockFor(ArcadeGame.hoopDuel),
             title: 'HOOP DUEL',
@@ -2429,6 +2501,7 @@ class _GamesTabState extends State<_GamesTab> {
           startIndex: 1,
           games: [
             _QuickGameEntry(
+              game: ArcadeGame.basketballQuiz,
               key: const ValueKey('basketball-quiz-grid-card'),
               lock: _lockFor(ArcadeGame.basketballQuiz),
               title: 'BASKETBALL QUIZ',
@@ -2438,6 +2511,7 @@ class _GamesTabState extends State<_GamesTab> {
               onTap: () => widget.onOpenQuiz(Sport.basketball),
             ),
             _QuickGameEntry(
+              game: ArcadeGame.basketballGuessPlayer,
               key: const ValueKey('basketball-guess-player-grid-card'),
               lock: _lockFor(ArcadeGame.basketballGuessPlayer),
               title: 'GUESS THE PLAYER',
@@ -2461,6 +2535,7 @@ class _GamesTabState extends State<_GamesTab> {
           index: 0,
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
+            game: ArcadeGame.finalOver,
             key: const ValueKey('final-over-hero-card'),
             lock: _lockFor(ArcadeGame.finalOver),
             title: 'FINAL OVER',
@@ -2480,6 +2555,7 @@ class _GamesTabState extends State<_GamesTab> {
           startIndex: 1,
           games: [
             _QuickGameEntry(
+              game: ArcadeGame.cricketQuiz,
               key: const ValueKey('cricket-quiz-grid-card'),
               lock: _lockFor(ArcadeGame.cricketQuiz),
               title: 'CRICKET QUIZ',
@@ -2489,6 +2565,7 @@ class _GamesTabState extends State<_GamesTab> {
               onTap: () => widget.onOpenQuiz(Sport.cricket),
             ),
             _QuickGameEntry(
+              game: ArcadeGame.cricketGuessPlayer,
               key: const ValueKey('cricket-guess-player-grid-card'),
               lock: _lockFor(ArcadeGame.cricketGuessPlayer),
               title: 'GUESS THE PLAYER',
@@ -2515,6 +2592,7 @@ class _GamesTabState extends State<_GamesTab> {
           index: 0,
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
+            game: ArcadeGame.pitchDuel,
             key: const ValueKey('pitch-duel-hero-card'),
             lock: _lockFor(ArcadeGame.pitchDuel),
             title: 'PITCH DUEL',
@@ -2532,6 +2610,7 @@ class _GamesTabState extends State<_GamesTab> {
           index: 1,
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
+            game: ArcadeGame.penaltyShootout,
             key: const ValueKey('penalty-shootout-hero-card'),
             lock: _lockFor(ArcadeGame.penaltyShootout),
             title: 'PENALTY SHOOTOUT',
@@ -2550,6 +2629,7 @@ class _GamesTabState extends State<_GamesTab> {
           index: 2,
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
+            game: ArcadeGame.footballChess,
             key: const ValueKey('football-chess-hero-card'),
             lock: _lockFor(ArcadeGame.footballChess),
             title: '5V5 FOOTBALL CHESS',
@@ -2570,6 +2650,7 @@ class _GamesTabState extends State<_GamesTab> {
           startIndex: 3,
           games: [
             _QuickGameEntry(
+              game: ArcadeGame.footballQuiz,
               key: const ValueKey('football-quiz-grid-card'),
               lock: _lockFor(ArcadeGame.footballQuiz),
               title: 'FOOTBALL QUIZ',
@@ -2579,6 +2660,7 @@ class _GamesTabState extends State<_GamesTab> {
               onTap: () => widget.onOpenQuiz(Sport.football),
             ),
             _QuickGameEntry(
+              game: ArcadeGame.footballBingo,
               key: const ValueKey('football-bingo-grid-card'),
               lock: _lockFor(ArcadeGame.footballBingo),
               title: 'FOOTBALL BINGO',
@@ -2588,6 +2670,7 @@ class _GamesTabState extends State<_GamesTab> {
               onTap: widget.onOpenFootballBingo,
             ),
             _QuickGameEntry(
+              game: ArcadeGame.footballGuessPlayer,
               key: const ValueKey('football-guess-player-grid-card'),
               lock: _lockFor(ArcadeGame.footballGuessPlayer),
               title: 'GUESS THE PLAYER',
@@ -2611,6 +2694,7 @@ class _GamesTabState extends State<_GamesTab> {
           index: 0,
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
+            game: ArcadeGame.grandPrixDash,
             key: const ValueKey('grand-prix-dash-hero-card'),
             lock: _lockFor(ArcadeGame.grandPrixDash),
             title: 'GRAND PRIX DASH',
@@ -2630,6 +2714,7 @@ class _GamesTabState extends State<_GamesTab> {
           startIndex: 1,
           games: [
             _QuickGameEntry(
+              game: ArcadeGame.motorsportQuiz,
               key: const ValueKey('motorsport-quiz-grid-card'),
               lock: _lockFor(ArcadeGame.motorsportQuiz),
               title: 'MOTORSPORT QUIZ',
@@ -2639,6 +2724,7 @@ class _GamesTabState extends State<_GamesTab> {
               onTap: () => widget.onOpenQuiz(Sport.motorsport),
             ),
             _QuickGameEntry(
+              game: ArcadeGame.guessDriver,
               key: const ValueKey('f1-guess-driver-grid-card'),
               lock: _lockFor(ArcadeGame.guessDriver),
               title: 'GUESS THE DRIVER',
@@ -2663,6 +2749,7 @@ class _TennisRallyGameTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _ArcadeHeroGameTile(
+      game: ArcadeGame.tennisRally,
       key: const ValueKey('tennis-rally-hero-card'),
       title: 'TENNIS RALLY',
       subtitle: '2D ARCADE SETS // 5 MODES',
@@ -2680,6 +2767,7 @@ enum GameHeroLayout { landscape, portrait }
 
 class _ArcadeHeroGameTile extends StatelessWidget {
   const _ArcadeHeroGameTile({
+    required this.game,
     required this.title,
     required this.subtitle,
     required this.badgeLabel,
@@ -2694,6 +2782,7 @@ class _ArcadeHeroGameTile extends StatelessWidget {
     super.key,
   });
 
+  final ArcadeGame game;
   final String title;
   final List<String>? titleLines;
   final String subtitle;
@@ -2719,6 +2808,7 @@ class _ArcadeHeroGameTile extends StatelessWidget {
         bigCut: 16,
         smallCut: 0,
         child: CyberGameLaunchCard(
+          game: game,
           title: title,
           titleLines: titleLines,
           subtitle: subtitle,
@@ -2754,7 +2844,11 @@ class _QuickPlayHeader extends StatelessWidget {
       children: [
         Text(
           'QUICK PLAY',
-          style: Cyber.display(11, color: Colors.white, letterSpacing: 1.8),
+          style: Cyber.display(
+            StatOzTypography.p11,
+            color: Colors.white,
+            letterSpacing: 1.8,
+          ),
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -2764,7 +2858,11 @@ class _QuickPlayHeader extends StatelessWidget {
           ),
           child: Text(
             badgeLabel,
-            style: Cyber.display(7, color: Cyber.cyan, letterSpacing: 1.1),
+            style: Cyber.display(
+              StatOzTypography.p7,
+              color: Cyber.cyan,
+              letterSpacing: 1.1,
+            ),
           ),
         ),
       ],
@@ -2774,6 +2872,7 @@ class _QuickPlayHeader extends StatelessWidget {
 
 class _QuickGameEntry {
   const _QuickGameEntry({
+    required this.game,
     required this.key,
     required this.title,
     required this.subtitle,
@@ -2783,6 +2882,7 @@ class _QuickGameEntry {
     this.lock,
   });
 
+  final ArcadeGame game;
   final _GameLock? lock;
   final Key key;
   final String title;
@@ -2835,6 +2935,7 @@ class _QuickGamesGrid extends StatelessWidget {
                   index: startIndex + index,
                   animate: animateIntro,
                   child: _QuickGameTile(
+                    game: games[index].game,
                     key: games[index].key,
                     title: games[index].title,
                     subtitle: games[index].subtitle,
@@ -2854,6 +2955,7 @@ class _QuickGamesGrid extends StatelessWidget {
 
 class _QuickGameTile extends StatelessWidget {
   const _QuickGameTile({
+    required this.game,
     required this.title,
     required this.subtitle,
     required this.art,
@@ -2862,6 +2964,7 @@ class _QuickGameTile extends StatelessWidget {
     this.lock,
     super.key,
   });
+  final ArcadeGame game;
   final String title;
   final String subtitle;
   final CyberGameArt art;
@@ -2882,6 +2985,7 @@ class _QuickGameTile extends StatelessWidget {
     bigCut: 16,
     smallCut: 0,
     child: CyberGameLaunchCard(
+      game: game,
       title: title,
       subtitle: subtitle,
       badge: 'QUICK PLAY',
@@ -2957,7 +3061,11 @@ class _LockVeil extends StatelessWidget {
                   Flexible(
                     child: Text(
                       lock.label,
-                      style: Cyber.label(10, color: tint, letterSpacing: 1),
+                      style: Cyber.label(
+                        StatOzTypography.p10,
+                        color: tint,
+                        letterSpacing: 1,
+                      ),
                     ),
                   ),
                 ],

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -76,14 +77,14 @@ class _QuestResultReceiptState extends State<QuestResultReceipt> {
                           Flexible(
                             child: Text(
                               'MISSION CLEARED',
-                              style: Cyber.display(13, color: Cyber.success),
+                              style: Cyber.display(StatOzTypography.p13, color: Cyber.success),
                             ),
                           ),
                         ],
                       ),
                       Text(
                         '+$beginnerQuestStepXp XP',
-                        style: Cyber.display(13, color: Cyber.gold),
+                        style: Cyber.display(StatOzTypography.p13, color: Cyber.gold),
                       ),
                     ],
                   ),
@@ -93,12 +94,12 @@ class _QuestResultReceiptState extends State<QuestResultReceipt> {
                       Expanded(
                         child: Text(
                           'QUEST PROGRESS',
-                          style: Cyber.label(9, color: Cyber.muted),
+                          style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
                         ),
                       ),
                       Text(
                         '${receipt.completed}/${receipt.total}',
-                        style: Cyber.display(12, color: Colors.white),
+                        style: Cyber.display(StatOzTypography.p12, color: Colors.white),
                       ),
                     ],
                   ),
@@ -133,8 +134,7 @@ class _QuestResultReceiptState extends State<QuestResultReceipt> {
                               : receipt.graduated
                               ? 'DAILY QUESTS UNLOCKED'
                               : 'NEXT: CHOOSE A GAME',
-                          style: Cyber.label(
-                            10,
+                          style: Cyber.label(StatOzTypography.p10,
                             color: receipt.questCompleted
                                 ? Cyber.gold
                                 : receipt.graduated

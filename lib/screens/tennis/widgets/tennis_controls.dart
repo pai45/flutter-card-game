@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -303,8 +304,7 @@ class _ShotPainter extends CustomPainter {
     final text = TextPainter(
       text: TextSpan(
         text: active ? _gestureLabel(delta) : 'TAP',
-        style: Cyber.display(
-          9,
+        style: Cyber.display(StatOzTypography.p9,
           color: Colors.white.withValues(alpha: 0.88),
           letterSpacing: 0.8,
         ),
@@ -341,7 +341,7 @@ class _ZoneLabel extends StatelessWidget {
       children: [
         Icon(icon, size: 12, color: Cyber.muted),
         const SizedBox(width: 5),
-        Text(label, style: Cyber.display(9, color: Cyber.muted)),
+        Text(label, style: Cyber.display(StatOzTypography.p9, color: Cyber.muted)),
       ],
     );
   }

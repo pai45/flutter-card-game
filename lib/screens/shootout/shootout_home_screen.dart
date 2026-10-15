@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -96,7 +97,7 @@ class ShootoutHomeScreen extends StatelessWidget {
                                   Text(
                                     'PENALTY\nSHOOTOUT',
                                     style:
-                                        Cyber.display(24, letterSpacing: 1.2)
+                                        Cyber.display(StatOzTypography.p24, letterSpacing: 1.2)
                                             .copyWith(
                                               height: 1.05,
                                               shadows: [
@@ -115,8 +116,8 @@ class ShootoutHomeScreen extends StatelessWidget {
                                     style: TextStyle(
                                       color: Cyber.muted,
                                       fontFamily: Cyber.displayFont,
-                                      fontSize: 9,
-                                      fontWeight: FontWeight.w800,
+                                      fontSize: StatOzTypography.p9,
+                                      fontWeight: StatOzTypography.extrabold,
                                       letterSpacing: 2,
                                     ),
                                   ),
@@ -215,8 +216,8 @@ class ShootoutHomeScreen extends StatelessWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Cyber.muted,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
+                            fontSize: StatOzTypography.p11,
+                            fontWeight: StatOzTypography.semibold,
                           ),
                         ),
                       ],
@@ -313,8 +314,8 @@ class _ShootoutStatusBar extends StatelessWidget {
           style: TextStyle(
             color: Cyber.lime,
             fontFamily: Cyber.displayFont,
-            fontSize: 9,
-            fontWeight: FontWeight.w900,
+            fontSize: StatOzTypography.p9,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 2,
           ),
         ),
@@ -331,8 +332,8 @@ class _ShootoutStatusBar extends StatelessWidget {
           style: TextStyle(
             color: Cyber.muted,
             fontFamily: Cyber.displayFont,
-            fontSize: 9,
-            fontWeight: FontWeight.w800,
+            fontSize: StatOzTypography.p9,
+            fontWeight: StatOzTypography.extrabold,
             letterSpacing: 1.2,
           ),
         ),
@@ -371,8 +372,8 @@ class _HudStat extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white,
                 fontFamily: Cyber.displayFont,
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
+                fontSize: StatOzTypography.p16,
+                fontWeight: StatOzTypography.black,
                 fontFeatures: [FontFeature.tabularFigures()],
               ),
             ),
@@ -385,8 +386,8 @@ class _HudStat extends StatelessWidget {
             style: TextStyle(
               color: Cyber.muted,
               fontFamily: Cyber.displayFont,
-              fontSize: 9,
-              fontWeight: FontWeight.w800,
+              fontSize: StatOzTypography.p9,
+              fontWeight: StatOzTypography.extrabold,
               letterSpacing: 0.8,
             ),
           ),

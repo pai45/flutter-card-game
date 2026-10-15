@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -96,7 +97,7 @@ class _FootballChessTossResult extends StatelessWidget {
         Text(
           '$winner WON THE TOSS',
           textAlign: TextAlign.center,
-          style: Cyber.display(26, color: accent, letterSpacing: 2).copyWith(
+          style: Cyber.display(StatOzTypography.p26, color: accent, letterSpacing: 2).copyWith(
             shadows: [
               Shadow(color: accent.withValues(alpha: 0.5), blurRadius: 18),
             ],
@@ -108,7 +109,7 @@ class _FootballChessTossResult extends StatelessWidget {
               ? 'YOU KICK OFF'
               : '${match.opponentName.toUpperCase()} KICKS OFF',
           textAlign: TextAlign.center,
-          style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+          style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
         ),
         const SizedBox(height: 16),
         Padding(
@@ -117,7 +118,7 @@ class _FootballChessTossResult extends StatelessWidget {
             children: [
               Text(
                 'KICKOFF PROTOCOL LOCKED',
-                style: Cyber.label(10, color: accent, letterSpacing: 2),
+                style: Cyber.label(StatOzTypography.p10, color: accent, letterSpacing: 2),
               ),
               const SizedBox(height: 10),
               CyberProgressBar(value: 1, accent: accent, height: 3, radius: 2),

@@ -174,9 +174,9 @@ void main() {
     );
 
     expect(find.byType(MatchPredictionCard), findsNWidgets(3));
-    expect(find.text('VIEW MORE // +2 GAMES'), findsOneWidget);
+    expect(find.text('VIEW MORE'), findsOneWidget);
 
-    await tester.tap(find.text('VIEW MORE // +2 GAMES'));
+    await tester.tap(find.text('VIEW MORE'));
     await tester.pump();
 
     expect(openedLeagueGames?.id, _league.id);
@@ -204,7 +204,7 @@ void main() {
     cubit.seed(_motorsportFixtures());
     addTearDown(cubit.close);
 
-    await _pumpHome(tester, cubit, activeMatchSportTab: 5);
+    await _pumpHome(tester, cubit, activeMatchSportTab: 4);
 
     expect(_headingText('THIS WEEK'), findsOneWidget);
     expect(_headingText('(2)'), findsOneWidget);
@@ -215,7 +215,7 @@ void main() {
     cubit.seed(_motorsportFixtures());
     addTearDown(cubit.close);
 
-    await _pumpHome(tester, cubit, activeMatchSportTab: 5);
+    await _pumpHome(tester, cubit, activeMatchSportTab: 4);
 
     await tester.tap(find.byKey(const ValueKey('match-day-next-button')));
     await tester.pumpAndSettle();
@@ -235,7 +235,7 @@ void main() {
     cubit.seed(_motorsportFixtures());
     addTearDown(cubit.close);
 
-    await _pumpHome(tester, cubit, activeMatchSportTab: 5);
+    await _pumpHome(tester, cubit, activeMatchSportTab: 4);
 
     await tester.tap(find.byKey(const ValueKey('match-day-calendar-button')));
     await tester.pumpAndSettle();

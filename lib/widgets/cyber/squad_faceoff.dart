@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
@@ -103,16 +104,15 @@ class _FaceoffRow extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.label(11, color: accent, letterSpacing: 2),
+            style: Cyber.label(StatOzTypography.p11, color: accent, letterSpacing: 2),
           ),
         ),
         const SizedBox(width: 12),
-        Text('AVG', style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4)),
+        Text('AVG', style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.4)),
         const SizedBox(width: 5),
         Text(
           '${_avgRating().round()}',
-          style: Cyber.display(
-            14,
+          style: Cyber.display(StatOzTypography.p14,
             color: accent,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
@@ -144,8 +144,7 @@ class _FaceoffRow extends StatelessWidget {
             child: Center(
               child: Text(
                 '${i + 1}',
-                style: Cyber.label(
-                  10,
+                style: Cyber.label(StatOzTypography.p10,
                   color: i == shooters.length - 1 ? Cyber.gold : Cyber.muted,
                   letterSpacing: 1,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -228,8 +227,7 @@ class FaceoffCard extends StatelessWidget {
                     color: Colors.black.withValues(alpha: 0.62),
                     child: Text(
                       '${card.rating}',
-                      style: Cyber.display(
-                        12,
+                      style: Cyber.display(StatOzTypography.p12,
                         color: chipColor,
                         letterSpacing: 0.2,
                       ).copyWith(
@@ -249,7 +247,7 @@ class FaceoffCard extends StatelessWidget {
                       child: Text(
                         'GK',
                         style:
-                            Cyber.label(8, color: Cyber.bg, letterSpacing: 1),
+                            Cyber.label(StatOzTypography.p8, color: Cyber.bg, letterSpacing: 1),
                       ),
                     ),
                   ),
@@ -265,8 +263,7 @@ class FaceoffCard extends StatelessWidget {
                       card.shortName.toUpperCase(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.label(
-                        8.5,
+                      style: Cyber.label(StatOzTypography.p8_5,
                         color: Colors.white,
                         letterSpacing: 0.6,
                       ),
@@ -356,7 +353,7 @@ class _VsDivider extends StatelessWidget {
                 border: Border.all(color: Cyber.gold, width: 1.5),
                 boxShadow: Cyber.glow(Cyber.gold),
               ),
-              child: Text('VS', style: Cyber.display(20, color: Cyber.gold)),
+              child: Text('VS', style: Cyber.display(StatOzTypography.p20, color: Cyber.gold)),
             ),
           ),
         ),

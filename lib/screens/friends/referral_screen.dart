@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -221,7 +222,7 @@ class _PanelTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       label,
-      style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.2),
+      style: Cyber.label(StatOzTypography.p10, color: Cyber.muted, letterSpacing: 1.2),
     );
   }
 }
@@ -270,8 +271,7 @@ class _RewardHero extends StatelessWidget {
                       child: Text(
                         'EARN 500 OZ COINS',
                         maxLines: 1,
-                        style: Cyber.display(
-                          22,
+                        style: Cyber.display(StatOzTypography.p22,
                           color: Cyber.gold,
                           letterSpacing: 0.8,
                         ),
@@ -280,7 +280,7 @@ class _RewardHero extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       'Invite a friend into StatOz and get paid when they join.',
-                      style: Cyber.bodyFor(context, 13, color: Colors.white),
+                      style: Cyber.bodyFor(context, StatOzTypography.p13, color: Colors.white),
                     ),
                   ],
                 ),
@@ -301,8 +301,7 @@ class _RewardHero extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Your personal invite link is ready to share.',
-                  style: Cyber.label(
-                    10,
+                  style: Cyber.label(StatOzTypography.p10,
                     color: Cyber.cyan.withValues(alpha: 0.86),
                     letterSpacing: 0.8,
                   ),
@@ -401,7 +400,7 @@ class _StepItem extends StatelessWidget {
                 ),
                 child: Text(
                   '$index',
-                  style: Cyber.label(8, color: Cyber.gold, letterSpacing: 0),
+                  style: Cyber.label(StatOzTypography.p8, color: Cyber.gold, letterSpacing: 0),
                 ),
               ),
             ),
@@ -413,7 +412,7 @@ class _StepItem extends StatelessWidget {
           maxLines: 2,
           textAlign: TextAlign.center,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.label(8.5, color: Colors.white, letterSpacing: 0.45),
+          style: Cyber.label(StatOzTypography.p8_5, color: Colors.white, letterSpacing: 0.45),
         ),
       ],
     );
@@ -464,7 +463,7 @@ class _ReferralLinkCard extends StatelessWidget {
                     link,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.bodyFor(context, 12, color: Colors.white),
+                    style: Cyber.bodyFor(context, StatOzTypography.p12, color: Colors.white),
                   ),
                 ),
                 const SizedBox(width: 3),
@@ -503,7 +502,7 @@ class _ReferralLinkCard extends StatelessWidget {
                     copied
                         ? 'Link copied. Send it anywhere your squad chats.'
                         : 'Share or copy this invite to bring a friend in.',
-                    style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
                   ),
                 ),
               ],
@@ -551,15 +550,14 @@ class _ProgressCard extends StatelessWidget {
                   children: [
                     Text(
                       '${values[i].$2}',
-                      style: Cyber.display(19, color: values[i].$3),
+                      style: Cyber.display(StatOzTypography.p19, color: values[i].$3),
                     ),
                     const SizedBox(height: 5),
                     Text(
                       values[i].$1,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.label(
-                        8,
+                      style: Cyber.label(StatOzTypography.p8,
                         color: Cyber.muted,
                         letterSpacing: 0.7,
                       ),
@@ -599,12 +597,12 @@ class _RecentReferrals extends StatelessWidget {
               Expanded(
                 child: Text(
                   'RECENT REFERRALS',
-                  style: Cyber.display(13, letterSpacing: 1),
+                  style: Cyber.display(StatOzTypography.p13, letterSpacing: 1),
                 ),
               ),
               Text(
                 '${entries.length} TOTAL',
-                style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 1),
+                style: Cyber.label(StatOzTypography.p8_5, color: Cyber.muted, letterSpacing: 1),
               ),
             ],
           ),
@@ -619,7 +617,7 @@ class _RecentReferrals extends StatelessWidget {
               child: Text(
                 'No referrals yet. Share your link to invite your first friend.',
                 textAlign: TextAlign.center,
-                style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                style: Cyber.bodyFor(context, StatOzTypography.p12, color: Cyber.muted),
               ),
             )
           else
@@ -664,7 +662,7 @@ class _ReferralRow extends StatelessWidget {
           ),
           child: Text(
             entry.friendName.substring(0, 1).toUpperCase(),
-            style: Cyber.display(13, color: color),
+            style: Cyber.display(StatOzTypography.p13, color: color),
           ),
         ),
         const SizedBox(width: 11),
@@ -672,11 +670,11 @@ class _ReferralRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(entry.friendName, style: Cyber.bodyFor(context, 13)),
+              Text(entry.friendName, style: Cyber.bodyFor(context, StatOzTypography.p13)),
               const SizedBox(height: 4),
               Text(
                 _dateLabel(entry.createdAt),
-                style: Cyber.label(9, color: Cyber.muted),
+                style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
               ),
             ],
           ),
@@ -689,7 +687,7 @@ class _ReferralRow extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: Cyber.label(8, color: color, letterSpacing: 0.55),
+            style: Cyber.label(StatOzTypography.p8, color: color, letterSpacing: 0.55),
           ),
         ),
       ],

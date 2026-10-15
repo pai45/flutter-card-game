@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../blocs/football_bingo/football_bingo_state.dart';
@@ -54,9 +55,9 @@ class FootballBingoLogsScreen extends StatelessWidget {
                         'BINGO LOGS',
                         style: TextStyle(
                           color: Colors.white,
-                          fontFamily: 'Orbitron',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
+                          fontFamily: StatOzTypography.displayFont,
+                          fontSize: StatOzTypography.p18,
+                          fontWeight: StatOzTypography.black,
                           letterSpacing: 1.2,
                         ),
                       ),
@@ -88,8 +89,7 @@ class FootballBingoLogsScreen extends StatelessWidget {
                         children: [
                           Text(
                             '$completionRate%',
-                            style: Cyber.display(
-                              24,
+                            style: Cyber.display(StatOzTypography.p24,
                               color: completed > 0 ? Cyber.lime : Cyber.muted,
                             ),
                           ),
@@ -97,8 +97,8 @@ class FootballBingoLogsScreen extends StatelessWidget {
                             'CLEAR RATE',
                             style: TextStyle(
                               color: Cyber.muted,
-                              fontFamily: 'Orbitron',
-                              fontSize: 9,
+                              fontFamily: StatOzTypography.displayFont,
+                              fontSize: StatOzTypography.p9,
                               letterSpacing: 1.5,
                             ),
                           ),
@@ -134,7 +134,7 @@ class FootballBingoLogsScreen extends StatelessWidget {
                   padding: EdgeInsets.fromLTRB(16, 10, 16, 14),
                   child: Text(
                     'No bingo logs yet.',
-                    style: TextStyle(color: Cyber.muted, fontSize: 12),
+                    style: TextStyle(color: Cyber.muted, fontSize: StatOzTypography.p12),
                   ),
                 ),
               Expanded(
@@ -190,9 +190,9 @@ class _LogStatBox extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(value, style: Cyber.display(15, color: color)),
+          Text(value, style: Cyber.display(StatOzTypography.p15, color: color)),
           const SizedBox(height: 2),
-          Text(label, style: Cyber.label(7, color: Cyber.muted)),
+          Text(label, style: Cyber.label(StatOzTypography.p7, color: Cyber.muted)),
         ],
       ),
     );
@@ -268,7 +268,7 @@ class _BingoLogTile extends StatelessWidget {
                         const Spacer(),
                         Text(
                           locked ? 'LOCKED' : done ? 'DONE' : 'OPEN',
-                          style: Cyber.label(8.5, color: accent),
+                          style: Cyber.label(StatOzTypography.p8_5, color: accent),
                         ),
                       ],
                     ),
@@ -277,7 +277,7 @@ class _BingoLogTile extends StatelessWidget {
                       _formatDate(dayKey),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.display(14, color: Colors.white),
+                      style: Cyber.display(StatOzTypography.p14, color: Colors.white),
                     ),
                     const Spacer(),
                     Text(
@@ -286,8 +286,7 @@ class _BingoLogTile extends StatelessWidget {
                           : done
                           ? 'COMPLETED'
                           : '${progress?.lifelines ?? kFootballBingoStartingLifelines} LIVES LEFT',
-                      style: Cyber.label(
-                        8.5,
+                      style: Cyber.label(StatOzTypography.p8_5,
                         color: Cyber.muted,
                         letterSpacing: 0.5,
                       ),
@@ -305,7 +304,7 @@ class _BingoLogTile extends StatelessWidget {
                 locked ? 'LOCKED' : done ? 'CHECK ANSWER' : 'PLAY GRID',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.label(9, color: accent, letterSpacing: 0.55),
+                style: Cyber.label(StatOzTypography.p9, color: accent, letterSpacing: 0.55),
               ),
             ),
           ],

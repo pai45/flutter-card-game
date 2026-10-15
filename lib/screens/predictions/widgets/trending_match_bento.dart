@@ -1,1608 +1,510 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../../blocs/game/game_bloc.dart';
 import '../../../blocs/picks/picks_cubit.dart';
 import '../../../blocs/picks/picks_state.dart';
 import '../../../blocs/prediction/prediction_cubit.dart';
 import '../../../blocs/prediction/prediction_state.dart';
-import '../../../config/sport_modules.dart';
+import '../../../config/game_ladder.dart';
 import '../../../config/theme.dart';
+import '../../../design_system/match_discovery.generated.dart';
 import '../../../models/picks.dart';
+import '../../../models/prediction.dart';
 import '../../../models/sport_match.dart';
 import '../../../models/unlock_progress.dart';
-import '../../../utils/prediction_helpers.dart';
-import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
-import '../../../widgets/staggered_card_entrance.dart';
-import '../../../widgets/team_logo.dart';
-import '../all_picks_screen.dart';
-import '../trending_hub_catalog.dart';
-import 'pick_status_style.dart';
-
-/// The primary title on every MATCH / PREDICT / PICK / FUTURE tile.
-///
-/// Supporting telemetry remains deliberately compact, but the tappable subject
-/// of a tile must stay readable at the app's 15px minimum.
-const double _kTrendingTileHeadingSize = 15;
-
-/// A market is "hot" when its leader's latest tick swung by at least this
-/// many percentage points — calibrated against the live catalog so the pulse
-/// stays rare (only a genuine mover crosses it), per the glow rule.
-const int _kHotDeltaThreshold = 5;
+import '../../../widgets/cyber/match_discovery.dart';
+import 'pick_trade_sheet.dart';
+import '../match_prediction_screen.dart';
 
 class TrendingMatchesView extends StatefulWidget {
   const TrendingMatchesView({
     required this.onOpenMatch,
     required this.onOpenMarket,
     required this.animateIntro,
+    this.onOpenQuiz,
     this.onIntroPlayed,
     this.header,
     super.key,
   });
-
   final ValueChanged<SportMatch> onOpenMatch;
   final ValueChanged<String> onOpenMarket;
+  final ValueChanged<Sport>? onOpenQuiz;
   final bool animateIntro;
   final VoidCallback? onIntroPlayed;
-
-  /// Optional lead item above the bento grid (the home daily-quest tile).
   final Widget? header;
-
   @override
   State<TrendingMatchesView> createState() => _TrendingMatchesViewState();
 }
 
-class _TrendingMatchesViewState extends State<TrendingMatchesView> {
-  bool _fixtureScanRunning = true;
-  bool _introReported = false;
-  Map<String, SportMatch> _catalogFixtures = const {};
+class _EditorialCycle {
+  const _EditorialCycle(
+    this.sport,
+    this.matches,
+    this.compact,
+    this.missions,
+    this.events,
+    this.future,
+  );
+  final Sport sport;
+  final List<String> matches, missions, events;
+  final String? compact, future;
+}
 
+class _TrendingMatchesViewState extends State<TrendingMatchesView> {
+  final Map<Sport, _EditorialCycle> _cycles = {};
+  bool _introPlayed = false;
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _loadConfiguredSports(),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
-  Future<void> _loadConfiguredSports() async {
+  Future<void> _load() async {
     final cubit = context.read<PredictionCubit>();
-    final catalogFixtureIds = matchTrendingCatalog
-        .where(
-          (item) =>
-              item.enabled &&
-              (item.kind == TrendingTileKind.match ||
-                  item.kind == TrendingTileKind.predict),
-        )
-        .map((item) => item.sourceId)
-        .toList(growable: false);
-
-    // Paint the curated feature tiles as soon as their known IDs resolve. The
-    // wider sport scan can include sizeable bundled ESPN snapshots, and should
-    // not hold the first Trends row in a skeleton state while it completes.
-    final initialCatalogFixtures = await cubit.resolveCatalogFixtures(
-      catalogFixtureIds,
-    );
-    if (!mounted) return;
-    setState(() {
-      _catalogFixtures = initialCatalogFixtures;
-      _fixtureScanRunning = false;
-    });
-
-    // PredictionCubit merges each sport result into its current fixture
-    // snapshot. Keep these catalog-scoped loads ordered so concurrent
-    // completions cannot replace fixtures added by another sport.
     final unlocks =
         context.read<GameBloc?>()?.state.unlocks ?? const UnlockProgress();
-    for (final sport in matchTrendingSports) {
+    for (final sport in MatchDiscoveryTokens.sportOrder.map(
+      (name) => Sport.values.firstWhere((sport) => sport.name == name),
+    )) {
+      if (!mounted) return;
       if (unlocks.isSportUnlocked(sport)) await cubit.loadSport(sport);
     }
-    final catalogFixtures = await cubit.resolveCatalogFixtures(
-      catalogFixtureIds,
+  }
+
+  _EditorialCycle _select(
+    Sport sport,
+    PredictionState state,
+    PicksState picks,
+  ) {
+    int priority(SportMatch m) =>
+        (state.isFavoriteMatch(m) ? 4 : 0) +
+        (state.followedLeagueIds.contains(m.leagueId) ? 2 : 0) +
+        (state
+                .predictionsForMatch(m.id)
+                .any((p) => p.status == PredictionStatus.open)
+            ? 1
+            : 0);
+    final seen = <String>{};
+    final fixtures =
+        state.fixtures.where((m) => m.sport == sport && seen.add(m.id)).toList()
+          ..sort((a, b) {
+            final p = priority(b).compareTo(priority(a));
+            if (p != 0) return p;
+            final live = (b.status == MatchStatus.live ? 1 : 0).compareTo(
+              a.status == MatchStatus.live ? 1 : 0,
+            );
+            if (live != 0) return live;
+            final time = a.kickoff.compareTo(b.kickoff);
+            return time != 0 ? time : a.id.compareTo(b.id);
+          });
+    final matches = fixtures
+        .take(MatchDiscoveryTokens.cycleCounts['matches']!)
+        .map((m) => m.id)
+        .toList();
+    final compact = fixtures
+        .skip(MatchDiscoveryTokens.cycleCounts['matches']!)
+        .firstOrNull
+        ?.id;
+    final missions = fixtures
+        .where(
+          (m) =>
+              m.status == MatchStatus.upcoming &&
+              state.quizzes.values.any(
+                (q) => q.matchId == m.id && q.entryFee == 0,
+              ),
+        )
+        .take(MatchDiscoveryTokens.cycleCounts['missions']!)
+        .map((m) => m.id)
+        .toList();
+    final events = picks.markets
+        .where(
+          (m) =>
+              m.sport == sport &&
+              m.type == PickMarketType.event &&
+              m.outcomes.isNotEmpty,
+        )
+        .take(MatchDiscoveryTokens.cycleCounts['events']!)
+        .map((m) => m.id)
+        .toList();
+    final excluded = _featured(
+      picks.markets,
+    ).map((market) => market.id).toSet();
+    final futures =
+        picks.markets
+            .where(
+              (market) =>
+                  market.sport == sport &&
+                  market.type == PickMarketType.future &&
+                  market.outcomes.isNotEmpty &&
+                  !excluded.contains(market.id),
+            )
+            .toList()
+          ..sort((a, b) {
+            int rank(PickMarket market) =>
+                (market.canBuy ? 4 : 0) +
+                (RegExp(
+                      MatchDiscoveryTokens.futurePriorityPattern,
+                      caseSensitive: false,
+                    ).hasMatch(market.question)
+                    ? 2
+                    : 0);
+            final order = rank(b).compareTo(rank(a));
+            return order != 0 ? order : a.id.compareTo(b.id);
+          });
+    return _EditorialCycle(
+      sport,
+      matches,
+      compact,
+      missions,
+      events,
+      futures.firstOrNull?.id,
     );
-    if (!mounted) return;
-    setState(() {
-      _catalogFixtures = {..._catalogFixtures, ...catalogFixtures};
-      _fixtureScanRunning = false;
-    });
   }
 
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<PredictionCubit, PredictionState>(
-      builder: (context, predictionState) {
-        return BlocBuilder<PicksCubit, PicksState>(
-          builder: (context, picksState) {
-            final unlocks = context.select<GameBloc?, UnlockProgress>(
-              (bloc) => bloc?.state.unlocks ?? const UnlockProgress(),
-            );
-            final catalog = matchTrendingCatalog
-                .where((item) => trendingTileVisible(item, unlocks))
-                .toList(growable: false);
-            final animate = widget.animateIntro && !_introReported;
-            if (animate && catalog.isNotEmpty) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (!mounted || _introReported) return;
-                _introReported = true;
-                widget.onIntroPlayed?.call();
-              });
+  Widget build(
+    BuildContext context,
+  ) => BlocBuilder<PredictionCubit, PredictionState>(
+    builder: (context, state) => BlocBuilder<PicksCubit, PicksState>(
+      builder: (context, picks) {
+        final unlocks = context.select<GameBloc?, UnlockProgress>(
+          (b) => b?.state.unlocks ?? const UnlockProgress(),
+        );
+        final ordered = MatchDiscoveryTokens.sportOrder
+            .map((name) => Sport.values.firstWhere((s) => s.name == name))
+            .where(unlocks.isSportUnlocked);
+        // Freeze each sport's IDs after its load; values and statuses remain live.
+        for (final sport in ordered) {
+          if (!_cycles.containsKey(sport) &&
+              (!state.loadingSports.contains(sport)) &&
+              (state.loadedSports.contains(sport) ||
+                  state.fixtures.any((m) => m.sport == sport)) &&
+              !picks.loading) {
+            final selected = _select(sport, state, picks);
+            if (selected.matches.isNotEmpty ||
+                selected.events.isNotEmpty ||
+                selected.future != null) {
+              _cycles[sport] = selected;
             }
-
-            return ListView(
-              key: const ValueKey('match-trending-feed'),
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-              children: [
-                if (widget.header != null) ...[
-                  widget.header!,
-                  const SizedBox(height: 14),
-                ],
-                _PickCategoryStrip(picksState: picksState, animate: animate),
-                const SizedBox(height: 14),
-                CyberBentoGrid(
-                  gap: 10,
-                  rowGap: 14,
-                  rowHeightFactor: 1.05,
-                  minRowHeight: 150,
-                  tiles: [
-                    for (var index = 0; index < catalog.length; index++)
-                      CyberBentoTile(
-                        span: catalog[index].span,
-                        rowHeight:
-                            catalog[index].kind == TrendingTileKind.match &&
-                                catalog[index].span == CyberBentoSpan.wide
-                            ? catalog[index].sport == Sport.cricket
-                                  ? _kCricketScoreboardRowHeight
-                                  : _kScoreboardRowHeight
-                            : null,
-                        child: StaggeredCardEntrance(
-                          key: ValueKey(catalog[index].id),
-                          index: index + _pickCategories.length,
-                          animate: animate,
-                          child: _buildTile(
-                            catalog[index],
-                            predictionState,
-                            picksState,
+          }
+        }
+        final markets = _featured(
+          picks.markets.where((m) => unlocks.isSportUnlocked(m.sport)).toList(),
+        );
+        if (!_introPlayed && _cycles.isNotEmpty) {
+          _introPlayed = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) widget.onIntroPlayed?.call();
+          });
+        }
+        SportMatch? match(String id) =>
+            state.fixtures.where((m) => m.id == id).firstOrNull;
+        final children = <Widget>[
+          if (markets.isNotEmpty) ...[
+            _FeaturedPicks(markets: markets, onOpen: widget.onOpenMarket),
+            const SizedBox(height: MatchDiscoveryTokens.moduleGap),
+          ],
+          for (final sport in ordered)
+            if (_cycles[sport] case final cycle?) ...[
+              if (cycle.matches.isNotEmpty) ...[
+                for (var i = 0; i < cycle.matches.length; i++)
+                  if (match(cycle.matches[i]) case final fixture?) ...[
+                    if (i > 0) const SizedBox(height: 16),
+                    EditorialMatchCard(
+                      key: ValueKey('editorial-match-${fixture.id}'),
+                      match: fixture,
+                      followed: state.isFavoriteMatch(fixture),
+                      competitionLabel: state.leagueFor(fixture.leagueId)?.name,
+                      onTap: () => widget.onOpenMatch(fixture),
+                    ),
+                  ],
+                const SizedBox(height: MatchDiscoveryTokens.moduleGap),
+              ],
+              if (cycle.events.isNotEmpty) ...[
+                EditorialEventsPanel(
+                  markets: cycle.events
+                      .expand((id) => picks.markets.where((m) => m.id == id))
+                      .toList(),
+                  onOpen: widget.onOpenMarket,
+                ),
+                const SizedBox(height: MatchDiscoveryTokens.moduleGap),
+              ],
+              EditorialPairedGrid(
+                children: [
+                  if (widget.onOpenQuiz != null) _quiz(context, sport, unlocks),
+                  if (cycle.compact != null)
+                    if (match(cycle.compact!) case final fixture?)
+                      EditorialMatchCard(
+                        match: fixture,
+                        followed: state.isFavoriteMatch(fixture),
+                        competitionLabel: state
+                            .leagueFor(fixture.leagueId)
+                            ?.name,
+                        compact: true,
+                        onTap: () => widget.onOpenMatch(fixture),
+                      ),
+                  for (final id in cycle.missions)
+                    if (match(id) case final fixture?)
+                      if (state.quizzes.values
+                              .where((q) => q.matchId == id && q.entryFee == 0)
+                              .firstOrNull
+                          case final quiz?)
+                        EditorialMission(
+                          match: fixture,
+                          quiz: quiz,
+                          prediction: state.predictionFor(id, quiz.id),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => MatchPredictionScreen(
+                                match: fixture,
+                                quizId: quiz.id,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                  ],
+                ],
+              ),
+              if (cycle.future != null)
+                if (picks.markets
+                        .where(
+                          (m) =>
+                              m.id == cycle.future &&
+                              m.type == PickMarketType.future,
+                        )
+                        .firstOrNull
+                    case final future?) ...[
+                  const SizedBox(height: MatchDiscoveryTokens.moduleGap),
+                  EditorialMarketCard(
+                    market: future,
+                    featured: true,
+                    onOpen: () => widget.onOpenMarket(future.id),
+                    onBuy: (outcome) => showPickTradeSheet(
+                      context: context,
+                      market: future,
+                      outcome: outcome,
+                    ),
+                  ),
+                ],
+              const SizedBox(height: MatchDiscoveryTokens.moduleGap),
+            ],
+          if ((state.loading || state.loadingSports.isNotEmpty) &&
+              _cycles.isEmpty)
+            const Center(child: CircularProgressIndicator()),
+          if (widget.header != null) widget.header!,
+        ];
+        return ListView(
+          key: const PageStorageKey('match-trending-feed'),
+          padding: const EdgeInsets.fromLTRB(0, 16, 0, 32),
+          children: [
+            for (final child in children)
+              if (child is _FeaturedPicks)
+                child
+              else
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: MatchDiscoveryTokens.page,
+                  ),
+                  child: child,
                 ),
-              ],
-            );
-          },
+          ],
         );
       },
-    );
-  }
-
-  Widget _buildTile(
-    TrendingTileConfig config,
-    PredictionState predictionState,
-    PicksState picksState,
-  ) {
-    switch (config.kind) {
-      case TrendingTileKind.match:
-      case TrendingTileKind.predict:
-        final match =
-            predictionState.fixtures
-                .where((fixture) => fixture.id == config.sourceId)
-                .firstOrNull ??
-            _catalogFixtures[config.sourceId];
-        if (match == null) {
-          return _fixtureScanRunning
-              ? _TrendingSkeleton(span: config.span)
-              : _TrendingUnavailable(kind: config.kind);
-        }
-        if (config.kind == TrendingTileKind.match) {
-          final quiz = predictionState.quizzes.values
-              .where((quiz) => quiz.matchId == match.id)
-              .firstOrNull;
-          return _TrendingMatchCard(
-            match: match,
-            leagueLabel:
-                predictionState.leagueFor(match.leagueId)?.shortCode ??
-                match.leagueId.toUpperCase(),
-            potentialXp: quiz?.maxReward ?? match.rewardXp,
-            volumeOz: seededMatchVolumeOz(match.id),
-            isFavorite: predictionState.isFavoriteMatch(match),
-            onTap: () => widget.onOpenMatch(match),
-          );
-        }
-        final prediction = predictionState.predictionSummaryForMatch(match.id);
-        final quiz = predictionState.quizzes.values
-            .where((quiz) => quiz.matchId == match.id)
-            .firstOrNull;
-        return _TrendingPredictCard(
-          match: match,
-          leagueLabel:
-              predictionState.leagueFor(match.leagueId)?.shortCode ??
-              match.leagueId.toUpperCase(),
-          hasPrediction: prediction != null,
-          potentialXp: quiz?.maxReward ?? match.rewardXp,
-          volumeOz: seededMatchVolumeOz(match.id),
-          onTap: () => widget.onOpenMatch(match),
-        );
-      case TrendingTileKind.future:
-      case TrendingTileKind.pick:
-        if (picksState.loading) {
-          return _TrendingSkeleton(span: config.span);
-        }
-        final market = picksState.marketFor(config.sourceId);
-        if (market == null) {
-          return _TrendingUnavailable(kind: config.kind);
-        }
-        return _TrendingMarketCard(
-          market: market,
-          kind: config.kind,
-          sport: config.sport ?? Sport.football,
-          tall: config.span == CyberBentoSpan.tall,
-          onTap: () => widget.onOpenMarket(market.id),
-        );
-      case TrendingTileKind.game:
-        return _TrendingUnavailable(kind: config.kind);
-    }
-  }
-}
-
-class _TrendingMatchCard extends StatelessWidget {
-  const _TrendingMatchCard({
-    required this.match,
-    required this.leagueLabel,
-    required this.potentialXp,
-    required this.volumeOz,
-    required this.isFavorite,
-    required this.onTap,
-  });
-
-  final SportMatch match;
-  final String leagueLabel;
-  final int potentialXp;
-  final int volumeOz;
-
-  /// Whether one of the player's followed clubs is in this fixture — it takes
-  /// over the tile's corner tag (LIVE still wins).
-  final bool isFavorite;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final module = sportModuleFor(match.sport);
-    final live = match.status == MatchStatus.live;
-    final finished = match.status == MatchStatus.finished;
-    if (match.sport == Sport.cricket) {
-      return _CricketTrendingMatchCard(
-        match: match,
-        leagueLabel: leagueLabel,
-        volumeOz: volumeOz,
-        potentialXp: potentialXp,
-        isFavorite: isFavorite,
-        onTap: onTap,
-      );
-    }
-    final centerLabel = live
-        ? '${match.liveMinute ?? 0}′'
-        : finished
-        ? '${match.homeScore ?? '-'} - ${match.awayScore ?? '-'}'
-        : _kickoffTime(match.kickoff);
-    final detail = live
-        ? '${match.homeScore ?? '0'} - ${match.awayScore ?? '0'}'
-        : finished
-        ? 'FULL TIME'
-        : _shortDate(match.kickoff);
-    final scoreOrTime = live ? detail : centerLabel;
-    final contextLabel = live
-        ? centerLabel
-        : finished
-        ? leagueLabel
-        : detail;
-    final statusTag = live
-        ? centerLabel
-        : isFavorite
-        ? 'YOUR CLUB'
-        : finished
-        ? 'FINISHED'
-        : 'UPCOMING';
-    final footerLabel = live
-        ? 'IN PLAY'
-        : finished
-        ? 'FULL TIME'
-        : '+${potentialXp > 0 ? potentialXp : 50} XP MISSION';
-
-    return _TrendSignalShell(
-      semanticsLabel:
-          '${match.home.name} versus ${match.away.name}, $scoreOrTime',
-      accent: live ? Cyber.success : module.accent,
-      tag: statusTag,
-      live: live,
-      scoreboard: true,
-      hardElevated: true,
-      onTap: onTap,
+    ),
+  );
+  Widget _quiz(BuildContext context, Sport sport, UnlockProgress unlocks) {
+    final game = switch (sport) {
+      Sport.football => ArcadeGame.footballQuiz,
+      Sport.cricket => ArcadeGame.cricketQuiz,
+      Sport.basketball => ArcadeGame.basketballQuiz,
+      _ => ArcadeGame.motorsportQuiz,
+    };
+    final locked = !unlocks.isGameUnlocked(game);
+    return EditorialPlate(
+      onTap: () => widget.onOpenQuiz?.call(sport),
+      signalAccent: editorialSportAccent(sport),
+      motionId: 'quiz:${sport.name}',
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 26, 14, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _TeamLockup(
-                      team: match.home,
-                      sport: match.sport,
-                      competition: match.leagueId,
-                    ),
-                  ),
-                  SizedBox(
-                    width: 88,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          scoreOrTime,
-                          maxLines: 1,
-                          style:
-                              Cyber.display(
-                                live || finished ? 23 : 19,
-                                color: Colors.white,
-                                letterSpacing: 0.5,
-                              ).copyWith(
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
-                              ),
-                        ),
-                        if (!live) ...[
-                          const SizedBox(height: 5),
-                          Text(
-                            contextLabel,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Cyber.label(
-                              10,
-                              color: Cyber.muted,
-                              letterSpacing: 0.6,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: _TeamLockup(
-                      team: match.away,
-                      sport: match.sport,
-                      competition: match.leagueId,
-                      alignEnd: true,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          CyberTelemetryFooter(
-            key: ValueKey('trending-match-footer-${match.id}'),
-            leading: footerLabel,
-            trailing: 'VOL ${formatOzCompact(volumeOz)} OZ',
-            leadingColor: live ? Cyber.success : Cyber.cyan,
-            leadingIcon: module.icon,
-            leadingIconColor: module.accent,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Cricket has two innings, not one shared scoreline. Keep each score and its
-/// overs with its team, then give the outcome its own beat below the innings.
-class _CricketTrendingMatchCard extends StatelessWidget {
-  const _CricketTrendingMatchCard({
-    required this.match,
-    required this.leagueLabel,
-    required this.volumeOz,
-    required this.potentialXp,
-    required this.isFavorite,
-    required this.onTap,
-  });
-
-  final SportMatch match;
-  final String leagueLabel;
-  final int volumeOz;
-  final int potentialXp;
-  final bool isFavorite;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final live = match.status == MatchStatus.live;
-    final finished = match.status == MatchStatus.finished;
-    final result = (match.resultLine ?? match.cricketDetails?.result ?? '')
-        .trim();
-    final status = live
-        ? 'LIVE'
-        : isFavorite
-        ? 'YOUR CLUB'
-        : finished
-        ? 'FINISHED'
-        : 'UPCOMING';
-    final footer = live
-        ? 'IN PLAY'
-        : finished
-        ? 'FULL TIME'
-        : '+${potentialXp > 0 ? potentialXp : 50} XP MISSION';
-    final home = _cricketInningsDisplay(match, match.home);
-    final away = _cricketInningsDisplay(match, match.away);
-
-    return _TrendSignalShell(
-      semanticsLabel:
-          '${match.home.name} ${home.score}, ${match.away.name} ${away.score}'
-          '${result.isEmpty ? '' : ', $result'}',
-      accent: live ? Cyber.success : Cyber.cyan,
-      tag: status,
-      live: live,
-      scoreboard: true,
-      onTap: onTap,
-      child: Column(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 25, 14, 7),
-              child: Column(
-                children: [
-                  Text(
-                    leagueLabel.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(
-                      10,
-                      color: Cyber.muted,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 7),
-                  _CricketTrendingTeamRow(
-                    match: match,
-                    team: match.home,
-                    innings: home,
-                  ),
-                  const SizedBox(height: 6),
-                  _CricketTrendingTeamRow(
-                    match: match,
-                    team: match.away,
-                    innings: away,
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
-                    decoration: BoxDecoration(
-                      color: Cyber.bg.withValues(alpha: 0.4),
-                      border: Border(
-                        left: BorderSide(
-                          color: live ? Cyber.success : Cyber.cyan,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                    child: Text(
-                      result.isNotEmpty
-                          ? result
-                          : live
-                          ? 'MATCH IN PROGRESS'
-                          : finished
-                          ? 'FINAL SCORE'
-                          : '${_shortDate(match.kickoff)} · ${_kickoffTime(match.kickoff)}',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: Cyber.bodyFor(
-                        context,
-                        11,
-                        color: result.isNotEmpty
-                            ? AppTheme.textContrast
-                            : Cyber.muted,
-                        weight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          CyberTelemetryFooter(
-            key: ValueKey('trending-match-footer-${match.id}'),
-            leading: footer,
-            trailing: 'VOL ${formatOzCompact(volumeOz)} OZ',
-            leadingColor: live ? Cyber.success : Cyber.cyan,
-            leadingIcon: Icons.sports_cricket,
-            leadingIconColor: sportModuleFor(Sport.cricket).accent,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-typedef _CricketInningsDisplay = ({String score, String? context});
-
-_CricketInningsDisplay _cricketInningsDisplay(
-  SportMatch match,
-  SportTeam team,
-) {
-  final raw = team.id == match.home.id ? match.homeScore : match.awayScore;
-  final innings = match.cricketDetails?.innings
-      .where((value) => value.teamId == team.id)
-      .firstOrNull;
-  final value = raw?.trim().isNotEmpty == true
-      ? raw!.trim()
-      : innings?.score.trim();
-  if (value == null || value.isEmpty) return (score: '—', context: null);
-  final contextStart = value.indexOf('(');
-  final score = contextStart < 0
-      ? value
-      : value.substring(0, contextStart).trim();
-  final context = contextStart < 0
-      ? innings == null
-            ? null
-            : '${innings.overs} OV'
-      : value.substring(contextStart).trim();
-  return (score: score, context: context);
-}
-
-class _CricketTrendingTeamRow extends StatelessWidget {
-  const _CricketTrendingTeamRow({
-    required this.match,
-    required this.team,
-    required this.innings,
-  });
-
-  final SportMatch match;
-  final SportTeam team;
-  final _CricketInningsDisplay innings;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            TeamLogo(
-              team: team,
-              width: 32,
-              height: 32,
-              sport: Sport.cricket,
-              competition: match.leagueId,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                team.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Cyber.bodyFor(
-                  context,
-                  13,
-                  color: AppTheme.textContrast,
-                  weight: FontWeight.w800,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              innings.score,
-              maxLines: 1,
-              style: Cyber.display(
-                18,
-                color: AppTheme.textContrast,
-                letterSpacing: 0,
-              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-            ),
-          ],
-        ),
-        if (innings.context != null)
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              innings.context!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.end,
-              style: Cyber.label(
-                9,
-                color: Cyber.muted,
-                letterSpacing: 0,
-              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-typedef _PickCategory = ({PickMarketType type, String label, IconData icon});
-
-/// Market categories surfaced as compact shortcuts above the Trending grid.
-const _pickCategories = <_PickCategory>[
-  (
-    type: PickMarketType.match,
-    label: 'PICKS',
-    icon: Icons.stacked_line_chart_rounded,
-  ),
-  (
-    type: PickMarketType.future,
-    label: 'FUTURES',
-    icon: Icons.emoji_events_rounded,
-  ),
-  (type: PickMarketType.event, label: 'EVENTS', icon: Icons.bolt_rounded),
-];
-
-const double _kCategoryTabHeight = 116;
-
-class _PickCategoryStrip extends StatelessWidget {
-  const _PickCategoryStrip({required this.picksState, required this.animate});
-
-  final PicksState picksState;
-  final bool animate;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (var i = 0; i < _pickCategories.length; i++) ...[
-          if (i > 0) const SizedBox(width: 8),
-          Expanded(
+          EditorialStatusArea(label: sport.name, sport: sport),
+          EditorialInset(
+            padding: EdgeInsets.zero,
+            edge: Colors.transparent,
             child: SizedBox(
-              key: ValueKey(
-                'trend-category-${_pickCategories[i].label.toLowerCase()}',
-              ),
-              height: _kCategoryTabHeight,
-              child: StaggeredCardEntrance(
-                index: i,
-                animate: animate,
-                child: _buildCard(context, _pickCategories[i]),
+              height: 104,
+              child: CyberGameIllustration(
+                art: CyberGameArt.quiz,
+                game: game,
+                accent: Cyber.cyan,
+                animate: !locked,
               ),
             ),
           ),
+          Text(
+            game.title,
+            style: Cyber.display(14).copyWith(fontWeight: FontWeight.w600),
+          ),
+          EditorialAction(locked ? 'Locked · Play quiz' : 'Play quiz'),
         ],
-      ],
-    );
-  }
-
-  Widget _buildCard(BuildContext context, _PickCategory category) {
-    final open = picksState.markets
-        .where((market) => market.type == category.type && market.canBuy)
-        .toList(growable: false);
-    int moveOf(PickMarket market) =>
-        (market.latestDeltaFor(market.leadingOutcome.id) ?? 0).abs();
-    bool isHot(PickMarket market) =>
-        moveOf(market) >= _kHotDeltaThreshold && !market.isResultKnown;
-    return _PickCategoryCard(
-      type: category.type,
-      label: category.label,
-      icon: category.icon,
-      openCount: picksState.loading ? null : open.length,
-      hot: !picksState.loading && open.any(isHot),
-      onTap: () => AllPicksScreen.openFiltered(context, category.type),
-    );
-  }
-}
-
-class _PickCategoryCard extends StatelessWidget {
-  const _PickCategoryCard({
-    required this.type,
-    required this.label,
-    required this.icon,
-    required this.openCount,
-    required this.hot,
-    required this.onTap,
-  });
-
-  final PickMarketType type;
-  final String label;
-  final IconData icon;
-
-  /// Null while markets are still loading.
-  final int? openCount;
-
-  /// A genuinely hot mover in this category — the only state that animates.
-  final bool hot;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final typeColor = pickMarketTypeColor(type);
-    return _TrendSignalShell(
-      semanticsLabel: openCount == null
-          ? '$label markets'
-          : '$label, $openCount open markets',
-      accent: Cyber.cyan,
-      tag: label,
-      showTag: false,
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 10, 8, 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                _CategoryGlyph(icon: icon, color: typeColor, dimension: 28),
-                const Spacer(),
-                if (hot)
-                  _HotMoverTag(color: typeColor)
-                else
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    size: 16,
-                    color: Cyber.cyan,
-                  ),
-              ],
-            ),
-            const Spacer(),
-            Text(
-              label,
-              maxLines: 1,
-              style: Cyber.display(11, color: Colors.white, letterSpacing: 0.4),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              openCount?.toString() ?? '—',
-              maxLines: 1,
-              style: Cyber.display(
-                20,
-                color: Colors.white,
-                letterSpacing: 0.3,
-              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-            ),
-            Text(
-              'OPEN',
-              style: Cyber.label(10, color: Cyber.muted, letterSpacing: 0.2),
-            ),
-          ],
-        ),
       ),
     );
   }
 }
 
-/// Chamfered type badge on a category shortcut — flat fill +
-/// border only (always-on chrome never glows).
-class _CategoryGlyph extends StatelessWidget {
-  const _CategoryGlyph({
-    required this.icon,
-    required this.color,
-    this.dimension = 42,
-  });
-
-  final IconData icon;
-  final Color color;
-  final double dimension;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox.square(
-      dimension: dimension,
-      child: CustomPaint(
-        painter: _CategoryGlyphPainter(color: color),
-        child: Center(
-          child: Icon(icon, size: dimension * 0.48, color: color),
-        ),
-      ),
+List<PickMarket> _featured(List<PickMarket> markets) {
+  final seen = <String>{}, out = <PickMarket>[];
+  for (var i = 0; i < MatchDiscoveryTokens.carouselIds.length; i++) {
+    final sport = Sport.values.firstWhere(
+      (s) => s.name == [...MatchDiscoveryTokens.sportOrder, 'football'][i],
     );
+    final m =
+        markets
+            .where(
+              (m) =>
+                  m.id == MatchDiscoveryTokens.carouselIds[i] &&
+                  m.sport == sport &&
+                  !seen.contains(m.id) &&
+                  m.outcomes.isNotEmpty,
+            )
+            .firstOrNull ??
+        markets
+            .where(
+              (m) =>
+                  m.sport == sport &&
+                  m.type == PickMarketType.match &&
+                  !seen.contains(m.id) &&
+                  m.outcomes.isNotEmpty,
+            )
+            .firstOrNull;
+    if (m != null) {
+      seen.add(m.id);
+      out.add(m);
+    }
   }
+  return out;
 }
 
-class _CategoryGlyphPainter extends CustomPainter {
-  const _CategoryGlyphPainter({required this.color});
-
-  final Color color;
-
+class _FeaturedPicks extends StatefulWidget {
+  const _FeaturedPicks({required this.markets, required this.onOpen});
+  final List<PickMarket> markets;
+  final ValueChanged<String> onOpen;
   @override
-  void paint(Canvas canvas, Size size) {
-    const cut = 8.0;
-    final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width - cut, 0)
-      ..lineTo(size.width, cut)
-      ..lineTo(size.width, size.height)
-      ..lineTo(cut, size.height)
-      ..lineTo(0, size.height - cut)
-      ..close();
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = Color.alphaBlend(color.withValues(alpha: 0.12), Cyber.bg),
+  State<_FeaturedPicks> createState() => _FeaturedPicksState();
+}
+
+class _FeaturedPicksState extends State<_FeaturedPicks> {
+  final controller = ScrollController();
+  int active = 0;
+  double width = 300;
+  @override
+  void initState() {
+    super.initState();
+    controller.addListener(_scroll);
+  }
+
+  void _scroll() {
+    final next = (controller.offset / (width + 16)).round().clamp(
+      0,
+      widget.markets.length - 1,
     );
-    canvas.drawPath(
-      path,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..color = color.withValues(alpha: 0.5),
+    if (next != active) setState(() => active = next);
+  }
+
+  void move(int index) {
+    if (index < 0 || index >= widget.markets.length) return;
+    controller.jumpTo(
+      (index * (width + 16)).clamp(0, controller.position.maxScrollExtent),
     );
   }
 
   @override
-  bool shouldRepaint(covariant _CategoryGlyphPainter oldDelegate) =>
-      oldDelegate.color != color;
-}
-
-/// Pulsing HOT flag — only shown when a category holds a genuine mover, so
-/// the glow stays scarce.
-class _HotMoverTag extends StatelessWidget {
-  const _HotMoverTag({required this.color});
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return CyberPulse(
-      period: const Duration(milliseconds: 700),
-      builder: (context, t) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.10 + 0.08 * t),
-          border: Border.all(color: color.withValues(alpha: 0.4 + 0.4 * t)),
-          boxShadow: Cyber.glow(color, alpha: 0.35 * t, blur: 6, spread: -2),
-        ),
-        child: Text(
-          'HOT',
-          style: Cyber.label(9, color: color, letterSpacing: 1),
-        ),
-      ),
-    );
+  void dispose() {
+    controller.removeListener(_scroll);
+    controller.dispose();
+    super.dispose();
   }
-}
-
-class _TeamLockup extends StatelessWidget {
-  const _TeamLockup({
-    required this.team,
-    required this.sport,
-    this.competition,
-    this.alignEnd = false,
-  });
-
-  final SportTeam team;
-  final Sport sport;
-  final String? competition;
-  final bool alignEnd;
 
   @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: alignEnd
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
-      children: [
-        TeamLogo(
-          team: team,
-          width: 40,
-          height: 40,
-          sport: sport,
-          competition: competition,
-        ),
-        const SizedBox(height: 4),
-        Text(
-          team.name,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          textAlign: alignEnd ? TextAlign.end : TextAlign.start,
-          style: Cyber.bodyFor(
-            context,
-            _kTrendingTileHeadingSize,
-            weight: FontWeight.w800,
-            height: 1.05,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _TrendingPredictCard extends StatelessWidget {
-  const _TrendingPredictCard({
-    required this.match,
-    required this.leagueLabel,
-    required this.hasPrediction,
-    required this.potentialXp,
-    required this.volumeOz,
-    required this.onTap,
-  });
-
-  final SportMatch match;
-  final String leagueLabel;
-  final bool hasPrediction;
-  final int potentialXp;
-  final int volumeOz;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final module = sportModuleFor(match.sport);
-    return _TrendSignalShell(
-      semanticsLabel: 'Predict ${match.home.name} versus ${match.away.name}',
-      accent: Cyber.cyan,
-      tag: 'PREDICT',
-      onTap: onTap,
-      child: Column(
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) {
+      width = ((box.maxWidth - MatchDiscoveryTokens.page * 2) * .88).clamp(
+        0,
+        340,
+      );
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 34, 12, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          Focus(
+            onKeyEvent: (_, event) {
+              if (event is KeyDownEvent &&
+                  (event.logicalKey == LogicalKeyboardKey.arrowRight ||
+                      event.logicalKey == LogicalKeyboardKey.arrowLeft)) {
+                move(
+                  active +
+                      (event.logicalKey == LogicalKeyboardKey.arrowRight
+                          ? 1
+                          : -1),
+                );
+                return KeyEventResult.handled;
+              }
+              return KeyEventResult.ignored;
+            },
+            child: SingleChildScrollView(
+              key: const PageStorageKey('featured-winner-picks'),
+              controller: controller,
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                horizontal: MatchDiscoveryTokens.page,
+              ),
+              child: EditorialEqualRow(
+                itemWidth: width,
+                gap: 16,
                 children: [
-                  Row(
-                    children: [
-                      Icon(module.icon, size: 13, color: module.accent),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          leagueLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Cyber.label(
-                            10,
-                            color: Cyber.muted,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
+                  for (var i = 0; i < widget.markets.length; i++)
+                    EditorialMarketCard(
+                      market: widget.markets[i],
+                      featured: true,
+                      onOpen: () => widget.onOpen(widget.markets[i].id),
+                      onBuy: (outcome) => showPickTradeSheet(
+                        context: context,
+                        market: widget.markets[i],
+                        outcome: outcome,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TeamLogo(
-                        team: match.home,
-                        width: 36,
-                        height: 36,
-                        sport: match.sport,
-                        competition: match.leagueId,
-                      ),
-                      Text('VS', style: Cyber.display(10, color: Cyber.cyan)),
-                      TeamLogo(
-                        team: match.away,
-                        width: 36,
-                        height: 36,
-                        sport: match.sport,
-                        competition: match.leagueId,
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  Text(
-                    '${match.home.shortName} // ${match.away.shortName}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Cyber.display(
-                      _kTrendingTileHeadingSize,
-                      letterSpacing: 0.2,
                     ),
-                  ),
                 ],
               ),
             ),
           ),
-          CyberTelemetryFooter(
-            key: ValueKey('trending-predict-footer-${match.id}'),
-            leading: hasPrediction
-                ? 'ANSWERS LOCKED'
-                : '+${potentialXp > 0 ? potentialXp : 50} XP',
-            trailing: 'VOL ${formatOzCompact(volumeOz)} OZ',
-            leadingColor: hasPrediction ? Cyber.success : Cyber.cyan,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TrendingMarketCard extends StatelessWidget {
-  const _TrendingMarketCard({
-    required this.market,
-    required this.kind,
-    required this.sport,
-    required this.tall,
-    required this.onTap,
-  });
-
-  final PickMarket market;
-  final TrendingTileKind kind;
-  final Sport sport;
-  final bool tall;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final future = kind == TrendingTileKind.future;
-    final marketAccent = future ? Cyber.gold : Cyber.lime;
-    final module = sportModuleFor(sport);
-    final leader = market.leadingOutcome;
-    final delta = market.latestDeltaFor(leader.id);
-    final hot =
-        delta != null &&
-        delta.abs() >= _kHotDeltaThreshold &&
-        !market.isResultKnown;
-    return _TrendSignalShell(
-      semanticsLabel: market.question,
-      // Type tags are navigational chrome, so FUTURE and PICK follow the
-      // shared cyan action treatment. Market values retain their own signal
-      // colour below.
-      accent: Cyber.cyan,
-      tag: future ? 'FUTURE' : 'PICK',
-      onTap: onTap,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final compact = !tall && constraints.maxHeight < 160;
-          return Column(
+          const SizedBox(height: MatchDiscoveryTokens.carouselDotGap),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Expanded(
-                child: Padding(
-                  padding: compact
-                      ? const EdgeInsets.fromLTRB(10, 34, 10, 4)
-                      : const EdgeInsets.fromLTRB(12, 36, 12, 4),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(module.icon, size: 13, color: module.accent),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              market.leagueLabel,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Cyber.label(
-                                10,
-                                color: Cyber.muted,
-                                letterSpacing: 0.7,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: compact ? 4 : 8),
-                      Text(
-                        market.question,
-                        maxLines: compact
-                            ? 2
-                            : tall
-                            ? 4
-                            : 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: Cyber.bodyFor(
-                          context,
-                          _kTrendingTileHeadingSize,
-                          weight: FontWeight.w800,
-                          height: 1.12,
+              for (var i = 0; i < widget.markets.length; i++)
+                Semantics(
+                  label: 'Show featured Pick ${i + 1}',
+                  selected: i == active,
+                  button: true,
+                  child: InkWell(
+                    onTap: () => move(i),
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: Center(
+                        child: Container(
+                          width: 8,
+                          height: 4,
+                          color: i == active ? Cyber.cyan : Cyber.border,
                         ),
                       ),
-                      if (tall) ...[
-                        const SizedBox(height: 16),
-                        for (final outcome in market.outcomes.take(4)) ...[
-                          _OutcomeSignal(
-                            label: outcome.label,
-                            value: outcome.probabilityPercent,
-                            accent: outcome.id == leader.id
-                                ? marketAccent
-                                : Cyber.muted,
-                          ),
-                          const SizedBox(height: 7),
-                        ],
-                      ] else ...[
-                        const Spacer(),
-                        if (!compact) ...[
-                          Text(
-                            leader.label.toUpperCase(),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Cyber.display(10, letterSpacing: 0.5),
-                          ),
-                          const SizedBox(height: 4),
-                        ],
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              '${leader.probabilityPercent}%',
-                              style:
-                                  Cyber.display(
-                                    compact ? 18 : 22,
-                                    color: marketAccent,
-                                    letterSpacing: 0,
-                                  ).copyWith(
-                                    fontFeatures: const [
-                                      FontFeature.tabularFigures(),
-                                    ],
-                                  ),
-                            ),
-                            if (delta != null) ...[
-                              const SizedBox(width: 6),
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 2),
-                                child: _DeltaBadge(delta: delta, hot: hot),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              CyberTelemetryFooter(
-                key: ValueKey('trending-market-footer-${market.id}'),
-                leading: market.isResultKnown ? 'SETTLED' : 'MARKET OPEN',
-                trailing: 'VOL ${formatOzCompact(market.volumeOz)} OZ',
-                leadingColor: market.isResultKnown ? Cyber.muted : Cyber.cyan,
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _OutcomeSignal extends StatelessWidget {
-  const _OutcomeSignal({
-    required this.label,
-    required this.value,
-    required this.accent,
-  });
-
-  final String label;
-  final int value;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                label.toUpperCase(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Cyber.label(10, color: accent, letterSpacing: 0.3),
-              ),
-            ),
-            Text(
-              '$value%',
-              style: Cyber.display(
-                10,
-                color: accent,
-                letterSpacing: 0,
-              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-            ),
-          ],
-        ),
-        const SizedBox(height: 3),
-        CyberProgressBar(
-          value: value / 100,
-          accent: accent,
-          height: 4,
-          radius: 2,
-        ),
-      ],
-    );
-  }
-}
-
-class _DeltaBadge extends StatelessWidget {
-  const _DeltaBadge({required this.delta, required this.hot});
-
-  final int delta;
-  final bool hot;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = delta >= 0 ? Cyber.success : Cyber.danger;
-    final text = Text(
-      '${delta >= 0 ? '+' : ''}$delta',
-      style: Cyber.label(
-        10,
-        color: color,
-      ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-    );
-    if (!hot) return text;
-    return CyberPulse(
-      period: const Duration(milliseconds: 900),
-      builder: (context, t) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.10 + 0.06 * t),
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: color.withValues(alpha: 0.4 + 0.35 * t)),
-          boxShadow: Cyber.glow(
-            color,
-            alpha: 0.12 + 0.18 * t,
-            blur: 7,
-            spread: -3,
-          ),
-        ),
-        child: text,
-      ),
-    );
-  }
-}
-
-class _TrendSignalShell extends StatelessWidget {
-  const _TrendSignalShell({
-    required this.semanticsLabel,
-    required this.accent,
-    required this.tag,
-    required this.onTap,
-    required this.child,
-    this.live = false,
-    this.scoreboard = false,
-    this.hardElevated = true,
-    this.showTag = true,
-  });
-
-  final String semanticsLabel;
-  final Color accent;
-  final String tag;
-  final VoidCallback onTap;
-  final Widget child;
-  final bool live;
-  final bool scoreboard;
-  final bool hardElevated;
-
-  /// Long tabs carry their own headline, so the corner tag can be dropped.
-  final bool showTag;
-
-  @override
-  Widget build(BuildContext context) {
-    const chromeColor = Cyber.cyan;
-    return Semantics(
-      button: true,
-      label: semanticsLabel,
-      child: PressableScale(
-        onTap: () {
-          playSound(SoundEffect.uiTap);
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: CustomPaint(
-          painter: _TrendSignalPainter(
-            accent: chromeColor,
-            hardElevated: hardElevated,
-            scoreboard: scoreboard,
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ClipPath(
-                clipper: _TrendSignalClipper(scoreboard: scoreboard),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    ColoredBox(
-                      color: Color.alphaBlend(
-                        chromeColor.withValues(alpha: 0.08),
-                        Cyber.panel,
-                      ),
-                    ),
-                    Positioned(
-                      top: 0,
-                      left: 14,
-                      right: 14,
-                      child: Container(
-                        height: 2,
-                        color: chromeColor.withValues(alpha: 0.8),
-                      ),
-                    ),
-                    if (!scoreboard && (showTag || live))
-                      Positioned(
-                        top: 10,
-                        left: 12,
-                        child: live
-                            ? const _LiveSignalBadge(label: 'LIVE')
-                            : Text(
-                                tag,
-                                style: Cyber.label(
-                                  10,
-                                  color: accent,
-                                  letterSpacing: 0.7,
-                                ),
-                              ),
-                      ),
-                    child,
-                  ],
-                ),
-              ),
-              if (scoreboard)
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: _scoreboardNotchDepth,
-                  child: Center(
-                    child: _ScoreboardStatusTag(
-                      label: tag,
-                      color: accent,
-                      live: live,
                     ),
                   ),
                 ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LiveSignalBadge extends StatelessWidget {
-  const _LiveSignalBadge({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-      decoration: BoxDecoration(
-        color: Cyber.success.withValues(alpha: 0.12),
-        border: Border.all(color: Cyber.success.withValues(alpha: 0.62)),
-        boxShadow: Cyber.glow(Cyber.success, alpha: 0.2, blur: 8, spread: -4),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 5,
-            height: 5,
-            decoration: const BoxDecoration(
-              color: Cyber.success,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: Cyber.label(10, color: Cyber.success, letterSpacing: 0.5),
-          ),
         ],
-      ),
-    );
-  }
-}
-
-class _ScoreboardStatusTag extends StatelessWidget {
-  const _ScoreboardStatusTag({
-    required this.label,
-    required this.color,
-    required this.live,
-  });
-
-  final String label;
-  final Color color;
-  final bool live;
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Text(
-      label,
-      style: Cyber.label(
-        10,
-        color: color,
-        letterSpacing: 0.7,
-      ).copyWith(height: 1, fontFeatures: const [FontFeature.tabularFigures()]),
-    );
-    if (!live) return text;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        CyberPulse(
-          period: const Duration(milliseconds: 700),
-          builder: (context, t) => Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.25 + 0.75 * t),
-              shape: BoxShape.circle,
-              boxShadow: Cyber.glow(color, alpha: 0.5 * t, blur: 6, spread: 0),
-            ),
-          ),
-        ),
-        const SizedBox(width: 5),
-        text,
-      ],
-    );
-  }
-}
-
-class _TrendingSkeleton extends StatelessWidget {
-  const _TrendingSkeleton({required this.span});
-
-  final CyberBentoSpan span;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: const _TrendSignalPainter(
-        accent: Cyber.cyan,
-        hardElevated: true,
-      ),
-      child: ClipPath(
-        clipper: const _TrendSignalClipper(),
-        child: ColoredBox(
-          color: Color.alphaBlend(
-            Cyber.cyan.withValues(alpha: 0.08),
-            Cyber.panel,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 72,
-                  height: 7,
-                  color: Cyber.line.withValues(alpha: 0.65),
-                ),
-                const Spacer(),
-                Container(
-                  width: double.infinity,
-                  height: 10,
-                  color: Cyber.line.withValues(alpha: 0.48),
-                ),
-                const SizedBox(height: 8),
-                FractionallySizedBox(
-                  widthFactor: span == CyberBentoSpan.wide ? 0.42 : 0.72,
-                  child: Container(
-                    height: 8,
-                    color: Cyber.line.withValues(alpha: 0.34),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TrendingUnavailable extends StatelessWidget {
-  const _TrendingUnavailable({required this.kind});
-
-  final TrendingTileKind kind;
-
-  @override
-  Widget build(BuildContext context) {
-    return _TrendSignalShell(
-      semanticsLabel: '${kind.name} signal unavailable',
-      accent: Cyber.muted,
-      tag: kind.name.toUpperCase(),
-      onTap: () {},
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.signal_wifi_off_rounded, color: Cyber.muted),
-            const SizedBox(height: 8),
-            Text(
-              'SIGNAL\nUNAVAILABLE',
-              textAlign: TextAlign.center,
-              style: Cyber.label(
-                10,
-                color: Cyber.muted,
-                letterSpacing: 0.7,
-              ).copyWith(height: 1.3),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TrendSignalClipper extends CustomClipper<Path> {
-  const _TrendSignalClipper({this.scoreboard = false});
-
-  final bool scoreboard;
-
-  @override
-  Path getClip(Size size) => _trendSignalPath(size, scoreboard: scoreboard);
-
-  @override
-  bool shouldReclip(covariant _TrendSignalClipper oldClipper) =>
-      oldClipper.scoreboard != scoreboard;
-}
-
-class _TrendSignalPainter extends CustomPainter {
-  const _TrendSignalPainter({
-    required this.accent,
-    required this.hardElevated,
-    this.scoreboard = false,
-  });
-
-  final Color accent;
-  final bool hardElevated;
-  final bool scoreboard;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final path = _trendSignalPath(size, scoreboard: scoreboard);
-    if (hardElevated) {
-      canvas.drawPath(
-        path.shift(const Offset(0, 6)),
-        Paint()..color = accent.withValues(alpha: 0.22),
       );
-    }
-    canvas.drawPath(
-      path,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.1
-        ..color = accent.withValues(alpha: 0.55),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _TrendSignalPainter oldDelegate) =>
-      oldDelegate.accent != accent ||
-      oldDelegate.hardElevated != hardElevated ||
-      oldDelegate.scoreboard != scoreboard;
-}
-
-/// How far the scoreboard card's top status notch dips into the panel.
-const _scoreboardNotchDepth = 16.0;
-
-/// Wide live-scoreboard cards are a strip, not a square cell — shorter row.
-const _kScoreboardRowHeight = 148.0;
-const _kCricketScoreboardRowHeight = 224.0;
-
-Path _trendSignalPath(Size size, {required bool scoreboard}) {
-  const cut = 12.0;
-  const notch = 34.0;
-  final path = Path()..moveTo(cut, 0);
-  if (scoreboard) {
-    final center = size.width / 2;
-    const notchHalf = 54.0;
-    path
-      ..lineTo(center - notchHalf - 8, 0)
-      ..lineTo(center - notchHalf, _scoreboardNotchDepth)
-      ..lineTo(center + notchHalf, _scoreboardNotchDepth)
-      ..lineTo(center + notchHalf + 8, 0)
-      ..lineTo(size.width, 0);
-  } else {
-    path
-      ..lineTo(size.width - notch - 8, 0)
-      ..lineTo(size.width - notch, 8)
-      ..lineTo(size.width, 8);
-  }
-  return path
-    ..lineTo(size.width, size.height - cut)
-    ..lineTo(size.width - cut, size.height)
-    ..lineTo(0, size.height)
-    ..lineTo(0, cut)
-    ..close();
-}
-
-String _kickoffTime(DateTime kickoff) {
-  final local = kickoff.toLocal();
-  final hour = local.hour.toString().padLeft(2, '0');
-  final minute = local.minute.toString().padLeft(2, '0');
-  return '$hour:$minute';
-}
-
-String _shortDate(DateTime kickoff) {
-  final formatted = formatKickoffSchedule(kickoff);
-  final comma = formatted.indexOf(',');
-  return comma == -1
-      ? formatted.toUpperCase()
-      : formatted.substring(comma + 1).trim().toUpperCase();
+    },
+  );
 }

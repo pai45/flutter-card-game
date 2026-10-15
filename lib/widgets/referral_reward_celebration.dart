@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
@@ -48,8 +49,7 @@ class ReferralRewardCelebration extends StatelessWidget {
                   const SizedBox(height: 14),
                   Text(
                     '+$amount COINS',
-                    style: Cyber.display(
-                      30,
+                    style: Cyber.display(StatOzTypography.p30,
                       color: Cyber.gold,
                       letterSpacing: 1.1,
                     ),
@@ -57,8 +57,7 @@ class ReferralRewardCelebration extends StatelessWidget {
                   const SizedBox(height: 7),
                   Text(
                     'FRIEND REFERRAL REWARDED',
-                    style: Cyber.label(
-                      11,
+                    style: Cyber.label(StatOzTypography.p11,
                       color: Colors.white,
                       letterSpacing: 1.2,
                     ),

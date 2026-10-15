@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -208,7 +209,7 @@ class CyberChartPainter extends CustomPainter {
         _paintText(
           canvas,
           yAxisFormatter?.call(value) ?? value.round().toString(),
-          Cyber.label(7, color: Cyber.muted),
+          Cyber.label(StatOzTypography.p7, color: Cyber.muted),
           Offset(rect.left - 5, y - 4),
           alignRight: true,
         );
@@ -234,7 +235,7 @@ class CyberChartPainter extends CustomPainter {
       _paintText(
         canvas,
         xAxisLabels[i],
-        Cyber.label(7, color: Cyber.muted),
+        Cyber.label(StatOzTypography.p7, color: Cyber.muted),
         Offset(x, rect.bottom + 5),
         centered: true,
       );
@@ -422,7 +423,7 @@ class CyberChartPainter extends CustomPainter {
     _paintText(
       canvas,
       label,
-      Cyber.label(7, color: Cyber.bg),
+      Cyber.label(StatOzTypography.p7, color: Cyber.bg),
       Offset(badge.dx, badge.dy - 4),
       centered: true,
     );
@@ -603,7 +604,7 @@ class _CyberChartPanelState extends State<CyberChartPanel> {
                 child: Text(
                   widget.title.toUpperCase(),
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.label(10, color: Cyber.cyan),
+                  style: Cyber.label(StatOzTypography.p10, color: Cyber.cyan),
                 ),
               ),
               IconButton(
@@ -619,7 +620,7 @@ class _CyberChartPanelState extends State<CyberChartPanel> {
               if (widget.caption != null)
                 Text(
                   widget.caption!,
-                  style: Cyber.label(9, color: Cyber.muted),
+                  style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
                 ),
             ],
           ),
@@ -848,13 +849,13 @@ class _CyberChartFullScreenState extends State<CyberChartFullScreen> {
                         widget.title.toUpperCase(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.display(16, letterSpacing: 1),
+                        style: Cyber.display(StatOzTypography.p16, letterSpacing: 1),
                       ),
                     ),
                     if (widget.caption != null)
                       Text(
                         widget.caption!,
-                        style: Cyber.label(9, color: Cyber.muted),
+                        style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
                       ),
                   ],
                 ),
@@ -991,7 +992,7 @@ class _RangeButton extends StatelessWidget {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.label(9, color: active ? Cyber.cyan : Cyber.muted),
+          style: Cyber.label(StatOzTypography.p9, color: active ? Cyber.cyan : Cyber.muted),
         ),
       ),
     );
@@ -1027,11 +1028,9 @@ class CyberChartLegend extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 '${item.label} ${item.readoutAt(selectedIndex)}',
-                style: Cyber.bodyFor(
-                  context,
-                  10,
+                style: Cyber.bodyFor(context, StatOzTypography.p10,
                   color: item.color,
-                  weight: FontWeight.w700,
+                  weight: StatOzTypography.bold,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
@@ -1040,8 +1039,7 @@ class CyberChartLegend extends StatelessWidget {
         if (contextLabel != null)
           Text(
             contextLabel!,
-            style: Cyber.label(
-              9,
+            style: Cyber.label(StatOzTypography.p9,
               color: Cyber.muted,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),

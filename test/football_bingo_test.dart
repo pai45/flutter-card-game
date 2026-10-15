@@ -359,6 +359,9 @@ void main() {
     for (var i = 0; i < 120 && !completed; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
+    expect(find.text('DAILY LOGGED'), findsOneWidget);
+    await tester.tap(find.text('DAILY LOGGED'));
+    await tester.pump();
     expect(completed, isTrue);
   });
 }

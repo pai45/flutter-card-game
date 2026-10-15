@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -44,7 +45,7 @@ class _CricketScorecardViewState extends State<CricketScorecardView> {
       return Center(
         child: Text(
           'No scorecard data available',
-          style: Cyber.body(13, color: Cyber.muted),
+          style: Cyber.body(StatOzTypography.p13, color: Cyber.muted),
         ),
       );
     }
@@ -162,7 +163,7 @@ class _InningsScorecard extends StatelessWidget {
             label: 'BATTING CARD',
             trailing: Text(
               '${innings.batters.length} BATTERS',
-              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1),
+              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1),
             ),
           ),
           const SizedBox(height: 8),
@@ -178,7 +179,7 @@ class _InningsScorecard extends StatelessWidget {
             label: 'PARTNERSHIPS',
             trailing: Text(
               '${innings.partnerships.length} STANDS',
-              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1),
+              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1),
             ),
           ),
           const SizedBox(height: 8),
@@ -190,7 +191,7 @@ class _InningsScorecard extends StatelessWidget {
             label: 'BOWLING CARD',
             trailing: Text(
               '${innings.bowlers.length} BOWLERS',
-              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1),
+              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1),
             ),
           ),
           const SizedBox(height: 8),
@@ -229,8 +230,7 @@ class _InningsScorecard extends StatelessWidget {
                     children: [
                       Text(
                         'INNINGS ${inningsNumber.toString().padLeft(2, '0')} // SCORECARD',
-                        style: Cyber.label(
-                          8,
+                        style: Cyber.label(StatOzTypography.p8,
                           color: accent,
                           letterSpacing: 1.4,
                         ),
@@ -240,15 +240,14 @@ class _InningsScorecard extends StatelessWidget {
                         '${innings.teamName} Innings',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.display(14, letterSpacing: 0.35),
+                        style: Cyber.display(StatOzTypography.p14, letterSpacing: 0.35),
                       ),
                       const SizedBox(height: 5),
                       Text(
                         innings.target == null
                             ? 'MATCH DATA // VERIFIED FIGURES'
                             : 'CHASE TARGET // ${innings.target}',
-                        style: Cyber.label(
-                          7,
+                        style: Cyber.label(StatOzTypography.p7,
                           color: Cyber.muted,
                           letterSpacing: 1.1,
                         ),
@@ -263,7 +262,7 @@ class _InningsScorecard extends StatelessWidget {
                     Text(
                       score,
                       textAlign: TextAlign.right,
-                      style: Cyber.display(25, color: accent, letterSpacing: 0)
+                      style: Cyber.display(StatOzTypography.p25, color: accent, letterSpacing: 0)
                           .copyWith(
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
@@ -271,8 +270,7 @@ class _InningsScorecard extends StatelessWidget {
                     if (innings.overs != null)
                       Text(
                         '${_formatNumber(innings.overs!)} OVERS',
-                        style: Cyber.label(
-                          8,
+                        style: Cyber.label(StatOzTypography.p8,
                           color: Cyber.muted,
                           letterSpacing: 1,
                         ),
@@ -376,10 +374,9 @@ class _InningsScorecard extends StatelessWidget {
                         batter.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.body(
-                          12,
+                        style: Cyber.body(StatOzTypography.p12,
                           color: notOut ? accent : AppTheme.whiteColor,
-                          weight: notOut ? FontWeight.w800 : FontWeight.w600,
+                          weight: notOut ? StatOzTypography.extrabold : StatOzTypography.semibold,
                         ),
                       ),
                       if (dismissal.isNotEmpty)
@@ -387,15 +384,14 @@ class _InningsScorecard extends StatelessWidget {
                           dismissal,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.body(8.5, color: Cyber.muted),
+                          style: Cyber.body(StatOzTypography.p8_5, color: Cyber.muted),
                         ),
                       if (details.isNotEmpty)
                         Text(
                           details.join(' // '),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.label(
-                            6.5,
+                          style: Cyber.label(StatOzTypography.p6_5,
                             color: Cyber.muted.withValues(alpha: 0.82),
                             letterSpacing: 0.7,
                           ),
@@ -409,7 +405,7 @@ class _InningsScorecard extends StatelessWidget {
           _numberCell(
             '${batter.runs}',
             color: isTopScore ? Cyber.gold : AppTheme.whiteColor,
-            weight: FontWeight.w900,
+            weight: StatOzTypography.black,
           ),
           _numberCell('${batter.balls}'),
           _numberCell('${batter.fours}'),
@@ -429,7 +425,7 @@ class _InningsScorecard extends StatelessWidget {
           Expanded(
             child: Text(
               'EXTRAS',
-              style: Cyber.label(9, color: accent, letterSpacing: 1.1),
+              style: Cyber.label(StatOzTypography.p9, color: accent, letterSpacing: 1.1),
             ),
           ),
           Flexible(
@@ -438,10 +434,9 @@ class _InningsScorecard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.right,
-              style: Cyber.body(
-                11,
+              style: Cyber.body(StatOzTypography.p11,
                 color: AppTheme.whiteColor,
-                weight: FontWeight.w800,
+                weight: StatOzTypography.bold,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
@@ -485,9 +480,9 @@ class _InningsScorecard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: Cyber.label(8, color: accent, letterSpacing: 1.1)),
+        Text(label, style: Cyber.label(StatOzTypography.p8, color: accent, letterSpacing: 1.1)),
         const SizedBox(height: 5),
-        Text(value, style: Cyber.body(10.5, color: Cyber.muted)),
+        Text(value, style: Cyber.body(StatOzTypography.p10_5, color: Cyber.muted)),
       ],
     );
   }
@@ -509,7 +504,7 @@ class _InningsScorecard extends StatelessWidget {
                     width: 34,
                     child: Text(
                       innings.partnerships[index].wicket.toUpperCase(),
-                      style: Cyber.label(8, color: accent),
+                      style: Cyber.label(StatOzTypography.p8, color: accent),
                     ),
                   ),
                   Expanded(
@@ -519,14 +514,13 @@ class _InningsScorecard extends StatelessWidget {
                           .join(' + '),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.body(10.5, weight: FontWeight.w600),
+                      style: Cyber.body(StatOzTypography.p10_5, weight: StatOzTypography.semibold),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     '${innings.partnerships[index].runs} / ${_formatNumber(innings.partnerships[index].overs)} OV',
-                    style: Cyber.label(
-                      8,
+                    style: Cyber.label(StatOzTypography.p8,
                       color: Cyber.gold,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
@@ -597,19 +591,17 @@ class _InningsScorecard extends StatelessWidget {
                         bowler.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.body(
-                          12,
+                        style: Cyber.body(StatOzTypography.p12,
                           weight: isStrikeBowler
-                              ? FontWeight.w800
-                              : FontWeight.w600,
+                              ? StatOzTypography.extrabold
+                              : StatOzTypography.semibold,
                         ),
                       ),
                       Text(
                         'DOT ${bowler.dots ?? '—'} // WD ${bowler.wides ?? '—'} // NB ${bowler.noBalls ?? '—'}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.label(
-                          6.5,
+                        style: Cyber.label(StatOzTypography.p6_5,
                           color: Cyber.muted.withValues(alpha: 0.82),
                           letterSpacing: 0.65,
                         ),
@@ -626,7 +618,7 @@ class _InningsScorecard extends StatelessWidget {
           _numberCell(
             '${bowler.wickets}',
             color: isStrikeBowler ? Cyber.gold : accent,
-            weight: FontWeight.w900,
+            weight: StatOzTypography.black,
           ),
           _numberCell(bowler.economyRate.toStringAsFixed(1), flex: 2),
         ],
@@ -643,7 +635,7 @@ class _InningsScorecard extends StatelessWidget {
             flex: 4,
             child: Text(
               name,
-              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1),
+              style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 1),
             ),
           ),
           for (var index = 0; index < values.length; index++)
@@ -652,7 +644,7 @@ class _InningsScorecard extends StatelessWidget {
               child: Text(
                 values[index],
                 textAlign: TextAlign.right,
-                style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.8),
+                style: Cyber.label(StatOzTypography.p8, color: Cyber.muted, letterSpacing: 0.8),
               ),
             ),
         ],
@@ -664,7 +656,7 @@ class _InningsScorecard extends StatelessWidget {
     String value, {
     int flex = 1,
     Color? color,
-    FontWeight weight = FontWeight.w600,
+    FontWeight weight = StatOzTypography.semibold,
   }) {
     return Expanded(
       flex: flex,
@@ -672,8 +664,7 @@ class _InningsScorecard extends StatelessWidget {
         value,
         maxLines: 1,
         textAlign: TextAlign.right,
-        style: Cyber.body(
-          10.5,
+        style: Cyber.body(StatOzTypography.p10_5,
           color: color ?? Cyber.muted,
           weight: weight,
           fontFeatures: const [FontFeature.tabularFigures()],

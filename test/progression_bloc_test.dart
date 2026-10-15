@@ -265,7 +265,13 @@ void main() {
     addTearDown(bloc.close);
     await _load(bloc);
 
-    bloc.add(ShootoutFinished(playerGoals: 5, cpuGoals: 3));
+    bloc.add(
+      ShootoutFinished(
+        playerGoals: 5,
+        cpuGoals: 3,
+        sessionId: 'progression-test-shootout-1',
+      ),
+    );
     final rewarded = await _nextWhere(bloc, (state) => state.coins == 20);
 
     expect(
@@ -346,9 +352,7 @@ void main() {
 
   test('XP application records only the loss that can actually be applied', () {
     final result = applyXpTransaction(
-      progression: PlayerProgression(
-        xpByTrack: {ProgressTrack.pitchDuel: 3},
-      ),
+      progression: PlayerProgression(xpByTrack: {ProgressTrack.pitchDuel: 3}),
       ledger: const [],
       delta: -15,
       source: XpTransactionSource.match,

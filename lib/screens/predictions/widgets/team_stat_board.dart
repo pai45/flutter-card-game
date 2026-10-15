@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -321,7 +322,7 @@ class _LeaderPlate extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 spec.lowerIsBetter ? 'LEAGUE BEST // FEWEST' : 'LEAGUE BEST',
-                style: Cyber.label(8.5, color: Cyber.gold, letterSpacing: 1.6),
+                style: Cyber.label(StatOzTypography.p8_5, color: Cyber.gold, letterSpacing: 1.6),
               ),
               const Spacer(),
               Flexible(
@@ -330,8 +331,7 @@ class _LeaderPlate extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.end,
-                  style: Cyber.label(
-                    8.5,
+                  style: Cyber.label(StatOzTypography.p8_5,
                     color: Cyber.muted,
                     letterSpacing: 1.4,
                   ),
@@ -358,8 +358,7 @@ class _LeaderPlate extends StatelessWidget {
                       entry.team.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.display(
-                        17,
+                      style: Cyber.display(StatOzTypography.p17,
                         color: Colors.white,
                         letterSpacing: 0.3,
                       ),
@@ -367,8 +366,7 @@ class _LeaderPlate extends StatelessWidget {
                     const SizedBox(height: 5),
                     Text(
                       entry.team.shortName.toUpperCase(),
-                      style: Cyber.label(
-                        9,
+                      style: Cyber.label(StatOzTypography.p9,
                         color: Cyber.muted,
                         letterSpacing: 1.1,
                       ),
@@ -379,8 +377,7 @@ class _LeaderPlate extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 formatStat(entry.value, entry.display, spec.format),
-                style: Cyber.display(
-                  30,
+                style: Cyber.display(StatOzTypography.p30,
                   color: accent,
                   letterSpacing: 0.5,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -393,7 +390,7 @@ class _LeaderPlate extends StatelessWidget {
               description.toUpperCase(),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 1.1),
+              style: Cyber.label(StatOzTypography.p8_5, color: Cyber.muted, letterSpacing: 1.1),
             ),
           ],
         ],
@@ -434,8 +431,7 @@ class _ChaserRow extends StatelessWidget {
               width: 20,
               child: Text(
                 '${entry.rank}',
-                style: Cyber.label(
-                  12,
+                style: Cyber.label(StatOzTypography.p12,
                   color: Cyber.muted,
                   letterSpacing: 0.2,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -456,10 +452,8 @@ class _ChaserRow extends StatelessWidget {
                 entry.team.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.bodyFor(
-                  context,
-                  13,
-                  weight: FontWeight.w700,
+                style: Cyber.bodyFor(context, StatOzTypography.p13,
+                  weight: StatOzTypography.bold,
                   height: 1,
                 ),
               ),
@@ -467,8 +461,7 @@ class _ChaserRow extends StatelessWidget {
             const SizedBox(width: 12),
             Text(
               formatStat(entry.value, entry.display, spec.format),
-              style: Cyber.display(
-                15,
+              style: Cyber.display(StatOzTypography.p15,
                 color: Colors.white,
                 letterSpacing: 0.4,
               ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),

@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
@@ -81,8 +82,7 @@ class _RacingPortraitFallback extends StatelessWidget {
             Center(
               child: Text(
                 initials,
-                style: Cyber.display(
-                  28,
+                style: Cyber.display(StatOzTypography.p28,
                   color: palette.text,
                   letterSpacing: 2,
                 ),
@@ -96,8 +96,7 @@ class _RacingPortraitFallback extends StatelessWidget {
                 color: Colors.black.withValues(alpha: 0.55),
                 child: Text(
                   seriesLabel,
-                  style: Cyber.label(
-                    7,
+                  style: Cyber.label(StatOzTypography.p7,
                     color: palette.secondary,
                     letterSpacing: 1.2,
                   ),
@@ -113,8 +112,7 @@ class _RacingPortraitFallback extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: Cyber.label(
-                  7,
+                style: Cyber.label(StatOzTypography.p7,
                   color: palette.text.withValues(alpha: 0.92),
                   letterSpacing: 0.6,
                 ),

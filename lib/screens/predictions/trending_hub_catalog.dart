@@ -64,6 +64,13 @@ const matchTrendingCatalog = <TrendingTileConfig>[
     span: CyberBentoSpan.square,
   ),
   TrendingTileConfig(
+    id: 'trend-spurs-knicks',
+    kind: TrendingTileKind.match,
+    sourceId: 'basketball-revamp-20260614-ny-sa',
+    sport: Sport.basketball,
+    span: CyberBentoSpan.wide,
+  ),
+  TrendingTileConfig(
     id: 'trend-live-cricket',
     kind: TrendingTileKind.match,
     sourceId: '1496576',
@@ -113,14 +120,14 @@ const gamesTrendingCatalog = <TrendingTileConfig>[
     kind: TrendingTileKind.game,
     sourceId: 'pitch-duel',
     sport: Sport.football,
-    span: CyberBentoSpan.tall,
+    span: CyberBentoSpan.square,
   ),
   TrendingTileConfig(
     id: 'trend-game-penalty',
     kind: TrendingTileKind.game,
     sourceId: 'penalty-shootout',
     sport: Sport.football,
-    span: CyberBentoSpan.tall,
+    span: CyberBentoSpan.square,
   ),
   TrendingTileConfig(
     id: 'trend-game-football-chess',

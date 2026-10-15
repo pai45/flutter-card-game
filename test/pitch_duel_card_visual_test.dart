@@ -61,8 +61,7 @@ void main() {
   setUpAll(() async {
     for (final font in [
       ('Orbitron', 'Orbitron'),
-      ('Exo 2', 'Exo2'),
-      ('Onest', 'Onest'),
+      ('Space Grotesk', 'SpaceGrotesk'),
     ]) {
       await (FontLoader(font.$1)..addFont(
             rootBundle.load('assets/fonts/${font.$2}-VariableFont_wght.ttf'),

@@ -27,14 +27,13 @@ void main() {
     expect(match.basketballScorecard, isNotNull);
   });
 
-  test('the repository has no hand-authored quiz for it (by design)', () async {
+  test('the repository provides the basketball Match Basics quiz', () async {
     final repository = MockPredictionRepository();
     final quizzes = await repository.quizzesFor(matchId);
-    expect(
-      quizzes,
-      isEmpty,
-      reason: 'this fixture exists to prove auto-generation, not overrides',
-    );
+    expect(quizzes, hasLength(1));
+    expect(quizzes.single.title, 'Match Basics Quiz');
+    expect(quizzes.single.questions.map((q) => q.id), ['winner', 'total', 'margin']);
+    expect(quizzes.single.questions.map((q) => q.id), contains('winner'));
   });
 
   test('QuizArchetypes + SettlementWriter settle it end-to-end', () async {

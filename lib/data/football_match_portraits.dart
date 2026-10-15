@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
@@ -152,8 +153,7 @@ class _NumberBadge extends StatelessWidget {
           padding: const EdgeInsets.all(8),
           child: Text(
             '${player.number}',
-            style: Cyber.display(
-              22,
+            style: Cyber.display(StatOzTypography.p22,
               color: accent,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),

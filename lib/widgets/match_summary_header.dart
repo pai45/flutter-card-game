@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
@@ -61,8 +62,7 @@ class _TeamMatchSummaryHeader extends StatelessWidget {
             children: [
               Text(
                 _teamStatusText(match),
-                style: Cyber.display(
-                  15,
+                style: Cyber.display(StatOzTypography.p15,
                   color: _statusColor,
                   letterSpacing: 1.5,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -113,7 +113,7 @@ class _TeamMatchSummaryHeader extends StatelessWidget {
                       child: Center(
                         child: Text(
                           'vs',
-                          style: Cyber.display(12, color: Cyber.muted),
+                          style: Cyber.display(StatOzTypography.p12, color: Cyber.muted),
                         ),
                       ),
                     ),
@@ -208,8 +208,7 @@ class _TeamIdentity extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style:
-                      Cyber.display(
-                        15,
+                      Cyber.display(StatOzTypography.p15,
                         color: Colors.white,
                         letterSpacing: 0,
                       ).copyWith(
@@ -228,11 +227,9 @@ class _TeamIdentity extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           softWrap: false,
-          style: Cyber.bodyFor(
-            context,
-            13,
+          style: Cyber.bodyFor(context, StatOzTypography.p13,
             color: Colors.white,
-            weight: FontWeight.w800,
+            weight: StatOzTypography.bold,
           ),
         ),
         if (innings.detail != null) ...[
@@ -242,8 +239,7 @@ class _TeamIdentity extends StatelessWidget {
             textAlign: align,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.label(
-              8.5,
+            style: Cyber.label(StatOzTypography.p8_5,
               color: Cyber.muted,
               letterSpacing: 1,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -294,8 +290,7 @@ class _GrandPrixSummaryHeader extends StatelessWidget {
             children: [
               Text(
                 statusText,
-                style: Cyber.display(
-                  14,
+                style: Cyber.display(StatOzTypography.p14,
                   color: statusColor,
                   letterSpacing: 1.6,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
@@ -306,7 +301,7 @@ class _GrandPrixSummaryHeader extends StatelessWidget {
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.display(20, weight: FontWeight.w700),
+                style: Cyber.display(StatOzTypography.p20, weight: StatOzTypography.bold),
               ),
               const SizedBox(height: 12),
               Row(

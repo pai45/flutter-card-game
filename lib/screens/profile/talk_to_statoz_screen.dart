@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -27,14 +28,12 @@ class TalkToStatozScreen extends StatelessWidget {
         children: [
           Text(
             'OPEN A CHANNEL',
-            style: Cyber.label(11, color: Cyber.cyan, letterSpacing: 2),
+            style: Cyber.label(StatOzTypography.p11, color: Cyber.cyan, letterSpacing: 2),
           ),
           const SizedBox(height: 6),
           Text(
             'Pick a channel. We read every transmission.',
-            style: Cyber.bodyFor(
-              context,
-              12.5,
+            style: Cyber.bodyFor(context, StatOzTypography.p12_5,
               color: AppTheme.text2,
               height: 1.4,
             ),
@@ -85,14 +84,12 @@ class _ChannelCard extends StatelessWidget {
                 children: [
                   Text(
                     channel.title,
-                    style: Cyber.display(15, letterSpacing: 0.6),
+                    style: Cyber.display(StatOzTypography.p15, letterSpacing: 0.6),
                   ),
                   const SizedBox(height: 5),
                   Text(
                     channel.tagline,
-                    style: Cyber.bodyFor(
-                      context,
-                      12,
+                    style: Cyber.bodyFor(context, StatOzTypography.p12,
                       color: AppTheme.text2,
                       height: 1.3,
                     ),
@@ -131,7 +128,7 @@ class _MetaTag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: Cyber.label(8, color: accent, letterSpacing: 1.2),
+        style: Cyber.label(StatOzTypography.p8, color: accent, letterSpacing: 1.2),
       ),
     );
   }
@@ -174,14 +171,12 @@ class _FollowUsPanel extends StatelessWidget {
       children: [
         Text(
           'FOLLOW US ON',
-          style: Cyber.label(11, color: Cyber.cyan, letterSpacing: 2),
+          style: Cyber.label(StatOzTypography.p11, color: Cyber.cyan, letterSpacing: 2),
         ),
         const SizedBox(height: 6),
         Text(
           'Highlights, hot takes, and the next drop.',
-          style: Cyber.bodyFor(
-            context,
-            12.5,
+          style: Cyber.bodyFor(context, StatOzTypography.p12_5,
             color: AppTheme.text2,
             height: 1.4,
           ),
@@ -233,7 +228,7 @@ class _SocialOption extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.label(7.5, color: AppTheme.text2, letterSpacing: 0.7),
+            style: Cyber.label(StatOzTypography.p7_5, color: AppTheme.text2, letterSpacing: 0.7),
           ),
         ],
       ),
@@ -316,14 +311,12 @@ class _ComposeTransmissionScreenState
                               children: [
                                 Text(
                                   channel.title.toUpperCase(),
-                                  style: Cyber.display(16, letterSpacing: 0.6),
+                                  style: Cyber.display(StatOzTypography.p16, letterSpacing: 0.6),
                                 ),
                                 const SizedBox(height: 7),
                                 Text(
                                   channel.composeHint,
-                                  style: Cyber.bodyFor(
-                                    context,
-                                    12.5,
+                                  style: Cyber.bodyFor(context, StatOzTypography.p12_5,
                                     color: AppTheme.text2,
                                     height: 1.45,
                                   ),
@@ -404,17 +397,17 @@ class _TransmissionField extends StatelessWidget {
       children: [
         Text(
           label.toUpperCase(),
-          style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.3),
+          style: Cyber.label(StatOzTypography.p10, color: Cyber.muted, letterSpacing: 1.3),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
           maxLines: maxLines,
-          style: Cyber.bodyFor(context, 13),
+          style: Cyber.bodyFor(context, StatOzTypography.p13),
           cursorColor: Cyber.cyan,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: Cyber.bodyFor(context, 13, color: Cyber.muted),
+            hintStyle: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
             filled: true,
             fillColor: Cyber.bg.withValues(alpha: 0.45),
             isDense: true,
@@ -571,8 +564,7 @@ class _TransmissionSentOverlayState extends State<_TransmissionSentOverlay>
                             children: [
                               Text(
                                 'TRANSMISSION SENT',
-                                style: Cyber.display(
-                                  18,
+                                style: Cyber.display(StatOzTypography.p18,
                                   letterSpacing: 1.4,
                                   color: accent,
                                 ),
@@ -580,8 +572,7 @@ class _TransmissionSentOverlayState extends State<_TransmissionSentOverlay>
                               const SizedBox(height: 8),
                               Text(
                                 widget.channelTitle.toUpperCase(),
-                                style: Cyber.label(
-                                  11,
+                                style: Cyber.label(StatOzTypography.p11,
                                   color: Cyber.muted,
                                   letterSpacing: 2,
                                 ),
@@ -590,9 +581,7 @@ class _TransmissionSentOverlayState extends State<_TransmissionSentOverlay>
                               Text(
                                 'Signal locked. We\'ll take it from here.',
                                 textAlign: TextAlign.center,
-                                style: Cyber.bodyFor(
-                                  context,
-                                  13,
+                                style: Cyber.bodyFor(context, StatOzTypography.p13,
                                   color: AppTheme.text2,
                                   height: 1.35,
                                 ),

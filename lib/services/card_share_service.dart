@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -278,8 +279,8 @@ class _CardSharePoster extends StatelessWidget {
                   style: const TextStyle(
                     color: Colors.white,
                     fontFamily: Cyber.gameBodyFont,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
+                    fontWeight: StatOzTypography.bold,
+                    fontSize: StatOzTypography.p15,
                     height: 1.15,
                   ),
                 ),
@@ -288,9 +289,9 @@ class _CardSharePoster extends StatelessWidget {
                   'STATOZ // CARD FLEX',
                   style: TextStyle(
                     color: payload.accent,
-                    fontFamily: 'Orbitron',
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
+                    fontFamily: StatOzTypography.displayFont,
+                    fontSize: StatOzTypography.p9,
+                    fontWeight: StatOzTypography.black,
                     letterSpacing: 1.6,
                   ),
                 ),
@@ -317,9 +318,9 @@ class _PosterHeader extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             color: payload.accent,
-            fontFamily: 'Orbitron',
-            fontSize: 9,
-            fontWeight: FontWeight.w900,
+            fontFamily: StatOzTypography.displayFont,
+            fontSize: StatOzTypography.p9,
+            fontWeight: StatOzTypography.black,
             letterSpacing: 1.2,
           ),
         ),
@@ -331,9 +332,9 @@ class _PosterHeader extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
             color: Colors.white,
-            fontFamily: 'Orbitron',
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
+            fontFamily: StatOzTypography.displayFont,
+            fontSize: StatOzTypography.p20,
+            fontWeight: StatOzTypography.black,
             height: 1.05,
           ),
         ),
@@ -372,9 +373,9 @@ class _PosterStats extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: payload.accent.withValues(alpha: 0.82),
-                      fontFamily: 'Orbitron',
-                      fontSize: 7,
-                      fontWeight: FontWeight.w900,
+                      fontFamily: StatOzTypography.displayFont,
+                      fontSize: StatOzTypography.p7,
+                      fontWeight: StatOzTypography.black,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -385,9 +386,9 @@ class _PosterStats extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontFamily: 'Orbitron',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
+                      fontFamily: StatOzTypography.displayFont,
+                      fontSize: StatOzTypography.p10,
+                      fontWeight: StatOzTypography.black,
                     ),
                   ),
                 ],

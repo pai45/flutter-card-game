@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -209,8 +210,7 @@ class _LevelSummary extends StatelessWidget {
                 children: [
                   Text(
                     'CURRENT LEVEL',
-                    style: Cyber.label(
-                      9,
+                    style: Cyber.label(StatOzTypography.p9,
                       color: Cyber.muted,
                       letterSpacing: 1.4,
                     ),
@@ -218,7 +218,7 @@ class _LevelSummary extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     '${progress.level}',
-                    style: Cyber.display(36, color: Cyber.cyan),
+                    style: Cyber.display(StatOzTypography.p36, color: Cyber.cyan),
                   ),
                 ],
               ),
@@ -228,8 +228,7 @@ class _LevelSummary extends StatelessWidget {
                 children: [
                   Text(
                     '${_grouped(progression.totalXP)} TOTAL XP',
-                    style: Cyber.label(
-                      10,
+                    style: Cyber.label(StatOzTypography.p10,
                       color: Colors.white,
                       letterSpacing: 0.8,
                     ),
@@ -238,8 +237,7 @@ class _LevelSummary extends StatelessWidget {
                   Text(
                     '${_grouped(progress.toNextLevel)} XP TO LEVEL ${progress.level + 1}',
                     key: const ValueKey('xp-to-next-level'),
-                    style: Cyber.display(
-                      13,
+                    style: Cyber.display(StatOzTypography.p13,
                       color: progress.toNextLevel == 0
                           ? Cyber.success
                           : Cyber.cyan,
@@ -261,12 +259,12 @@ class _LevelSummary extends StatelessWidget {
             children: [
               Text(
                 '${_grouped(progress.intoLevel)} XP',
-                style: Cyber.label(9, color: Cyber.muted),
+                style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
               ),
               const Spacer(),
               Text(
                 '${_grouped(progress.levelSpan)} XP',
-                style: Cyber.label(9, color: Cyber.muted),
+                style: Cyber.label(StatOzTypography.p9, color: Cyber.muted),
               ),
             ],
           ),
@@ -302,7 +300,7 @@ class _XpGraphCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'XP HISTORY',
-                style: Cyber.display(14, color: Cyber.cyan, letterSpacing: 1),
+                style: Cyber.display(StatOzTypography.p14, color: Cyber.cyan, letterSpacing: 1),
               ),
             ],
           ),
@@ -386,12 +384,12 @@ class _XpBalanceChartState extends State<XpBalanceChart> {
               children: [
                 Text(
                   'TOTAL XP',
-                  style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+                  style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 1.2),
                 ),
                 const Spacer(),
                 Text(
                   _grouped(values[selectedIndex]),
-                  style: Cyber.display(18, color: Cyber.cyan).copyWith(
+                  style: Cyber.display(StatOzTypography.p18, color: Cyber.cyan).copyWith(
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
@@ -512,8 +510,7 @@ class _XpRangeTabs extends StatelessWidget {
                 ),
                 child: Text(
                   range.name.toUpperCase(),
-                  style: Cyber.label(
-                    10,
+                  style: Cyber.label(StatOzTypography.p10,
                     color: active == range ? Cyber.cyan : Cyber.muted,
                     letterSpacing: 1,
                   ),
@@ -639,8 +636,7 @@ class _XpHistoryTile extends StatelessWidget {
                   entry.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.display(
-                    13,
+                  style: Cyber.display(StatOzTypography.p13,
                     color: Colors.white,
                     letterSpacing: 0.6,
                   ),
@@ -653,7 +649,7 @@ class _XpHistoryTile extends StatelessWidget {
                   ].join(' · '),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, StatOzTypography.p11, color: Cyber.muted),
                 ),
               ],
             ),
@@ -664,15 +660,14 @@ class _XpHistoryTile extends StatelessWidget {
             children: [
               Text(
                 '${entry.delta >= 0 ? '+' : '−'}${_grouped(entry.delta.abs())}',
-                style: Cyber.display(
-                  16,
+                style: Cyber.display(StatOzTypography.p16,
                   color: color,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
               const SizedBox(height: 4),
               Text(
                 '${_grouped(entry.balanceAfter)} XP',
-                style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.8),
+                style: Cyber.label(StatOzTypography.p9, color: Cyber.muted, letterSpacing: 0.8),
               ),
             ],
           ),
@@ -696,7 +691,7 @@ class _EmptyXpHistory extends StatelessWidget {
             ? 'No XP changes match this filter.'
             : 'No XP activity yet. Play a match, make a prediction, or open a pack.',
         textAlign: TextAlign.center,
-        style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+        style: Cyber.bodyFor(context, StatOzTypography.p13, color: Cyber.muted),
       ),
     );
   }

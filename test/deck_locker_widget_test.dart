@@ -1,3 +1,4 @@
+import 'package:card_game/widgets/cyber/statoz_icons.dart';
 import 'package:card_game/blocs/final_over/final_over_cubit.dart';
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/game/game_state.dart';
@@ -84,7 +85,7 @@ void main() {
 
     expect(find.text('FOOTBALL SQUAD LOCKED'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.sports_cricket));
+    await tester.tap(find.byWidgetPredicate((widget) => widget is StatozSportIcon && widget.sport == Sport.cricket));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 

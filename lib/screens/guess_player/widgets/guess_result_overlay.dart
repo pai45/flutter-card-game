@@ -1,3 +1,4 @@
+import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
@@ -39,10 +40,9 @@ class GuessResultOverlay extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   won ? 'CORRECT!' : 'GAME OVER',
-                  style: Cyber.display(
-                    24,
+                  style: Cyber.display(StatOzTypography.p24,
                     color: won ? Cyber.success : Cyber.danger,
-                    weight: FontWeight.w900,
+                    weight: StatOzTypography.black,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -50,13 +50,13 @@ class GuessResultOverlay extends StatelessWidget {
                   won
                       ? 'You guessed the player.'
                       : 'Out of hearts. Better luck tomorrow.',
-                  style: Cyber.bodyFor(context, 14, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, StatOzTypography.p14, color: Cyber.muted),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
                 Text(
                   playerName.toUpperCase(),
-                  style: Cyber.display(20, color: Colors.white),
+                  style: Cyber.display(StatOzTypography.p20, color: Colors.white),
                 ),
                 const SizedBox(height: 24),
                 if (won) ...[
@@ -67,10 +67,9 @@ class GuessResultOverlay extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         '+$xpEarned XP',
-                        style: Cyber.display(
-                          18,
+                        style: Cyber.display(StatOzTypography.p18,
                           color: Cyber.gold,
-                          weight: FontWeight.w900,
+                          weight: StatOzTypography.black,
                         ),
                       ),
                     ],
