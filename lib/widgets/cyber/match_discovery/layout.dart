@@ -117,3 +117,85 @@ class EditorialPairedGrid extends StatelessWidget {
     );
   }
 }
+
+/// A manual, content-height rail: two cards and a peek, or wider accessible cards.
+class EditorialCarousel extends StatefulWidget {
+  const EditorialCarousel({
+    required this.id,
+    required this.label,
+    required this.children,
+    super.key,
+  });
+  final String id, label;
+  final List<Widget> children;
+  @override
+  State<EditorialCarousel> createState() => _EditorialCarouselState();
+}
+
+class _EditorialCarouselState extends State<EditorialCarousel> {
+  final _controller = ScrollController();
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) {
+      final accessible =
+          MediaQuery.sizeOf(context).width <
+              MatchDiscoveryTokens.collapseWidth ||
+          MediaQuery.textScalerOf(context).scale(14) / 14 >=
+              MatchDiscoveryTokens.collapseTextScale;
+      final visible = accessible
+          ? MatchDiscoveryTokens.personalCarouselAccessibleVisible
+          : MatchDiscoveryTokens.personalCarouselVisible;
+      final gaps = visible.floor();
+      final width =
+          ((box.maxWidth - gaps * MatchDiscoveryTokens.gridGap) / visible)
+              .clamp(0.0, double.infinity);
+      return Semantics(
+        label: widget.label,
+        container: true,
+        child: Focus(
+          onKeyEvent: (_, event) {
+            if (event is! KeyDownEvent || !_controller.hasClients) {
+              return KeyEventResult.ignored;
+            }
+            final key = event.logicalKey;
+            if (![
+              LogicalKeyboardKey.arrowLeft,
+              LogicalKeyboardKey.arrowRight,
+              LogicalKeyboardKey.home,
+              LogicalKeyboardKey.end,
+            ].contains(key)) {
+              return KeyEventResult.ignored;
+            }
+            final offset = key == LogicalKeyboardKey.home
+                ? 0.0
+                : key == LogicalKeyboardKey.end
+                ? _controller.position.maxScrollExtent
+                : _controller.offset +
+                      (key == LogicalKeyboardKey.arrowRight ? 1 : -1) *
+                          (width + MatchDiscoveryTokens.gridGap);
+            _controller.jumpTo(
+              offset.clamp(0.0, _controller.position.maxScrollExtent),
+            );
+            return KeyEventResult.handled;
+          },
+          child: SingleChildScrollView(
+            key: PageStorageKey(widget.id),
+            controller: _controller,
+            scrollDirection: Axis.horizontal,
+            child: EditorialEqualRow(
+              itemWidth: width,
+              gap: MatchDiscoveryTokens.gridGap,
+              children: widget.children,
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}

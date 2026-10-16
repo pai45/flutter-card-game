@@ -1,8 +1,8 @@
+import 'dart:math' as math;
 import 'package:card_game/design_system/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../blocs/final_over/final_over_cubit.dart';
 import '../../blocs/final_over/final_over_state.dart';
 import '../../blocs/game/game_bloc.dart';
@@ -11,173 +11,282 @@ import '../../config/theme.dart';
 import '../../models/final_over.dart';
 import '../../models/progression.dart';
 import '../../models/sport_match.dart';
-import '../../utils/sound_effects.dart';
-import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/player_level_badge.dart';
-import '../leaderboard/widgets/game_leaderboard_button.dart';
+import '../leaderboard/leaderboard_screen.dart';
 import '../match_history/match_history_pages.dart';
 import 'final_over_deck_builder_screen.dart';
 import 'final_over_match_screen.dart';
-import 'widgets/final_over_arena_background.dart';
+import 'widgets/final_over_lobby_hero.dart';
+import 'widgets/final_over_pixel_play_button.dart';
 
-/// The Final Over lobby. Tier selection, primary CTA, and secondary links.
-class FinalOverHub extends StatelessWidget {
+/// Illustration-first presentation. Existing Cubits still own every game rule.
+class FinalOverHub extends StatefulWidget {
   const FinalOverHub({required this.onExit, super.key});
-
   final VoidCallback onExit;
+  @override
+  State<FinalOverHub> createState() => _FinalOverHubState();
+}
+
+class _FinalOverHubState extends State<FinalOverHub> {
+  bool _covered = false;
 
   @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<GameBloc, GameState>(
-      buildWhen: (p, c) =>
-          p.progression != c.progression ||
-          p.matchHistory != c.matchHistory ||
-          p.finalOverDeckReady != c.finalOverDeckReady ||
-          p.ownedFinalOverKitIds != c.ownedFinalOverKitIds,
-      builder: (context, gameState) {
-        context.read<FinalOverCubit>().ensureEquippedKitOwned(
-          gameState.ownedFinalOverKitIds,
-        );
-        return BlocBuilder<FinalOverCubit, FinalOverState>(
-          builder: (context, state) {
-            if (!state.loaded) {
-              return const Scaffold(
-                backgroundColor: Cyber.bg,
-                body: Center(
-                  child: CircularProgressIndicator(color: Cyber.cyan),
-                ),
-              );
-            }
-            final ready = gameState.finalOverDeckReady;
-            return Scaffold(
-              backgroundColor: Cyber.bg,
-              appBar: ReactHeaderBar(
-                title: 'FINAL OVER',
-                subtitle: '// THREE-OVER CHASE',
-                showTitle: false,
-                onBack: onExit,
-                rightSlot: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    PlayerLevelBadge(
-                      progression: gameState.progression,
-                      track: ProgressTrack.finalOver,
-                    ),
-                    const SizedBox(width: 6),
-                    const GameLeaderboardButton(
-                      sport: Sport.cricket,
-                      mode: GameMode.featured,
-                    ),
-                  ],
-                ),
+  Widget build(BuildContext context) => BlocBuilder<GameBloc, GameState>(
+    buildWhen: (p, c) =>
+        p.loading != c.loading ||
+        p.progression != c.progression ||
+        p.matchHistory != c.matchHistory ||
+        p.finalOverDeckReady != c.finalOverDeckReady ||
+        p.ownedFinalOverKitIds != c.ownedFinalOverKitIds,
+    builder: (context, gameState) {
+      context.read<FinalOverCubit>().ensureEquippedKitOwned(
+        gameState.ownedFinalOverKitIds,
+      );
+      return BlocBuilder<FinalOverCubit, FinalOverState>(
+        builder: (context, state) {
+          final ready = gameState.finalOverDeckReady;
+          return Scaffold(
+            backgroundColor: Cyber.bg,
+            appBar: ReactHeaderBar(
+              title: 'FINAL OVER',
+              showTitle: false,
+              onBack: widget.onExit,
+              rightSlot: IconButton(
+                tooltip: 'Final Over menu',
+                onPressed: state.loaded && !gameState.loading
+                    ? () => _utilities(gameState, state)
+                    : null,
+                icon: const Icon(Icons.more_vert, color: Cyber.muted),
               ),
-              body: FinalOverArenaBackground(
-                child: SafeArea(
-                  top: false,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minHeight: constraints.maxHeight,
-                          ),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 440),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  const CyberSlideUpFadeIn(
-                                    child: _PitchStatusBar(),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  CyberSlideUpFadeIn(
-                                    delay: const Duration(milliseconds: 80),
-                                    child: _HeroRow(tier: state.tier),
-                                  ),
-                                  const SizedBox(height: 18),
-                                  const SectionLabel(label: 'CHASE TIER'),
-                                  const SizedBox(height: 10),
-                                  CyberSlideUpFadeIn(
-                                    delay: const Duration(milliseconds: 240),
-                                    child: _TierPicker(selected: state.tier),
-                                  ),
-                                  const SizedBox(height: 22),
-                                  CyberSlideUpFadeIn(
-                                    delay: const Duration(milliseconds: 320),
-                                    child: HudCtaButton(
-                                      label: ready
-                                          ? 'TAKE GUARD'
-                                          : 'BUILD SQUAD',
-                                      icon: Icons.sports_cricket_rounded,
-                                      accent: Cyber.cyan,
-                                      helper: ready
-                                          ? '${state.tier.label} // TARGET ${state.tier.range}'
-                                          : 'PICK 3 OWNED BATTERS TO CHASE',
-                                      onTap: () => ready
-                                          ? _startMatch(context, gameState)
-                                          : _openDeckBuilder(context),
+            ),
+            body: !state.loaded || gameState.loading
+                ? const Center(
+                    child: CircularProgressIndicator(color: Cyber.cyan),
+                  )
+                : SafeArea(
+                    top: false,
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 640),
+                        child: Column(
+                          children: [
+                            Expanded(
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final scale =
+                                      MediaQuery.textScalerOf(
+                                        context,
+                                      ).scale(16) /
+                                      16;
+                                  final introHeight =
+                                      104 * math.max(1.0, scale);
+                                  final heroHeight = math.max(
+                                    200.0,
+                                    constraints.maxHeight - introHeight,
+                                  );
+                                  return SingleChildScrollView(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        SizedBox(
+                                          height: heroHeight,
+                                          child: FinalOverLobbyHero(
+                                            paused: _covered,
+                                          ),
+                                        ),
+                                        const Padding(
+                                          padding: EdgeInsets.fromLTRB(
+                                            24,
+                                            0,
+                                            24,
+                                            12,
+                                          ),
+                                          child: _LobbyIdentity(),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: CyberDealtCard(
-                                          index: 0,
-                                          child: CyberCtaButton(
-                                            label: 'Cricket Deck',
-                                            clip: false,
-                                            onPressed: () =>
-                                                _openDeckBuilder(context),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: CyberDealtCard(
-                                          index: 1,
-                                          child: CyberCtaButton(
-                                            label: 'Match History',
-                                            clip: false,
-                                            onPressed: () =>
-                                                showGameMatchHistory(
-                                                  context,
-                                                  gameLabel: 'Final Over',
-                                                  history: gameState
-                                                      .matchHistory
-                                                      .where(
-                                                        (e) => e.isFinalOver,
-                                                      )
-                                                      .toList(growable: false),
-                                                  career: _RecordPanel(
-                                                    stats: state.stats,
-                                                  ),
-                                                ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                                  );
+                                },
                               ),
                             ),
-                          ),
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+                              child: FinalOverPixelPlayButton(
+                                key: const ValueKey('final-over-play'),
+                                label: ready ? 'TAKE GUARD' : 'BUILD SQUAD',
+                                onTap: () => ready
+                                    ? _startMatch(context, gameState)
+                                    : _openDeckBuilder(context),
+                              ),
+                            ),
+                          ],
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
+          );
+        },
+      );
+    },
+  );
+
+  Future<T?> _sheet<T>({required Widget body, required String title}) async {
+    setState(() => _covered = true);
+    try {
+      return await showModalBottomSheet<T>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (sheetContext) => ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * .85,
+          ),
+          child: CyberKitSheet(
+            onClose: () => Navigator.of(sheetContext).pop(),
+            body: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: Cyber.display(
+                      StatOzTypography.p20,
+                      color: AppTheme.whiteColor,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  body,
+                ],
+              ),
+            ),
+            footer: Padding(
+              padding: const EdgeInsets.all(16),
+              child: CyberActionButton(
+                variant: CyberActionVariant.secondary,
+                label: 'DONE',
+                onPressed: () => Navigator.of(sheetContext).pop(),
+              ),
+            ),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _covered = false);
+    }
+  }
+
+  Future<void> _difficulty() async {
+    final cubit = context.read<FinalOverCubit>();
+    await _sheet<void>(
+      title: 'CHOOSE YOUR CHASE',
+      body: BlocBuilder<FinalOverCubit, FinalOverState>(
+        bloc: cubit,
+        builder: (context, state) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (final tier in FinalOverTier.values) ...[
+              Semantics(
+                selected: state.tier == tier,
+                child: CyberActionButton(
+                  variant: CyberActionVariant.secondary,
+                  icon: state.tier == tier ? Icons.check : Icons.chevron_right,
+                  label: '${tier.label}  ·  ${tier.range}',
+                  onPressed: () {
+                    HapticFeedback.selectionClick();
+                    cubit.selectTier(tier);
+                  },
                 ),
               ),
-            );
-          },
-        );
-      },
+              const SizedBox(height: 12),
+            ],
+            Text(
+              state.tier.blurb,
+              style: Cyber.bodyFor(
+                context,
+                StatOzTypography.p14,
+                color: AppTheme.whiteColor,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Three overs',
+              style: Cyber.bodyFor(
+                context,
+                StatOzTypography.p14,
+                color: Cyber.muted,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
+  }
+
+  Future<void> _utilities(GameState gameState, FinalOverState state) async {
+    final action = await _sheet<String>(
+      title: 'FINAL OVER',
+      body: Builder(
+        builder: (sheetContext) => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: PlayerLevelBadge(
+                progression: gameState.progression,
+                track: ProgressTrack.finalOver,
+              ),
+            ),
+            const SizedBox(height: 24),
+            for (final item in [
+              ('difficulty', 'Difficulty / ${state.tier.label}'),
+              ('deck', 'Cricket Deck'),
+              ('history', 'Match History'),
+              ('leaderboard', 'Leaderboard'),
+            ]) ...[
+              CyberActionButton(
+                variant: CyberActionVariant.secondary,
+                label: item.$2,
+                onPressed: () => Navigator.of(sheetContext).pop(item.$1),
+              ),
+              const SizedBox(height: 12),
+            ],
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (action == 'difficulty') {
+      await _difficulty();
+    } else if (action == 'deck') {
+      _openDeckBuilder(context);
+    } else if (action == 'history') {
+      showGameMatchHistory(
+        context,
+        gameLabel: 'Final Over',
+        history: gameState.matchHistory
+            .where((entry) => entry.isFinalOver)
+            .toList(growable: false),
+        career: _RecordPanel(stats: state.stats),
+      );
+    } else if (action == 'leaderboard') {
+      final navigator = Navigator.of(context);
+      navigator.push(
+        MaterialPageRoute<void>(
+          builder: (_) => LeaderboardScreen(
+            initialType: LeaderboardType.games,
+            initialSport: Sport.cricket,
+            initialMode: GameMode.featured,
+            onClose: navigator.pop,
+            onNavigate: (_) => navigator.pop(),
+          ),
+        ),
+      );
+    }
   }
 
   void _openDeckBuilder(BuildContext context) {
@@ -192,10 +301,11 @@ class FinalOverHub extends StatelessWidget {
 
   void _startMatch(BuildContext context, GameState gameState) {
     final cubit = context.read<FinalOverCubit>();
-    final batsmanIds = gameState.deckFinalOverBatsmen
-        .map((card) => card.id)
-        .toList();
-    final config = cubit.buildMatch(batsmanIds: batsmanIds);
+    final config = cubit.buildMatch(
+      batsmanIds: gameState.deckFinalOverBatsmen
+          .map((card) => card.id)
+          .toList(),
+    );
     Navigator.of(context).push(
       gamePageRoute<void>(
         builder: (_) => BlocProvider.value(
@@ -213,81 +323,37 @@ class FinalOverHub extends StatelessWidget {
   }
 }
 
-class _PitchStatusBar extends StatelessWidget {
-  const _PitchStatusBar();
-
+class _LobbyIdentity extends StatelessWidget {
+  const _LobbyIdentity();
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Container(
-        width: 7,
-        height: 7,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Cyber.cyan,
-          boxShadow: Cyber.glow(Cyber.cyan, alpha: 0.8, blur: 8),
-        ),
-      ),
-      const SizedBox(width: 8),
-      Expanded(
-        child: Text(
-          'SYS://FINAL_OVER v1.0.0 — PITCH READY',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Cyber.label(StatOzTypography.p8_5, color: Cyber.muted, letterSpacing: 1.4),
-        ),
-      ),
-    ],
-  );
-}
-
-class _HeroRow extends StatelessWidget {
-  const _HeroRow({required this.tier});
-  final FinalOverTier tier;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      CyberPulse(
-        period: const Duration(milliseconds: 2200),
-        builder: (context, t) => Container(
-          width: 58,
-          height: 58,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Cyber.panel,
-            border: Border.all(
-              color: Cyber.cyan.withValues(alpha: 0.4 + 0.35 * t),
-              width: 1.6,
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 12, bottom: 20),
+    child: LayoutBuilder(
+      builder: (context, box) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'FINAL OVER',
+            textAlign: TextAlign.center,
+            style: Cyber.display(
+              box.maxWidth < 290 ? StatOzTypography.p28 : StatOzTypography.p32,
+              color: AppTheme.whiteColor,
+              letterSpacing: .5,
             ),
           ),
-          child: const Icon(
-            Icons.sports_cricket_rounded,
-            color: Cyber.cyan,
-            size: 26,
+          const SizedBox(height: 8),
+          Text(
+            'Three overs. One chase.',
+            textAlign: TextAlign.center,
+            style: Cyber.bodyFor(
+              context,
+              StatOzTypography.p14,
+              color: Cyber.muted,
+            ),
           ),
-        ),
+        ],
       ),
-      const SizedBox(width: 14),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'FINAL OVER',
-              style: Cyber.display(StatOzTypography.p24, color: Colors.white, letterSpacing: 2),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'THREE OVERS. FIVE BATTERS. ONE CHASE.',
-              style: Cyber.label(StatOzTypography.p8_5, color: Cyber.muted, letterSpacing: 1.4),
-            ),
-            const SizedBox(height: 8),
-            CyberChip(label: tier.blurb, color: Cyber.cyan),
-          ],
-        ),
-      ),
-    ],
+    ),
   );
 }
 
@@ -329,79 +395,21 @@ class _RecordStat extends StatelessWidget {
       children: [
         Text(
           value,
-          style: Cyber.display(StatOzTypography.p18,
+          style: Cyber.display(
+            StatOzTypography.p18,
             color: Colors.white,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: Cyber.label(StatOzTypography.p7_5, color: Cyber.muted, letterSpacing: 1),
+          style: Cyber.label(
+            StatOzTypography.p7_5,
+            color: Cyber.muted,
+            letterSpacing: 1,
+          ),
         ),
       ],
     ),
   );
-}
-
-class _TierPicker extends StatelessWidget {
-  const _TierPicker({required this.selected});
-  final FinalOverTier selected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (final tier in FinalOverTier.values) ...[
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                playSound(SoundEffect.uiTap);
-                HapticFeedback.selectionClick();
-                context.read<FinalOverCubit>().selectTier(tier);
-              },
-              child: ClipPath(
-                clipper: const HudChamferClipper(bigCut: 10, smallCut: 3),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: tier == selected
-                        ? Cyber.cyan.withValues(alpha: 0.16)
-                        : Cyber.panel.withValues(alpha: 0.8),
-                    border: Border.all(
-                      color: tier == selected
-                          ? Cyber.cyan.withValues(alpha: 0.9)
-                          : Cyber.border,
-                      width: tier == selected ? 1.5 : 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        tier.label,
-                        style: Cyber.display(StatOzTypography.p12,
-                          color: tier == selected ? Cyber.cyan : Cyber.muted,
-                          letterSpacing: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        tier.range,
-                        style: Cyber.label(StatOzTypography.p8,
-                          color: Cyber.muted,
-                          letterSpacing: 1,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          if (tier != FinalOverTier.values.last) const SizedBox(width: 8),
-        ],
-      ],
-    );
-  }
 }

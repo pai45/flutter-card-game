@@ -6,11 +6,13 @@ class EditorialMission extends StatelessWidget {
     required this.quiz,
     required this.onTap,
     this.prediction,
+    this.history = false,
     super.key,
   });
   final SportMatch match;
   final PredictionQuiz quiz;
   final UserPrediction? prediction;
+  final bool history;
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
@@ -25,9 +27,15 @@ class EditorialMission extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           EditorialStatusArea(
-            label: 'XP prediction',
+            label: history ? quiz.title : 'XP prediction',
             sport: match.sport,
-            status: prediction?.status == PredictionStatus.locked
+            status: prediction?.status == PredictionStatus.settled
+                ? 'settled'
+                : match.status == MatchStatus.finished && prediction != null
+                ? 'unresolved'
+                : match.status == MatchStatus.live
+                ? 'live'
+                : prediction?.status == PredictionStatus.locked
                 ? 'closed'
                 : match.status.name,
           ),
@@ -63,7 +71,9 @@ class EditorialMission extends StatelessWidget {
             ),
           const SizedBox(height: 12),
           Text(
-            '$count / ${quiz.questions.length} answered',
+            prediction?.status == PredictionStatus.settled
+                ? '${prediction!.correctCount ?? 0} / ${quiz.questions.length} correct'
+                : '$count / ${quiz.questions.length} answered',
             style: editorialText(context, 12, color: Cyber.muted),
           ),
           const SizedBox(height: 12),
@@ -84,7 +94,9 @@ class EditorialMission extends StatelessWidget {
               ),
             ),
             child: Text(
-              'Up to ${quiz.maxReward} XP',
+              prediction?.status == PredictionStatus.settled
+                  ? '+${prediction!.rewardEarned} XP'
+                  : 'Up to ${quiz.maxReward} XP',
               style: editorialText(
                 context,
                 12,

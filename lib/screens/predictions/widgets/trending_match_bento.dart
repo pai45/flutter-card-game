@@ -18,6 +18,9 @@ import '../../../widgets/cyber/match_discovery.dart';
 import 'pick_trade_sheet.dart';
 import '../match_prediction_screen.dart';
 
+import 'personal_prediction_selection.dart';
+import 'personal_predictions.dart';
+
 part 'editorial_cycle_selection.dart';
 
 class TrendingMatchesView extends StatefulWidget {
@@ -43,6 +46,40 @@ class TrendingMatchesView extends StatefulWidget {
 class _TrendingMatchesViewState extends State<TrendingMatchesView> {
   final Map<Sport, _EditorialCycle> _cycles = {};
   bool _introPlayed = false;
+  String? _historyIds;
+  final Map<String, SportMatch> _historyFixtures = {};
+  final Map<String, PredictionQuiz> _historyQuizzes = {};
+
+  // Resolve saved entries outside the rolling discovery window without adding
+  // them to its fixture pool or changing settlement/economy state.
+  void _ensurePersonalHistory(PredictionState state) {
+    final ids = state.predictions.values.map((p) => p.matchId).toSet().toList()
+      ..sort();
+    final signature = ids.join('::');
+    if (_historyIds == signature) return;
+    _historyIds = signature;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final cubit = context.read<PredictionCubit>();
+      try {
+        final fixtures = await cubit.resolveCatalogFixtures(ids);
+        final quizzes = <String, PredictionQuiz>{};
+        for (final id in fixtures.keys) {
+          for (final quiz in await cubit.quizzesFor(id)) {
+            quizzes[predictionStorageKey(id, quiz.id)] = quiz;
+          }
+        }
+        if (!mounted || _historyIds != signature) return;
+        setState(() {
+          _historyFixtures.addAll(fixtures);
+          _historyQuizzes.addAll(quizzes);
+        });
+      } catch (error) {
+        debugPrint('Trending saved prediction lookup failed: $error');
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -70,13 +107,14 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
         final unlocks = context.select<GameBloc?, UnlockProgress>(
           (b) => b?.state.unlocks ?? const UnlockProgress(),
         );
+        _ensurePersonalHistory(state);
         final ordered = MatchDiscoveryTokens.sportOrder
             .map((name) => Sport.values.firstWhere((s) => s.name == name))
             .where(unlocks.isSportUnlocked);
         final excluded = _featured(picks.markets).map((m) => m.id).toSet();
-        final fixturesById = <String, SportMatch>{};
+        final fixturesById = <String, SportMatch>{..._historyFixtures};
         for (final fixture in state.fixtures) {
-          fixturesById.putIfAbsent(fixture.id, () => fixture);
+          fixturesById[fixture.id] = fixture;
         }
         final freeQuizzesByMatch = <String, PredictionQuiz>{};
         for (final quiz in state.quizzes.values.where((q) => q.entryFee == 0)) {
@@ -106,10 +144,23 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
             if (mounted) widget.onIntroPlayed?.call();
           });
         }
+        final personal = selectPersonalPredictions(
+          predictions: state.predictions.values,
+          fixtures: fixturesById,
+          quizzes: {..._historyQuizzes, ...state.quizzes},
+          visible: unlocks.isSportUnlocked,
+        );
         SportMatch? match(String id) => fixturesById[id];
         final children = <Widget>[
           if (markets.isNotEmpty) ...[
             _FeaturedPicks(markets: markets, onOpen: widget.onOpenMarket),
+            const SizedBox(height: MatchDiscoveryTokens.moduleGap),
+          ],
+          if (personal.isNotEmpty) ...[
+            PersonalPredictions(
+              key: const ValueKey('personal-predictions'),
+              entries: personal,
+            ),
             const SizedBox(height: MatchDiscoveryTokens.moduleGap),
           ],
           for (final sport in ordered)
@@ -154,19 +205,20 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
                   for (final id in cycle.missions)
                     if (match(id) case final fixture?)
                       if (freeQuizzesByMatch[id] case final quiz?)
-                        EditorialMission(
-                          match: fixture,
-                          quiz: quiz,
-                          prediction: state.predictionFor(id, quiz.id),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => MatchPredictionScreen(
-                                match: fixture,
-                                quizId: quiz.id,
+                        if (state.predictionFor(id, quiz.id) == null)
+                          EditorialMission(
+                            match: fixture,
+                            quiz: quiz,
+                            prediction: state.predictionFor(id, quiz.id),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => MatchPredictionScreen(
+                                  match: fixture,
+                                  quizId: quiz.id,
+                                ),
                               ),
                             ),
                           ),
-                        ),
                 ],
               ),
               if (cycle.future != null)
@@ -332,10 +384,10 @@ class _FeaturedPicksState extends State<_FeaturedPicks> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, box) {
-      width = ((box.maxWidth - MatchDiscoveryTokens.page * 2) * MatchDiscoveryTokens.carouselFraction).clamp(
-        0,
-        MatchDiscoveryTokens.carouselMaxWidth,
-      );
+      width =
+          ((box.maxWidth - MatchDiscoveryTokens.page * 2) *
+                  MatchDiscoveryTokens.carouselFraction)
+              .clamp(0, MatchDiscoveryTokens.carouselMaxWidth);
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

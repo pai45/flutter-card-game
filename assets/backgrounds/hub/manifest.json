@@ -28,8 +28,8 @@
           0.94,
           0.68,
           0.64,
-          0.84,
-          0.99
+          0.76,
+          0.91
         ]
       },
       "diagonal": {
@@ -66,5 +66,5 @@
     "motorsport": "racing",
     "tennis": "lime"
   },
-  "sourceHash": "dfcfdb87c9487e1a001f0379d70748605336a90b6a16ced877d60ba4d26307ae"
+  "sourceHash": "d8516b1a357441e57268f161f1f8a02f570c4a8a4d31b72c632a1274cdb38071"
 }

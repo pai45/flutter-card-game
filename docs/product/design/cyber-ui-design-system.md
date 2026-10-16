@@ -83,10 +83,10 @@ inspire the solid forms, faceted shading, material palette and cast shadows;
 background scenes are authored independently rather than copied from cards.
 Sport identity keeps the canonical accent. Detail lives around the edges.
 Artwork remains sharp beneath a pronounced dark navy overlay: a diagonal sweep,
-asymmetric edge shading, a deep bottom fade, and strong central coverage.
+asymmetric edge shading, a gently eased bottom fade, and strong central coverage.
 The centre stays dark behind the feed rather than opening a vibrant window. Broad cyan-tinted diagonal
 facets, chamfered navy plates and sparse segmented HUD edge marks make the
-overlay subtly cyber at 32% of its original decorative intensity, without glow
+overlay subtly cyber at 36.8% of its original decorative intensity, without glow
 or animation. The same source generates
 the web CSS, Flutter gradients and bundled transparent overlay SVG. Neither
 artwork nor foreground UI is blurred.

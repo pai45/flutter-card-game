@@ -5,13 +5,13 @@ import '../../config/theme.dart';
 enum HubBackgroundTheme { trending, football, cricket, basketball, motorsport, tennis }
 
 abstract final class HubBackgroundSpec {
-  static const sourceHash = 'dfcfdb87c9487e1a001f0379d70748605336a90b6a16ced877d60ba4d26307ae';
+  static const sourceHash = 'd8516b1a357441e57268f161f1f8a02f570c4a8a4d31b72c632a1274cdb38071';
   static const transition = Duration(milliseconds: 240);
   static const wideMinWidth = 768.0;
   static LinearGradient get verticalOverlay => LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [Cyber.bg.withValues(alpha: 0.94), Cyber.bg.withValues(alpha: 0.68), Cyber.bg.withValues(alpha: 0.64), Cyber.bg.withValues(alpha: 0.84), Cyber.bg.withValues(alpha: 0.99)],
+    colors: [Cyber.bg.withValues(alpha: 0.94), Cyber.bg.withValues(alpha: 0.68), Cyber.bg.withValues(alpha: 0.64), Cyber.bg.withValues(alpha: 0.76), Cyber.bg.withValues(alpha: 0.91)],
     stops: const [0, 0.22, 0.48, 0.76, 1],
   );
   static LinearGradient get diagonalOverlay => LinearGradient(

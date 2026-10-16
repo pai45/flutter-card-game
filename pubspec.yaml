@@ -125,6 +125,7 @@ flutter:
     - assets/packs/
     - assets/coins/
     - assets/quiz/
+    - assets/game_lobbies/
     - assets/game_discovery/
     - assets/game_discovery/layers/
     - assets/data/

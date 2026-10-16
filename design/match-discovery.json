@@ -101,7 +101,9 @@
     "entranceStaggerMs": 48,
     "entranceThreshold": 0.08,
     "carouselFraction": 0.88,
-    "teamNameLines": 2
+    "teamNameLines": 2,
+    "personalCarouselVisible": 2.2,
+    "personalCarouselAccessibleVisible": 1.1
   },
   "selection": {
     "futurePriorityPattern": "champion|title|season"

@@ -4,7 +4,7 @@
   <linearGradient id="edge" x1="1" y1="0" x2="0" y2="1"><stop stop-color="#5cdfff" stop-opacity=".13"/><stop offset=".7" stop-color="#5cdfff" stop-opacity=".03"/><stop offset="1" stop-color="#5cdfff" stop-opacity="0"/></linearGradient>
   <linearGradient id="armour" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0f172b" stop-opacity=".7"/><stop offset="1" stop-color="#0f172b" stop-opacity=".1"/></linearGradient>
 </defs>
-<g opacity=".32">
+<g opacity=".368">
 <path d="M0 0H450L300 150H170L0 320Z" fill="url(#armour)"/>
 <path d="M0 410L410 0H610L0 610Z" fill="url(#signal)"/>
 <path d="M1000 120V690L730 960H540L880 620V240Z" fill="url(#edge)"/>

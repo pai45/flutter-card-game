@@ -55,5 +55,7 @@ abstract final class MatchDiscoveryTokens {
   static const entranceThreshold = 0.08;
   static const carouselFraction = 0.88;
   static const teamNameLines = 2;
+  static const personalCarouselVisible = 2.2;
+  static const personalCarouselAccessibleVisible = 1.1;
   static const futurePriorityPattern = "champion|title|season";
 }
