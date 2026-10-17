@@ -18,6 +18,11 @@ import '../../../widgets/cyber/match_discovery.dart';
 import 'pick_trade_sheet.dart';
 import '../match_prediction_screen.dart';
 
+import 'personal_prediction_selection.dart';
+import 'personal_predictions.dart';
+
+part 'editorial_cycle_selection.dart';
+
 class TrendingMatchesView extends StatefulWidget {
   const TrendingMatchesView({
     required this.onOpenMatch,
@@ -38,23 +43,43 @@ class TrendingMatchesView extends StatefulWidget {
   State<TrendingMatchesView> createState() => _TrendingMatchesViewState();
 }
 
-class _EditorialCycle {
-  const _EditorialCycle(
-    this.sport,
-    this.matches,
-    this.compact,
-    this.missions,
-    this.events,
-    this.future,
-  );
-  final Sport sport;
-  final List<String> matches, missions, events;
-  final String? compact, future;
-}
-
 class _TrendingMatchesViewState extends State<TrendingMatchesView> {
   final Map<Sport, _EditorialCycle> _cycles = {};
   bool _introPlayed = false;
+  String? _historyIds;
+  final Map<String, SportMatch> _historyFixtures = {};
+  final Map<String, PredictionQuiz> _historyQuizzes = {};
+
+  // Resolve saved entries outside the rolling discovery window without adding
+  // them to its fixture pool or changing settlement/economy state.
+  void _ensurePersonalHistory(PredictionState state) {
+    final ids = state.predictions.values.map((p) => p.matchId).toSet().toList()
+      ..sort();
+    final signature = ids.join('::');
+    if (_historyIds == signature) return;
+    _historyIds = signature;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final cubit = context.read<PredictionCubit>();
+      try {
+        final fixtures = await cubit.resolveCatalogFixtures(ids);
+        final quizzes = <String, PredictionQuiz>{};
+        for (final id in fixtures.keys) {
+          for (final quiz in await cubit.quizzesFor(id)) {
+            quizzes[predictionStorageKey(id, quiz.id)] = quiz;
+          }
+        }
+        if (!mounted || _historyIds != signature) return;
+        setState(() {
+          _historyFixtures.addAll(fixtures);
+          _historyQuizzes.addAll(quizzes);
+        });
+      } catch (error) {
+        debugPrint('Trending saved prediction lookup failed: $error');
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -73,96 +98,6 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
     }
   }
 
-  _EditorialCycle _select(
-    Sport sport,
-    PredictionState state,
-    PicksState picks,
-  ) {
-    int priority(SportMatch m) =>
-        (state.isFavoriteMatch(m) ? 4 : 0) +
-        (state.followedLeagueIds.contains(m.leagueId) ? 2 : 0) +
-        (state
-                .predictionsForMatch(m.id)
-                .any((p) => p.status == PredictionStatus.open)
-            ? 1
-            : 0);
-    final seen = <String>{};
-    final fixtures =
-        state.fixtures.where((m) => m.sport == sport && seen.add(m.id)).toList()
-          ..sort((a, b) {
-            final p = priority(b).compareTo(priority(a));
-            if (p != 0) return p;
-            final live = (b.status == MatchStatus.live ? 1 : 0).compareTo(
-              a.status == MatchStatus.live ? 1 : 0,
-            );
-            if (live != 0) return live;
-            final time = a.kickoff.compareTo(b.kickoff);
-            return time != 0 ? time : a.id.compareTo(b.id);
-          });
-    final matches = fixtures
-        .take(MatchDiscoveryTokens.cycleCounts['matches']!)
-        .map((m) => m.id)
-        .toList();
-    final compact = fixtures
-        .skip(MatchDiscoveryTokens.cycleCounts['matches']!)
-        .firstOrNull
-        ?.id;
-    final missions = fixtures
-        .where(
-          (m) =>
-              m.status == MatchStatus.upcoming &&
-              state.quizzes.values.any(
-                (q) => q.matchId == m.id && q.entryFee == 0,
-              ),
-        )
-        .take(MatchDiscoveryTokens.cycleCounts['missions']!)
-        .map((m) => m.id)
-        .toList();
-    final events = picks.markets
-        .where(
-          (m) =>
-              m.sport == sport &&
-              m.type == PickMarketType.event &&
-              m.outcomes.isNotEmpty,
-        )
-        .take(MatchDiscoveryTokens.cycleCounts['events']!)
-        .map((m) => m.id)
-        .toList();
-    final excluded = _featured(
-      picks.markets,
-    ).map((market) => market.id).toSet();
-    final futures =
-        picks.markets
-            .where(
-              (market) =>
-                  market.sport == sport &&
-                  market.type == PickMarketType.future &&
-                  market.outcomes.isNotEmpty &&
-                  !excluded.contains(market.id),
-            )
-            .toList()
-          ..sort((a, b) {
-            int rank(PickMarket market) =>
-                (market.canBuy ? 4 : 0) +
-                (RegExp(
-                      MatchDiscoveryTokens.futurePriorityPattern,
-                      caseSensitive: false,
-                    ).hasMatch(market.question)
-                    ? 2
-                    : 0);
-            final order = rank(b).compareTo(rank(a));
-            return order != 0 ? order : a.id.compareTo(b.id);
-          });
-    return _EditorialCycle(
-      sport,
-      matches,
-      compact,
-      missions,
-      events,
-      futures.firstOrNull?.id,
-    );
-  }
-
   @override
   Widget build(
     BuildContext context,
@@ -172,9 +107,19 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
         final unlocks = context.select<GameBloc?, UnlockProgress>(
           (b) => b?.state.unlocks ?? const UnlockProgress(),
         );
+        _ensurePersonalHistory(state);
         final ordered = MatchDiscoveryTokens.sportOrder
             .map((name) => Sport.values.firstWhere((s) => s.name == name))
             .where(unlocks.isSportUnlocked);
+        final excluded = _featured(picks.markets).map((m) => m.id).toSet();
+        final fixturesById = <String, SportMatch>{..._historyFixtures};
+        for (final fixture in state.fixtures) {
+          fixturesById[fixture.id] = fixture;
+        }
+        final freeQuizzesByMatch = <String, PredictionQuiz>{};
+        for (final quiz in state.quizzes.values.where((q) => q.entryFee == 0)) {
+          freeQuizzesByMatch.putIfAbsent(quiz.matchId, () => quiz);
+        }
         // Freeze each sport's IDs after its load; values and statuses remain live.
         for (final sport in ordered) {
           if (!_cycles.containsKey(sport) &&
@@ -182,7 +127,7 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
               (state.loadedSports.contains(sport) ||
                   state.fixtures.any((m) => m.sport == sport)) &&
               !picks.loading) {
-            final selected = _select(sport, state, picks);
+            final selected = _select(sport, state, picks, excluded);
             if (selected.matches.isNotEmpty ||
                 selected.events.isNotEmpty ||
                 selected.future != null) {
@@ -199,11 +144,23 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
             if (mounted) widget.onIntroPlayed?.call();
           });
         }
-        SportMatch? match(String id) =>
-            state.fixtures.where((m) => m.id == id).firstOrNull;
+        final personal = selectPersonalPredictions(
+          predictions: state.predictions.values,
+          fixtures: fixturesById,
+          quizzes: {..._historyQuizzes, ...state.quizzes},
+          visible: unlocks.isSportUnlocked,
+        );
+        SportMatch? match(String id) => fixturesById[id];
         final children = <Widget>[
           if (markets.isNotEmpty) ...[
             _FeaturedPicks(markets: markets, onOpen: widget.onOpenMarket),
+            const SizedBox(height: MatchDiscoveryTokens.moduleGap),
+          ],
+          if (personal.isNotEmpty) ...[
+            PersonalPredictions(
+              key: const ValueKey('personal-predictions'),
+              entries: personal,
+            ),
             const SizedBox(height: MatchDiscoveryTokens.moduleGap),
           ],
           for (final sport in ordered)
@@ -247,23 +204,21 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
                       ),
                   for (final id in cycle.missions)
                     if (match(id) case final fixture?)
-                      if (state.quizzes.values
-                              .where((q) => q.matchId == id && q.entryFee == 0)
-                              .firstOrNull
-                          case final quiz?)
-                        EditorialMission(
-                          match: fixture,
-                          quiz: quiz,
-                          prediction: state.predictionFor(id, quiz.id),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => MatchPredictionScreen(
-                                match: fixture,
-                                quizId: quiz.id,
+                      if (freeQuizzesByMatch[id] case final quiz?)
+                        if (state.predictionFor(id, quiz.id) == null)
+                          EditorialMission(
+                            match: fixture,
+                            quiz: quiz,
+                            prediction: state.predictionFor(id, quiz.id),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => MatchPredictionScreen(
+                                  match: fixture,
+                                  quizId: quiz.id,
+                                ),
                               ),
                             ),
                           ),
-                        ),
                 ],
               ),
               if (cycle.future != null)
@@ -429,10 +384,10 @@ class _FeaturedPicksState extends State<_FeaturedPicks> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, box) {
-      width = ((box.maxWidth - MatchDiscoveryTokens.page * 2) * .88).clamp(
-        0,
-        340,
-      );
+      width =
+          ((box.maxWidth - MatchDiscoveryTokens.page * 2) *
+                  MatchDiscoveryTokens.carouselFraction)
+              .clamp(0, MatchDiscoveryTokens.carouselMaxWidth);
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

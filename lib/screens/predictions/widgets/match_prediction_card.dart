@@ -12,30 +12,8 @@ import '../../../widgets/team_logo.dart';
 import '../../../widgets/cyber/match_discovery.dart';
 import 'pick_status_style.dart';
 
-/// Fixture card on the prediction home — a faithful build of the design
-/// reference. A neutral dark-navy panel (NOT league-tinted) with:
-///   • a square top edge + chamfered bottom corners, and a drop shadow that
-///     follows that chamfer (see [_CyberCardBorder]);
-///   • a centred status line — kickoff time (gold), "• LIVE n'" (red), or a
-///     notched "Finished" tab hanging off the top edge;
-///   • mirrored team badges (single chamfered outer-bottom corner + a bright
-///     bottom accent edge) with the team name beneath;
-///   • football score in the centre / cricket innings under each name;
-///   • a full-width bottom strip whose chamfered corners match the card, read
-///     like a live market — potential XP on the left, Total Vol (Oz) on the
-///     right — and telegraphing lifecycle:
-///       - upcoming → "POTENTIAL +N XP"  |  "VOL … OZ" (✓ prefix if predicted),
-///       - live → "● IN PLAY"            |  "VOL … OZ",
-///       - finished + reward pending → focal gold, breathing
-///         "◆ RESULTS ARE OUT — TAP TO REVEAL" (the reveal cinematic runs onTap),
-///       - finished + revealed → "+N XP" | coins P&L ("±N OZ") if the player
-///         staked, else "VOL … OZ",
-///       - finished, no engagement → "FULL TIME" | "VOL … OZ".
-///
-/// When [favorite] is set, the fixture involves one of the player's clubs: the
-/// club's name is written in its identity colour and that colour takes over the
-/// card's resting border, so the player's team reads as theirs without a badge
-/// competing with the status tag.
+/// Routes revamped sports to the shared editorial library and preserves the
+/// existing Tennis set-score and prediction/reveal presentation.
 class MatchPredictionCard extends StatelessWidget {
   const MatchPredictionCard({
     required this.match,
@@ -70,10 +48,7 @@ class MatchPredictionCard extends StatelessWidget {
 
   bool get _predicted => prediction != null;
   bool get _finished => match.status == MatchStatus.finished;
-  bool get _showsResultSummary =>
-      match.resultLine != null &&
-      match.sport != Sport.football &&
-      match.sport != Sport.basketball;
+  bool get _showsResultSummary => match.resultLine != null;
 
   @override
   Widget build(BuildContext context) {
@@ -124,14 +99,12 @@ class MatchPredictionCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            match.sport == Sport.motorsport
-                ? _RaceIdentityRow(match: match)
-                : _TeamsRow(
-                    match: match,
-                    dimNames: _finished,
-                    favoriteIsHome: favorite?.isHome,
-                    clubAccent: clubAccent,
-                  ),
+            _TeamsRow(
+              match: match,
+              dimNames: _finished,
+              favoriteIsHome: favorite?.isHome,
+              clubAccent: clubAccent,
+            ),
             if (_showsResultSummary) ...[
               const SizedBox(height: 12),
               Text(
@@ -275,49 +248,6 @@ class _TagContent extends StatelessWidget {
   }
 }
 
-// ── Race identity (motorsport) ──────────────────────────────────────────────
-/// Races aren't a 1v1 matchup, so unlike [_TeamsRow] this is a single centred
-/// column: the series badge (reusing the same [TeamLogo] octagon, coloured
-/// with the series brand colour already carried on [SportMatch.home]) and the
-/// race name beneath it. No second badge, no centre dash — there's no "away"
-/// side to punctuate against.
-class _RaceIdentityRow extends StatelessWidget {
-  const _RaceIdentityRow({required this.match});
-  final SportMatch match;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TeamLogo(
-          team: match.home,
-          width: 46,
-          height: 46,
-          sport: match.sport,
-          competition: match.leagueId,
-        ),
-        const SizedBox(height: _namePad),
-        Text(
-          match.home.name,
-          maxLines: 2,
-          textAlign: TextAlign.center,
-          overflow: TextOverflow.ellipsis,
-          // The Grand Prix title is the card's one identity line, not a team
-          // name — it stays white after the flag instead of dimming like a
-          // finished team, so the race keeps its full identity at rest.
-          style: Cyber.bodyFor(
-            context,
-            StatOzTypography.p14_5,
-            color: Colors.white,
-            weight: StatOzTypography.bold,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 // ── Teams + score row ─────────────────────────────────────────────────────────
 class _TeamsRow extends StatelessWidget {
   const _TeamsRow({
@@ -335,18 +265,6 @@ class _TeamsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Cricket pins each score to its crest and its innings context below the
-    // team name; football/basketball/tennis keep the score centred. Motorsport
-    // never reaches this widget (see _RaceIdentityRow).
-    final perTeamScores = match.sport == Sport.cricket && match.hasScore;
-    final homeCricketScore = perTeamScores
-        ? _cricketScoreDisplay(match.homeScore)
-        : null;
-    final awayCricketScore = perTeamScores
-        ? _cricketScoreDisplay(match.awayScore)
-        : null;
-    final keepCricketResultTone =
-        match.sport == Sport.cricket && match.status == MatchStatus.finished;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -354,18 +272,10 @@ class _TeamsRow extends StatelessWidget {
           child: _TeamColumn(
             team: match.home,
             alignEnd: false,
-            nameColor: _teamResultColor(
-              match,
-              isHome: true,
-              fallbackDim: dimNames,
-            ),
+            nameColor: dimNames ? _dimName : Colors.white,
             sport: match.sport,
             competition: match.leagueId,
-            score: homeCricketScore?.score,
-            scoreContext: homeCricketScore?.context,
-            clubAccent: favoriteIsHome == true && !keepCricketResultTone
-                ? clubAccent
-                : null,
+            clubAccent: favoriteIsHome == true ? clubAccent : null,
           ),
         ),
         _ScoreCentre(match: match),
@@ -373,18 +283,10 @@ class _TeamsRow extends StatelessWidget {
           child: _TeamColumn(
             team: match.away,
             alignEnd: true,
-            nameColor: _teamResultColor(
-              match,
-              isHome: false,
-              fallbackDim: dimNames,
-            ),
+            nameColor: dimNames ? _dimName : Colors.white,
             sport: match.sport,
             competition: match.leagueId,
-            score: awayCricketScore?.score,
-            scoreContext: awayCricketScore?.context,
-            clubAccent: favoriteIsHome == false && !keepCricketResultTone
-                ? clubAccent
-                : null,
+            clubAccent: favoriteIsHome == false ? clubAccent : null,
           ),
         ),
       ],
@@ -399,8 +301,6 @@ class _TeamColumn extends StatelessWidget {
     required this.nameColor,
     this.sport,
     this.competition,
-    this.score,
-    this.scoreContext,
     this.clubAccent,
   });
 
@@ -409,8 +309,6 @@ class _TeamColumn extends StatelessWidget {
   final Color nameColor;
   final Sport? sport;
   final String? competition;
-  final String? score;
-  final String? scoreContext;
 
   /// Set only on the player's own club, which writes its name in this identity
   /// colour so the side that is "yours" is readable at a glance.
@@ -423,27 +321,15 @@ class _TeamColumn extends StatelessWidget {
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
       children: [
-        // Mirror the badge chamfer toward the centre of the card.
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (alignEnd && score != null)
-              _CricketScore(value: score!, color: nameColor),
-            if (alignEnd && score != null) const SizedBox(width: 8),
-            _TeamBadge(
-              team: team,
-              cutBottomRight: !alignEnd,
-              sport: sport,
-              competition: competition,
-            ),
-            if (!alignEnd && score != null) const SizedBox(width: 8),
-            if (!alignEnd && score != null)
-              _CricketScore(value: score!, color: nameColor),
-          ],
+        TeamLogo(
+          team: team,
+          width: 46,
+          height: 46,
+          cutBottomRight: !alignEnd,
+          sport: sport,
+          competition: competition,
         ),
         const SizedBox(height: _namePad),
-        // Long club names (cricket especially — "Los Angeles Knight Riders")
-        // wrap onto a second line and grow the card rather than ellipsing.
         Text(
           team.name,
           maxLines: 2,
@@ -458,68 +344,7 @@ class _TeamColumn extends StatelessWidget {
                 : StatOzTypography.bold,
           ),
         ),
-        if (scoreContext != null) ...[
-          const SizedBox(height: 3),
-          // Cricket's chase line ("172/4 (19.1/20 ov, target 172)") is long —
-          // wrap it rather than ellipse away the target.
-          Text(
-            scoreContext!,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: alignEnd ? TextAlign.end : TextAlign.start,
-            style: Cyber.bodyFor(
-              context,
-              StatOzTypography.p10_5,
-              color: _scoreSub,
-              weight: StatOzTypography.semibold,
-            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-          ),
-        ],
       ],
-    );
-  }
-}
-
-class _CricketScore extends StatelessWidget {
-  const _CricketScore({required this.value, required this.color});
-
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Text(
-    value,
-    maxLines: 1,
-    overflow: TextOverflow.ellipsis,
-    style: Cyber.display(
-      StatOzTypography.p20,
-      color: color,
-      letterSpacing: 0,
-    ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-  );
-}
-
-class _TeamBadge extends StatelessWidget {
-  const _TeamBadge({
-    required this.team,
-    required this.cutBottomRight,
-    this.sport,
-    this.competition,
-  });
-  final SportTeam team;
-  final bool cutBottomRight;
-  final Sport? sport;
-  final String? competition;
-
-  @override
-  Widget build(BuildContext context) {
-    return TeamLogo(
-      team: team,
-      width: 46,
-      height: 46,
-      cutBottomRight: cutBottomRight,
-      sport: sport,
-      competition: competition,
     );
   }
 }
@@ -530,11 +355,7 @@ class _ScoreCentre extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if ((match.sport == Sport.football ||
-            match.sport == Sport.basketball ||
-            match.sport == Sport.tennis) &&
-        match.hasScore) {
-      final isTennis = match.sport == Sport.tennis;
+    if (match.hasScore) {
       final sets = match.tennisScorecard?.sets;
       final scoreStyle = Cyber.display(
         StatOzTypography.p21,
@@ -549,35 +370,17 @@ class _ScoreCentre extends StatelessWidget {
             Text.rich(
               TextSpan(
                 children: [
-                  TextSpan(
-                    text: match.homeScore ?? '-',
-                    style: scoreStyle.copyWith(
-                      color: _teamResultColor(
-                        match,
-                        isHome: true,
-                        fallbackDim: false,
-                      ),
-                    ),
-                  ),
+                  TextSpan(text: match.homeScore ?? '-', style: scoreStyle),
                   TextSpan(
                     text: '  -  ',
                     style: scoreStyle.copyWith(color: Cyber.muted),
                   ),
-                  TextSpan(
-                    text: match.awayScore ?? '-',
-                    style: scoreStyle.copyWith(
-                      color: _teamResultColor(
-                        match,
-                        isHome: false,
-                        fallbackDim: false,
-                      ),
-                    ),
-                  ),
+                  TextSpan(text: match.awayScore ?? '-', style: scoreStyle),
                 ],
               ),
             ),
             // Tennis set scores row (e.g. 6-4  6-2  6-1)
-            if (isTennis && sets != null && sets.isNotEmpty) ...[
+            if (sets != null && sets.isNotEmpty) ...[
               const SizedBox(height: 6),
               Row(
                 mainAxisSize: MainAxisSize.min,
@@ -596,8 +399,7 @@ class _ScoreCentre extends StatelessWidget {
         ),
       );
     }
-    // Upcoming, or cricket (line lives under each name) → centre dash.
-    // Motorsport never reaches this widget (see _RaceIdentityRow).
+    // Upcoming Tennis fixtures have no score yet.
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: 12),
       child: Text(
@@ -1098,7 +900,6 @@ const _borderPredicted = Color(
 const _stripDark = Color(0xff0f1826);
 const _timeGold = Color(0xffc8a45a);
 const _dimName = Color(0xffaeb7c5);
-const _scoreSub = Color(0xff9fb0c2);
 const _resultCol = Color(0xffbac5d3);
 
 // Top-centre notch geometry (shared by the card shape + the tag overlay).
@@ -1129,74 +930,6 @@ Color _stateBorderColor(SportMatch match, UserPrediction? prediction) {
                 .cyan // cyan — revealed
           : _timeGold; // gold — results ready
   }
-}
-
-/// Finished fixture cards spotlight the winner in white and reduce the losing
-/// side with the shared muted token. A draw has no losing side, so both teams
-/// remain white.
-Color _teamResultColor(
-  SportMatch match, {
-  required bool isHome,
-  required bool fallbackDim,
-}) {
-  final supportsWinLossTone =
-      match.status == MatchStatus.finished &&
-      (match.sport == Sport.football ||
-          match.sport == Sport.basketball ||
-          match.sport == Sport.cricket);
-  if (match.sport == Sport.cricket) {
-    final homeWon = _cricketHomeWon(match);
-    if (!supportsWinLossTone || homeWon == null) {
-      return fallbackDim ? _dimName : Colors.white;
-    }
-    return isHome == homeWon ? Colors.white : Cyber.muted;
-  }
-  final homeScore = int.tryParse(match.homeScore ?? '');
-  final awayScore = int.tryParse(match.awayScore ?? '');
-  if (!supportsWinLossTone || homeScore == null || awayScore == null) {
-    return fallbackDim ? _dimName : Colors.white;
-  }
-  if (homeScore == awayScore) {
-    return Colors.white;
-  }
-  final won = isHome ? homeScore > awayScore : awayScore > homeScore;
-  return won ? Colors.white : Cyber.muted;
-}
-
-({String? score, String? context}) _cricketScoreDisplay(String? value) {
-  if (value == null || value.trim().isEmpty) {
-    return (score: null, context: null);
-  }
-  final match = RegExp(r'^(.+?)(?:\s*(\(.+\)))?$').firstMatch(value.trim());
-  return (
-    score: match?.group(1)?.trim() ?? value.trim(),
-    context: match?.group(2),
-  );
-}
-
-bool? _cricketHomeWon(SportMatch match) {
-  final homeInnings = match.cricketDetails?.innings
-      .where((innings) => innings.teamId == match.home.id)
-      .firstOrNull;
-  final awayInnings = match.cricketDetails?.innings
-      .where((innings) => innings.teamId == match.away.id)
-      .firstOrNull;
-  if (homeInnings != null && awayInnings != null) {
-    if (homeInnings.runs == awayInnings.runs) {
-      return null;
-    }
-    return homeInnings.runs > awayInnings.runs;
-  }
-  final homeRuns = int.tryParse(
-    _cricketScoreDisplay(match.homeScore).score?.split('/').first ?? '',
-  );
-  final awayRuns = int.tryParse(
-    _cricketScoreDisplay(match.awayScore).score?.split('/').first ?? '',
-  );
-  if (homeRuns == null || awayRuns == null || homeRuns == awayRuns) {
-    return null;
-  }
-  return homeRuns > awayRuns;
 }
 
 String _formatTime(DateTime dt) {

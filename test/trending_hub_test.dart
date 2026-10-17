@@ -1,3 +1,5 @@
+import 'package:card_game/screens/predictions/widgets/personal_predictions.dart';
+import 'package:card_game/screens/predictions/match_prediction_screen.dart';
 import 'package:card_game/widgets/cyber/match_discovery.dart';
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/picks/picks_cubit.dart';
@@ -8,7 +10,6 @@ import 'package:card_game/models/league.dart';
 import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/screens/predictions/all_sports_screen.dart';
 import 'package:card_game/screens/predictions/prediction_home_screen.dart';
-import 'package:card_game/screens/predictions/trending_hub_catalog.dart';
 import 'package:card_game/services/basketball_match_package_service.dart';
 import 'package:card_game/services/pick_repository.dart';
 import 'package:card_game/services/prediction_repository.dart';
@@ -42,15 +43,55 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  test('MATCH Trending registers the bundled NBA Finals card', () {
-    final card = matchTrendingCatalog.singleWhere(
-      (item) => item.id == 'trend-spurs-knicks',
+  test('MATCH Trending can resolve the bundled NBA Finals fixture', () async {
+    final fixture = await MockPredictionRepository().fixtureById(
+      BasketballMatchPackageService.bundledMatchId,
     );
+    expect(fixture, isNotNull);
+    expect(fixture!.sport, Sport.basketball);
+    expect(fixture.id, BasketballMatchPackageService.bundledMatchId);
+  });
 
-    expect(card.kind, TrendingTileKind.match);
-    expect(card.sourceId, BasketballMatchPackageService.bundledMatchId);
-    expect(card.sport, Sport.basketball);
-    expect(card.span, CyberBentoSpan.wide);
+  testWidgets('MATCH Trending restores reveal and previously played cards', (
+    tester,
+  ) async {
+    await _setPhoneSize(tester, const Size(393, 1100));
+    final bundle = (await tester.runAsync(_HubBundle.create))!;
+    addTearDown(bundle.dispose);
+    await tester.pumpWidget(bundle.wrap(const _HubHarness(initialTopTab: 0)));
+    await tester.pump(const Duration(seconds: 2));
+    await tester.runAsync(() async {
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    });
+    await tester.pump();
+    expect(find.byType(PersonalPredictions), findsOneWidget);
+    expect(find.text('Reveal results'), findsOneWidget);
+    expect(find.byType(EditorialCarousel), findsNWidgets(2));
+    expect(find.text('Your predictions'), findsOneWidget);
+    final cards = tester
+        .widget<PersonalPredictions>(find.byType(PersonalPredictions))
+        .entries;
+    expect(cards.any((entry) => entry.reveal), isTrue);
+    expect(cards.any((entry) => !entry.reveal), isTrue);
+    final entry = cards.firstWhere((entry) => entry.reveal);
+    final key = ValueKey('personal-reveal:${entry.prediction.key}');
+    final finder = find.byKey(key);
+    await _dragIntoView(tester, finder);
+    await tester.tap(finder);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    final detail = tester.widget<MatchPredictionScreen>(
+      find.byType(MatchPredictionScreen),
+    );
+    expect(detail.match.id, entry.match.id);
+    expect(detail.quizId, entry.quiz.id);
+    // Let the existing settlement cinematic complete its delayed reveal beats.
+    for (var beat = 0; beat < entry.quiz.questions.length + 3; beat++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 2));
   });
 
   testWidgets(

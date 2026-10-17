@@ -73,6 +73,40 @@ clear state/result feedback, and a reward/next-action handoff.
   `CyberCtaButton`, and `CyberSegmentedTabs`. If a visual pattern repeats, extend
   the shared cyber catalog rather than duplicate it.
 
+### Illustrated hub backgrounds [BUILT]
+
+Matches and Games share six original filled isometric worlds: Trending
+(collectible/play arena), Football (turf, goal and ball), Cricket (bat, wicket and
+clay strip), Basketball (wood court, hoop and ball), Motorsport (raised track and
+open-wheel car), and Tennis (blue court, net and racket). Game-card illustrations
+inspire the solid forms, faceted shading, material palette and cast shadows;
+background scenes are authored independently rather than copied from cards.
+Sport identity keeps the canonical accent. Detail lives around the edges.
+Artwork remains sharp beneath a pronounced dark navy overlay: a diagonal sweep,
+asymmetric edge shading, a gently eased bottom fade, and strong central coverage.
+The centre stays dark behind the feed rather than opening a vibrant window. Broad cyan-tinted diagonal
+facets, chamfered navy plates and sparse segmented HUD edge marks make the
+overlay subtly cyber at 36.8% of its original decorative intensity, without glow
+or animation. The same source generates
+the web CSS, Flutter gradients and bundled transparent overlay SVG. Neither
+artwork nor foreground UI is blurred.
+
+The background follows the active tab's resolved sport, including unlock
+fallbacks, without resetting either tab's selection or feed scroll. It extends
+behind the collapsing header and feed. Navigation, detail pages and gameplay
+keep their existing treatment. Worlds crossfade for 240 ms, stay stationary
+while browsing, ignore input and semantics, and switch immediately when system
+animations are disabled or accessible navigation is enabled. Missing artwork
+falls back to the existing navy gradient.
+
+Original SVG geometry and presentation settings are owned by
+statoz_web/scripts/hub-background-source. From statoz_web run
+`npm run backgrounds:sync -- --flutter-root <card_game checkout>` to explicitly
+update both local libraries. Run the same command with `--check` to verify
+parity. Each platform builds from its bundled assets without another checkout.
+Portrait and wide artwork have separate compositions; the wide breakpoint is
+768 logical pixels. CyberHubBackground is exported by the shared cyber catalog.
+
 ### Game discovery launch cards [BUILT]
 
 All 18 sport-specific Games entries and the curated Trending game tiles compose
@@ -295,3 +329,18 @@ Status and long-name cleanup (2026-10-15): timing text equal to the lifecycle la
 Future tail per sport (2026-10-15): one full-width Future market follows each sport grid, using the existing editorial market plate and up to three existing outcomes with colored percentage CTAs. Available championship/title/season markets lead; stable IDs preserve return/scroll order. Skip unavailable markets, exclude featured carousel records, and retain existing trade/detail guards. Futures also remain in their dedicated list.
 
 Carousel header removal (2026-10-15): remove the entire visible header strip, including Featured Picks, All Picks and previous/next arrows. Cards start directly in the scrolling rail; swipe, dot selection, keyboard navigation and return-position restoration remain available.
+
+VS typography (2026-10-15): upcoming match and compact XP-card VS labels use the existing shared 12px support size with Orbitron 600 weight. Labels continue to scale with accessibility text settings. Numeric scores retain their score typography.
+
+## Recent discovery card library
+
+The current match, Events, Picks, Futures, XP and reveal recipes are consolidated in [the discovery card library](../discovery-card-library.md). Keep the public match_discovery.dart import, reuse its focused primitives, and keep data/access rules in feature adapters. The shared numerical manifest generates local Flutter, web and Designer copies with explicit stale-output checks.
+
+The racing car follows the road centreline. Football goal posts sit on the
+projected end line, with net depth extending outside the pitch. Goal geometry
+uses the court projection, rather than an independently positioned rectangle.
+
+The complete car footprint uses an affine projection into the road plane: its
+length follows the road and its width follows the road cross-section. Tyres,
+curbs and the chequered line share that projection; all four tyre footprints
+remain inside the asphalt. A screen-space rotation alone is insufficient.

@@ -32,7 +32,7 @@ import '../profile/widgets/profile_card.dart';
 import 'all_sports_screen.dart';
 import 'match_search_screen.dart';
 import 'streak_calendar_screen.dart';
-import 'trending_hub_catalog.dart';
+import 'games_trending_catalog.dart';
 import 'widgets/beginner_quest_card.dart';
 import 'widgets/daily_quest_home_tile.dart';
 import 'widgets/history_hud.dart';
@@ -156,12 +156,19 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
         backgroundColor: Cyber.bg,
         body: Stack(
           children: [
-            const Positioned.fill(child: _PredictionBackground()),
+            Positioned.fill(
+              child: CyberHubBackground(
+                theme: HubBackgroundTheme.values.byName(
+                  (tab == 0 ? _selectedMatchSport : _selectedGamesSport)?.name ?? 'trending',
+                ),
+              ),
+            ),
             SafeArea(
               top: false,
               child: StatOzCollapsingHeaderView(
                 topBar: StatOzTopBar(
                   title: 'StatOz',
+                  backgroundOpacity: .84,
                   onAddCoins:
                       widget.onAddCoins ??
                       () => widget.onNavigate(AppSection.shop),
@@ -2101,7 +2108,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
       (bloc) => bloc?.state.unlocks ?? const UnlockProgress(),
     );
     final catalog = gamesTrendingCatalog
-        .where((item) => trendingTileVisible(item, unlocks))
+        .where((item) => gamesTrendingTileVisible(item, unlocks))
         .toList(growable: false);
     final animate = widget.animateIntro && !_introReported;
     if (animate && catalog.isNotEmpty) {
@@ -2152,7 +2159,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
   }
 
   Widget _buildGameTile(
-    TrendingTileConfig config,
+    GamesTrendingTileConfig config,
     ({int pitch, int penalty}) streaks,
   ) {
     return switch (config.sourceId) {

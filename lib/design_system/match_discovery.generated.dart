@@ -21,6 +21,8 @@ abstract final class MatchDiscoveryTokens {
   static const progressGap = 4.0;
   static const outcomeWidth = 64.0;
   static const carouselDotGap = 4.0;
+  static const outcomeMinHeight = 44.0;
+  static const carouselMaxWidth = 340.0;
   static const sportOrder = ['football','cricket','basketball','motorsport'];
   static const carouselIds = ['epl_liv_mc_winner','ipl_pjk_rcb_winner','nba_lal_gsw_winner','f1_belgian_gp_winner','epl_cfc_new_result'];
   static const statusLabels = {'upcoming':'OPEN','scheduled':'OPEN','live':'LIVE','closed':'CLOSED','unresolved':'UNRESOLVED','finished':'FINISHED','settled':'SETTLED','voided':'VOID'};
@@ -51,5 +53,9 @@ abstract final class MatchDiscoveryTokens {
   static const entranceDistance = 12;
   static const entranceStaggerMs = 48;
   static const entranceThreshold = 0.08;
+  static const carouselFraction = 0.88;
+  static const teamNameLines = 2;
+  static const personalCarouselVisible = 2.2;
+  static const personalCarouselAccessibleVisible = 1.1;
   static const futurePriorityPattern = "champion|title|season";
 }

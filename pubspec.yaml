@@ -106,6 +106,7 @@ flutter:
     - assets/pitch_duel/actions/
     - assets/pitch_duel/scenarios/
     - assets/pitch_duel/affinities/
+    - assets/backgrounds/hub/
     - assets/backgrounds/
     - assets/backgrounds/predictions/
     - assets/icons/
@@ -127,6 +128,7 @@ flutter:
     - assets/packs/
     - assets/coins/
     - assets/quiz/
+    - assets/game_lobbies/
     - assets/game_discovery/
     - assets/game_discovery/layers/
     - assets/data/

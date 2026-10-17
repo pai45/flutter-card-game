@@ -126,7 +126,10 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       MaterialApp(
-        theme: AppTheme.darkTheme,
+        // Keep activation checks independent of platform InkSparkle shaders.
+        theme: AppTheme.darkTheme.copyWith(
+          splashFactory: InkRipple.splashFactory,
+        ),
         home: MediaQuery(
           data: MediaQueryData(
             size: Size(width, 1200),

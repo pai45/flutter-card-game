@@ -2499,7 +2499,11 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
     );
     if (v.glow && widget.match.sport != Sport.tennis) {
       _pulse.stop();
-      return EditorialRevealCard(match: widget.match, onTap: widget.onTap);
+      return EditorialRevealCard(
+        match: widget.match,
+        quiz: widget.quiz,
+        onTap: widget.onTap,
+      );
     }
     final homeColor = paletteForTeam(
       widget.match.home,

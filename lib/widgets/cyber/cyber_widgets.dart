@@ -20,6 +20,7 @@ import '../racing/racing_driver_portrait.dart';
 import '../team_logo.dart' show OctagonBorderPainter, OctagonClipper;
 import 'sport_signal_painters.dart';
 
+export 'cyber_hub_background.dart';
 export 'quest_result_receipt.dart';
 export 'cyber_kit.dart';
 export 'daily_case_lobby.dart';

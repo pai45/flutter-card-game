@@ -19,6 +19,7 @@ class StatOzTopBar extends StatelessWidget {
     required this.title,
     required this.onAddCoins,
     this.accent = Cyber.cyan,
+    this.backgroundOpacity = 1,
     this.onStreakTap,
     this.leading,
     super.key,
@@ -27,6 +28,9 @@ class StatOzTopBar extends StatelessWidget {
   final String title;
   final VoidCallback onAddCoins;
   final Color accent;
+
+  /// Lets hub artwork continue under the bar while other screens stay opaque.
+  final double backgroundOpacity;
 
   /// Opens the streak hub. Null falls back to the hub without quest routing,
   /// so the flame is live on every screen that shows this bar.
@@ -75,7 +79,7 @@ class StatOzTopBar extends StatelessWidget {
       height: 78 + topInset,
       padding: EdgeInsets.fromLTRB(16, 12 + topInset, 14, 12),
       decoration: BoxDecoration(
-        color: _barFill,
+        color: _barFill.withValues(alpha: backgroundOpacity),
         border: Border(
           bottom: BorderSide(color: accent.withValues(alpha: 0.26)),
         ),
