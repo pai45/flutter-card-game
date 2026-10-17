@@ -29,7 +29,6 @@ When the player's followed club plays inside the match window on screen, that
 fixture is lifted out of its league group and pinned directly beneath the day
 navigator under a **YOUR CLUB** header, and the rest of the day follows below.
 
-
 Sports appear in one canonical order everywhere they are tabbed —
 **Football, Cricket, Basketball, Motorsport, Tennis** — defined by
 `sportTabOrder` in `lib/config/sport_modules.dart` and mirrored by the
@@ -295,7 +294,7 @@ the game clock. Each chart carries range tabs and expands to a full-screen view.
   pressure at a minute.
 - **Cricket RACE** — both innings worms on one axis (20 OV / POWERPLAY / DEATH)
   with wicket markers in the batting team's identity colour; scrubbing reads
-  *both* scoreboards at the same over. The chart has no duplicate RACE VERDICT
+  _both_ scoreboards at the same over. The chart has no duplicate RACE VERDICT
   panel; its legend already carries the live innings result. Directly beneath it,
   **INNINGS RUN RATE** switches between 1ST INNINGS and 2ND INNINGS. The selected
   batting team's resolved colour traces actual run rate; an innings with a target
@@ -306,7 +305,7 @@ the game clock. Each chart carries range tabs and expands to a full-screen view.
   game on one axis (GAME / H1 / H2 / CLUTCH), drawn stepped because a score is a
   step function, with the home side filled and the away side stroked so two
   rising lines stay separable. The x-axis samples the real play at each label
-  position and reads `Q1`…`Q4`; scrubbing reads *both* scoreboards at a live game
+  position and reads `Q1`…`Q4`; scrubbing reads _both_ scoreboards at a live game
   clock (`Q3 4:12`). Lead changes ride the plot as rings in the colour of the team
   that took the lead, only the closing dozen are drawn, and only the last flip —
   the one the game never came back from — is focal. Directly beneath it a
@@ -381,7 +380,7 @@ Player images degrade in three steps: a bundled portrait where one exists (the
 portrait library is the card game's roster, so it covers 2 of these 40 players),
 then ESPN's per-event kit render decoded downscaled, then the shirt-number
 octagon — the same badge the pitch draws, so card and formation board speak the
-same language. The number badge sits permanently *behind* the image, so a slow,
+same language. The number badge sits permanently _behind_ the image, so a slow,
 missing or failed kit never leaves a blank plate. **ESPN publishes no headshots
 for soccer at all**; the kit render is the only player image its API offers.
 
@@ -398,6 +397,7 @@ commentary. Cricket's STATS navigation contains OVERVIEW, RACE, SCORECARD, and
 MATCH FEED; the standalone CHASE and SQUADS tabs are omitted. MATCH FEED uses one
 tab per batting team and open timeline rows rather than individual comment cards;
 an innings without published commentary receives its own contextual empty state.
+
 ### NBA hub (league TABLE / LEADERS / STATS) — BUILT
 
 The NBA hub now shows the real 2025-26 season: both conference tables in
@@ -921,7 +921,7 @@ with red cards in danger red.
 
 Each board is the team-side twin of the LEADERS player boards — a glowing
 `#1` plate over calm chaser rows, so the two tabs read as one system. Boards
-where the *smallest* number wins (goals conceded, cards, fouls) rank ascending
+where the _smallest_ number wins (goals conceded, cards, fouls) rank ascending
 and are framed `LEAGUE BEST // FEWEST`.
 
 Neither board draws a progress meter behind its rows. Both carry short values
