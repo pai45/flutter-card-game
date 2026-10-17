@@ -286,4 +286,4 @@ one-time marker is not part of either profile snapshot.
 - [IPL player data sheet](../data/ipl_players.md)
 - [League stats field inventory (EPL and LaLiga)](../data/league-stats-field-inventory.md)
 
-- [Discovery card library](discovery-card-library.md): recent-card recipes, personal reveal/played cards beneath the Match Trending carousel, component ownership and shared local adapters.
+- [Discovery card library](discovery-card-library.md): recent-card recipes, gold reveal cards in Match Trending, component ownership and shared local adapters. The top featured and gold reveal carousels are visible; only the Your predictions rail is hidden in Trends.

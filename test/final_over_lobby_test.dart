@@ -7,7 +7,7 @@ import 'package:card_game/screens/final_over/final_over_hub.dart';
 import 'package:card_game/screens/final_over/widgets/final_over_lobby_hero.dart';
 import 'package:card_game/services/secure_storage_service.dart';
 import 'package:card_game/utils/sound_effects.dart';
-import 'package:card_game/screens/final_over/widgets/final_over_pixel_play_button.dart';
+import 'package:card_game/screens/final_over/widgets/final_over_fuse_cta.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -71,10 +71,10 @@ void main() {
     (tester) async {
       await mount(tester, incomplete: true);
       expect(find.text('FINAL OVER'), findsOneWidget);
-      expect(find.text('Three overs. One chase.'), findsOneWidget);
+      expect(find.text('Three overs. One chase.'), findsNothing);
       expect(find.byType(FinalOverLobbyHero), findsOneWidget);
       expect(find.text('ROOKIE'), findsNothing);
-      final cta = tester.widget<FinalOverPixelPlayButton>(
+      final cta = tester.widget<FinalOverFuseCta>(
         find.byKey(const ValueKey('final-over-play')),
       );
       expect(cta.label, 'BUILD SQUAD');
