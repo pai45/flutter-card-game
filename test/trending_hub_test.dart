@@ -66,8 +66,8 @@ void main() {
     await tester.pump();
     expect(find.byType(PersonalPredictions), findsOneWidget);
     expect(find.text('Reveal results'), findsOneWidget);
-    expect(find.byType(EditorialCarousel), findsNWidgets(2));
-    expect(find.text('Your predictions'), findsOneWidget);
+    expect(find.byType(EditorialCarousel), findsOneWidget);
+    expect(find.text('Your predictions'), findsNothing);
     final cards = tester
         .widget<PersonalPredictions>(find.byType(PersonalPredictions))
         .entries;

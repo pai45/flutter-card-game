@@ -19,7 +19,7 @@ import '../match_history/match_history_pages.dart';
 import 'final_over_deck_builder_screen.dart';
 import 'final_over_match_screen.dart';
 import 'widgets/final_over_lobby_hero.dart';
-import 'widgets/final_over_pixel_play_button.dart';
+import 'widgets/final_over_fuse_cta.dart';
 
 /// Illustration-first presentation. Existing Cubits still own every game rule.
 class FinalOverHub extends StatefulWidget {
@@ -80,8 +80,7 @@ class _FinalOverHubState extends State<FinalOverHub> {
                                         context,
                                       ).scale(16) /
                                       16;
-                                  final introHeight =
-                                      104 * math.max(1.0, scale);
+                                  final introHeight = 72 * math.max(1.0, scale);
                                   final heroHeight = math.max(
                                     200.0,
                                     constraints.maxHeight - introHeight,
@@ -102,7 +101,7 @@ class _FinalOverHubState extends State<FinalOverHub> {
                                             24,
                                             0,
                                             24,
-                                            12,
+                                            0,
                                           ),
                                           child: _LobbyIdentity(),
                                         ),
@@ -113,8 +112,8 @@ class _FinalOverHubState extends State<FinalOverHub> {
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
-                              child: FinalOverPixelPlayButton(
+                              padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                              child: FinalOverFuseCta(
                                 key: const ValueKey('final-over-play'),
                                 label: ready ? 'TAKE GUARD' : 'BUILD SQUAD',
                                 onTap: () => ready
@@ -327,31 +326,16 @@ class _LobbyIdentity extends StatelessWidget {
   const _LobbyIdentity();
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 12, bottom: 20),
+    padding: const EdgeInsets.only(top: 20, bottom: 16),
     child: LayoutBuilder(
-      builder: (context, box) => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            'FINAL OVER',
-            textAlign: TextAlign.center,
-            style: Cyber.display(
-              box.maxWidth < 290 ? StatOzTypography.p28 : StatOzTypography.p32,
-              color: AppTheme.whiteColor,
-              letterSpacing: .5,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Three overs. One chase.',
-            textAlign: TextAlign.center,
-            style: Cyber.bodyFor(
-              context,
-              StatOzTypography.p14,
-              color: Cyber.muted,
-            ),
-          ),
-        ],
+      builder: (context, box) => Text(
+        'FINAL OVER',
+        textAlign: TextAlign.center,
+        style: Cyber.display(
+          box.maxWidth < 290 ? StatOzTypography.p28 : StatOzTypography.p32,
+          color: AppTheme.whiteColor,
+          letterSpacing: .5,
+        ),
       ),
     ),
   );

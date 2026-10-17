@@ -31,6 +31,7 @@ class TrendingMatchesView extends StatefulWidget {
     this.onOpenQuiz,
     this.onIntroPlayed,
     this.header,
+    this.showFeaturedPicks = true,
     super.key,
   });
   final ValueChanged<SportMatch> onOpenMatch;
@@ -39,6 +40,7 @@ class TrendingMatchesView extends StatefulWidget {
   final bool animateIntro;
   final VoidCallback? onIntroPlayed;
   final Widget? header;
+  final bool showFeaturedPicks;
   @override
   State<TrendingMatchesView> createState() => _TrendingMatchesViewState();
 }
@@ -152,13 +154,14 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
         );
         SportMatch? match(String id) => fixturesById[id];
         final children = <Widget>[
-          if (markets.isNotEmpty) ...[
+          if (widget.showFeaturedPicks && markets.isNotEmpty) ...[
             _FeaturedPicks(markets: markets, onOpen: widget.onOpenMarket),
             const SizedBox(height: MatchDiscoveryTokens.moduleGap),
           ],
-          if (personal.isNotEmpty) ...[
+          if (personal.any((entry) => entry.reveal)) ...[
             PersonalPredictions(
               key: const ValueKey('personal-predictions'),
+              showPlayed: false,
               entries: personal,
             ),
             const SizedBox(height: MatchDiscoveryTokens.moduleGap),

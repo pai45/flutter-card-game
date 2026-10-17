@@ -5,12 +5,19 @@ import '../match_prediction_screen.dart';
 import 'personal_prediction_selection.dart';
 
 class PersonalPredictions extends StatelessWidget {
-  const PersonalPredictions({required this.entries, super.key});
+  const PersonalPredictions({
+    required this.entries,
+    this.showPlayed = true,
+    super.key,
+  });
   final List<PersonalPredictionEntry> entries;
+  final bool showPlayed;
   @override
   Widget build(BuildContext context) {
     final reveals = entries.where((entry) => entry.reveal).toList();
-    final played = entries.where((entry) => !entry.reveal).toList();
+    final played = showPlayed
+        ? entries.where((entry) => !entry.reveal).toList()
+        : <PersonalPredictionEntry>[];
     void open(PersonalPredictionEntry entry) => Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) =>
