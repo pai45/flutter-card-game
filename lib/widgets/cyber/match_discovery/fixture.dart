@@ -7,22 +7,23 @@ class EditorialMatchCard extends StatelessWidget {
     this.compact = false,
     this.competitionLabel,
     this.followed = false,
+    this.showCompetition = true,
     super.key,
   });
   final SportMatch match;
   final VoidCallback? onTap;
   final bool compact;
-  final bool followed;
+  final bool followed, showCompetition;
   final String? competitionLabel;
   @override
   Widget build(BuildContext context) {
+    final upcoming = match.status == MatchStatus.upcoming;
     final stacked =
-        compact ||
-        match.sport == Sport.cricket ||
-        match.sport == Sport.basketball;
-    final timing = match.status == MatchStatus.upcoming
-        ? editorialKickoff(match.kickoff, DateTime.now())
-        : match.status == MatchStatus.live
+        !upcoming &&
+        (compact ||
+            match.sport == Sport.cricket ||
+            match.sport == Sport.basketball);
+    final timing = match.status == MatchStatus.live
         ? match.liveStatusNote ??
               (match.sport == Sport.football && match.liveMinute != null
                   ? '${match.liveMinute}′'
@@ -42,9 +43,11 @@ class EditorialMatchCard extends StatelessWidget {
         children: [
           EditorialStatusArea(
             sport: match.sport,
-            label: competitionLabel ?? match.leagueId.toUpperCase(),
+            label: showCompetition
+                ? (competitionLabel ?? match.leagueId.toUpperCase())
+                : '',
+            showMarker: showCompetition,
             status: match.status.name,
-            timing: match.status == MatchStatus.live ? null : timing,
             liveContext: match.status == MatchStatus.live ? timing : null,
           ),
           if (match.sport == Sport.motorsport) ...[
@@ -52,7 +55,8 @@ class EditorialMatchCard extends StatelessWidget {
               match.home.name,
               style: editorialText(context, 16, weight: FontWeight.w600),
             ),
-            if (session != null) ...[
+            if (upcoming) ...[const SizedBox(height: 8), kickoffClock(context)],
+            if (!upcoming && session != null) ...[
               const SizedBox(height: 12),
               Text(
                 session.name,
@@ -77,7 +81,7 @@ class EditorialMatchCard extends StatelessWidget {
             LayoutBuilder(
               builder: (context, box) {
                 final Widget score = match.status == MatchStatus.upcoming
-                    ? const EditorialVersus()
+                    ? kickoffClock(context)
                     : Text(
                         '${match.homeScore ?? '—'} : ${match.awayScore ?? '—'}',
                         textAlign: TextAlign.center,
@@ -131,6 +135,25 @@ class EditorialMatchCard extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget kickoffClock(BuildContext context) {
+    final local = match.kickoff.toLocal();
+    final clock =
+        '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+    return Semantics(
+      label: 'Starts $clock',
+      child: Text(
+        clock,
+        key: const ValueKey('editorial-kickoff-clock'),
+        textAlign: TextAlign.center,
+        style: editorialText(
+          context,
+          MatchDiscoveryTokens.title,
+          weight: FontWeight.w500,
+        ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
       ),
     );
   }

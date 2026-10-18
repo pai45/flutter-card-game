@@ -8,12 +8,13 @@ class EditorialStatusArea extends StatelessWidget {
     this.liveContext,
     this.sport,
     this.showDivider = true,
+    this.showMarker = true,
     super.key,
   });
   final String label;
   final String? status, timing, liveContext;
   final Sport? sport;
-  final bool showDivider;
+  final bool showDivider, showMarker;
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -85,7 +86,7 @@ class EditorialStatusArea extends StatelessWidget {
               ),
             ],
           );
-          if (tag == null) return marker;
+          if (tag == null) return showMarker ? marker : const SizedBox.shrink();
           final text = TextPainter(
             text: TextSpan(
               text: tagLabel,
@@ -105,7 +106,14 @@ class EditorialStatusArea extends StatelessWidget {
           return Stack(
             clipBehavior: Clip.none,
             children: [
-              if (narrow)
+              if (!showMarker)
+                SizedBox(
+                  height: (tagHeight - MatchDiscoveryTokens.card).clamp(
+                    0.0,
+                    double.infinity,
+                  ),
+                )
+              else if (narrow)
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -151,10 +159,10 @@ class EditorialStatusArea extends StatelessWidget {
           ),
         ),
       ],
-      const SizedBox(height: 7),
-      if (showDivider)
+      if (showMarker) const SizedBox(height: 7),
+      if (showDivider && showMarker)
         Container(height: 1, color: kFixtureBorder)
-      else
+      else if (showMarker)
         const SizedBox(height: 1),
       const SizedBox(height: 4),
     ],

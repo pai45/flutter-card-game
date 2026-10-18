@@ -411,7 +411,7 @@ void main() {
     },
   );
   testWidgets(
-    'not-yet-batted cricket uses supporting text instead of an oversized score',
+    'upcoming cricket shows kickoff instead of not-yet-batted placeholders',
     (tester) async {
       await render(
         tester,
@@ -425,7 +425,11 @@ void main() {
         width: 320,
         scale: 1.4,
       );
-      expect(tester.widget<Text>(find.text('Yet to Bat')).style!.fontSize, 12);
+      expect(find.text('Yet to Bat'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('editorial-kickoff-clock')),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     },
   );

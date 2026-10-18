@@ -52,7 +52,7 @@ class MatchPredictionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (match.sport != Sport.tennis) {
+    if (match.sport != Sport.tennis || match.status == MatchStatus.upcoming) {
       if (_finished &&
           prediction != null &&
           prediction!.status != PredictionStatus.settled &&
@@ -61,6 +61,7 @@ class MatchPredictionCard extends StatelessWidget {
       }
       return EditorialMatchCard(
         match: match,
+        showCompetition: false,
         onTap: onTap,
         followed: this.favorite != null,
       );
