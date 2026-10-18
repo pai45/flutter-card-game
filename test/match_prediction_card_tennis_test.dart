@@ -50,7 +50,10 @@ void main() {
           ),
         ),
       );
-      expect(find.byType(EditorialMatchCard), findsNothing);
+      expect(
+        find.byType(EditorialMatchCard),
+        status == MatchStatus.upcoming ? findsOneWidget : findsNothing,
+      );
       expect(find.text('Player North'), findsOneWidget);
       expect(find.text('Player South'), findsOneWidget);
       expect(
@@ -67,6 +70,9 @@ void main() {
         }),
         findsOneWidget,
       );
+      if (status == MatchStatus.upcoming) {
+        expect(find.text('OPEN'), findsOneWidget);
+      }
       if (status == MatchStatus.finished) {
         expect(find.text('Player North won'), findsOneWidget);
       }

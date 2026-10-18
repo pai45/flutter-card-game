@@ -266,3 +266,7 @@ Use one row per coherent request, not one row per file.
 | 2026-10-17 | Restore first carousel after visibility clarification | Match Trending | BUILT | Restored the featured winner-Picks carousel; only Your predictions stays hidden. Gold reveal carousel remains visible. | `systems/predictions.md`; `discovery-card-library.md`; `README.md` | Featured visibility and reveal/played widget assertions. |
 
 | 2026-10-17 | Revamp Final Over bottom section with Fuse CTA | `games/final-over.md` | BUILT | Removed the lobby tagline and replaced the raised pixel action with the shared Fuse treatment; kept real launch/setup behavior without a fabricated timer. | FinalOverHub, FinalOverFuseCta and web FuseCta/lobby | Focused keyboard/loading/lobby tests, analysis, responsive running previews and web checks; evidence in Designer `output/final-over-fuse`. |
+
+| 2026-10-18 | Thin sport-tab match cards and centred kickoff | Match discovery presentation | BUILT | Removed sport-feed league/icon row, retained Trends competition row, moved upcoming kickoff to centre across sports and removed duplicate start metadata. | `discovery-card-library.md`; `systems/predictions.md` | Shared status marker visibility, fixture variants, timezone/geometry and affected widget checks. |
+
+| 2026-10-18 | Kickoff clock typography | Match discovery | BUILT | Reduced upcoming kickoff clocks to 16px / Space Grotesk 500 in app and web using existing title-size tokens. | discovery-card-library.md | Scoped analysis and presentation checks. |
